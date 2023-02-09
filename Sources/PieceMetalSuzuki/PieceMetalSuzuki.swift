@@ -21,8 +21,8 @@ public struct PieceMetalSuzuki {
         let options: NSDictionary = [
             kCVPixelBufferCGImageCompatibilityKey: true,
         ]
-        var pxbuffer: CVPixelBuffer!
-        let status = CVPixelBufferCreate(kCFAllocatorDefault, width, height, format, options, &pxbuffer)
+        var buffer: CVPixelBuffer!
+        let status = CVPixelBufferCreate(kCFAllocatorDefault, width, height, format, options, &buffer)
         guard status == kCVReturnSuccess else {
             assert(false, "Failed to create pixel buffer.")
             return
@@ -30,29 +30,44 @@ public struct PieceMetalSuzuki {
 
         /// Copy image to pixel buffer.
         let context = CIContext()
-        context.render(ciImage, to: pxbuffer)
+        context.render(ciImage, to: buffer)
 
         /// Read values from pixel buffer.
-        CVPixelBufferLockBaseAddress(pxbuffer, [])
+        CVPixelBufferLockBaseAddress(buffer, [])
         defer {
-            CVPixelBufferUnlockBaseAddress(pxbuffer, [])
+            CVPixelBufferUnlockBaseAddress(buffer, [])
         }
-        guard let baseAddress = CVPixelBufferGetBaseAddress(pxbuffer) else {
+        guard let ptr = CVPixelBufferGetBaseAddress(buffer) else {
             assert(false, "Failed to get base address.")
             return
         }
 
-        let (row, col) = (75, 575)
-        let offset = (row * width + col) * 4
+        /// Run Suzuki algorithm.
+        var img = ImageBuffer(ptr: ptr, width: CVPixelBufferGetWidth(buffer), height: CVPixelBufferGetHeight(buffer))
+        border(img: &img)
 
+        /// Write image back out.
+        let docUrls = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)
+        guard let documentsUrl = docUrls.first else {
+            assert(false, "Couldn't get documents directory.")
+            return
+        }
+        let filename = documentsUrl.appendingPathComponent("output.png")
 
-        let b = baseAddress.load(fromByteOffset: offset + 0, as: UInt8.self)
-        let g = baseAddress.load(fromByteOffset: offset + 1, as: UInt8.self)
-        let r = baseAddress.load(fromByteOffset: offset + 2, as: UInt8.self)
-        let a = baseAddress.load(fromByteOffset: offset + 3, as: UInt8.self)
-        print("b: \(b), g: \(g), r: \(r), a: \(a)")
-
+        let outputImage = CIImage(cvPixelBuffer: buffer)
+        let outputContext = CIContext()
+        guard let outputData = outputContext.pngRepresentation(of: outputImage, format: .RGBA8, colorSpace: CGColorSpaceCreateDeviceRGB(), options: [:]) else {
+            assert(false, "Couldn't get PNG data.")
+            return
+        }
+        do {
+            try outputData.write(to: filename)
+        } catch {
+            assert(false, "Couldn't write file.")
+            return
+        }
         
+
         print("so far so good")
     }
 }
