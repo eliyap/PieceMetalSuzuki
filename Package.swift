@@ -23,6 +23,7 @@ let package = Package(
             dependencies: [],
             resources: [
                 .copy("input.png"),
+                .copy("Metal/"),
             ]),
         .testTarget(
             name: "PieceMetalSuzukiTests",

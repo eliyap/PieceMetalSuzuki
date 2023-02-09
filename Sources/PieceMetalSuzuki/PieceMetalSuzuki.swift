@@ -89,6 +89,7 @@ func applyMetalFilter(bufferA: CVPixelBuffer, bufferB: CVPixelBuffer) -> CVPixel
         return outBuffer
     }
 
+    /// Apply a binary threshold.
     /// This is 1 in both signed and unsigned numbers.
     let setVal: Float = 1.0/256.0
     let binary = MPSImageThresholdBinary(device: metalDevice, thresholdValue: 0.5, maximumValue: setVal, linearGrayColorTransform: nil)
@@ -96,6 +97,16 @@ func applyMetalFilter(bufferA: CVPixelBuffer, bufferB: CVPixelBuffer) -> CVPixel
     binaryBuffer.commit()
     binaryBuffer.waitUntilCompleted()
 
+    guard
+        let libUrl = Bundle.module.url(forResource: "PieceSuzukiKernel", withExtension: "metal", subdirectory: "Metal"),
+        let source = try? String(contentsOf: libUrl),
+        let library = try? metalDevice.makeLibrary(source: source, options: nil),
+        let kernelFunction = library.makeFunction(name: "rosyEffect")
+    else {
+        assert(false, "Failed to get library.")
+        return outBuffer
+    }
+    
     return outBuffer
 }
  
