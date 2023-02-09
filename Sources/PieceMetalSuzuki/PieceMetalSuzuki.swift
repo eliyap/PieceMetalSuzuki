@@ -38,35 +38,7 @@ public struct PieceMetalSuzuki {
         context.render(ciImage, to: bufferA)
 
         /// Apply Metal filter to pixel buffer.
-        guard 
-            let metalDevice = MTLCreateSystemDefaultDevice(), 
-            let commandQueue = metalDevice.makeCommandQueue(),
-            let binaryBuffer = commandQueue.makeCommandBuffer()
-        else {
-            assert(false, "Failed to get metal device.")
-            return
-        }
-        
-        var metalTextureCache: CVMetalTextureCache!
-        guard CVMetalTextureCacheCreate(kCFAllocatorDefault, nil, metalDevice, nil, &metalTextureCache) == kCVReturnSuccess else {
-            assert(false, "Unable to allocate texture cache")
-            return
-        }
-        
-        
-        /// This is 1 in both signed and unsigned numbers.
-        let setVal: Float = 1.0/256.0
-        let binary = MPSImageThresholdBinary(device: metalDevice, thresholdValue: 0.5, maximumValue: setVal, linearGrayColorTransform: nil)
-        guard let textureA = makeTextureFromCVPixelBuffer(pixelBuffer: bufferA, textureFormat: .bgra8Unorm, textureCache: metalTextureCache) else {
-            assert(false, "Failed to create texture.")
-            return
-        }
-        guard let textureB = makeTextureFromCVPixelBuffer(pixelBuffer: bufferB, textureFormat: .bgra8Unorm, textureCache: metalTextureCache) else {
-            assert(false, "Failed to create texture.")
-            return
-        }
-        binary.encode(commandBuffer: binaryBuffer, sourceTexture: textureA, destinationTexture: textureB)
-        binaryBuffer.commit()
+        applyMetalFilter(bufferA: bufferA, bufferB: bufferB)
         
         /// Read values from pixel buffer.
         CVPixelBufferLockBaseAddress(bufferB, [])
@@ -88,6 +60,40 @@ public struct PieceMetalSuzuki {
         print("so far so good")
     }
 }
+
+func applyMetalFilter(bufferA: CVPixelBuffer, bufferB: CVPixelBuffer) -> Void {
+    /// Apply Metal filter to pixel buffer.
+    guard 
+        let metalDevice = MTLCreateSystemDefaultDevice(), 
+        let commandQueue = metalDevice.makeCommandQueue(),
+        let binaryBuffer = commandQueue.makeCommandBuffer()
+    else {
+        assert(false, "Failed to get metal device.")
+        return
+    }
+    
+    var metalTextureCache: CVMetalTextureCache!
+    guard CVMetalTextureCacheCreate(kCFAllocatorDefault, nil, metalDevice, nil, &metalTextureCache) == kCVReturnSuccess else {
+        assert(false, "Unable to allocate texture cache")
+        return
+    }
+    
+    guard let textureA = makeTextureFromCVPixelBuffer(pixelBuffer: bufferA, textureFormat: .bgra8Unorm, textureCache: metalTextureCache) else {
+        assert(false, "Failed to create texture.")
+        return
+    }
+    guard let textureB = makeTextureFromCVPixelBuffer(pixelBuffer: bufferB, textureFormat: .bgra8Unorm, textureCache: metalTextureCache) else {
+        assert(false, "Failed to create texture.")
+        return
+    }
+
+    /// This is 1 in both signed and unsigned numbers.
+    let setVal: Float = 1.0/256.0
+    let binary = MPSImageThresholdBinary(device: metalDevice, thresholdValue: 0.5, maximumValue: setVal, linearGrayColorTransform: nil)
+    binary.encode(commandBuffer: binaryBuffer, sourceTexture: textureA, destinationTexture: textureB)
+    binaryBuffer.commit()
+}
+ 
 
 func saveBufferToPng(buffer: CVPixelBuffer, format: CIFormat) -> Void { 
     let docUrls = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)
