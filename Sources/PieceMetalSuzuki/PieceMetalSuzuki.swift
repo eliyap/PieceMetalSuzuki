@@ -83,30 +83,34 @@ public struct PieceMetalSuzuki {
         border(img: &img)
 
         /// Write image back out.
-        let docUrls = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)
-        guard let documentsUrl = docUrls.first else {
-            assert(false, "Couldn't get documents directory.")
-            return
-        }
-        let filename = documentsUrl.appendingPathComponent("output.png")
-
-        let outputImage = CIImage(cvPixelBuffer: bufferB)
-        let outputContext = CIContext()
-        guard let outputData = outputContext.pngRepresentation(of: outputImage, format: .RGBA8, colorSpace: CGColorSpaceCreateDeviceRGB(), options: [:]) else {
-            assert(false, "Couldn't get PNG data.")
-            return
-        }
-        do {
-            try outputData.write(to: filename)
-        } catch {
-            assert(false, "Couldn't write file.")
-            return
-        }
-        
+        saveBufferToPng(buffer: bufferB, format: .RGBA8)
 
         print("so far so good")
     }
 }
+
+func saveBufferToPng(buffer: CVPixelBuffer, format: CIFormat) -> Void { 
+    let docUrls = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)
+    guard let documentsUrl = docUrls.first else {
+        assert(false, "Couldn't get documents directory.")
+        return
+    }
+    let filename = documentsUrl.appendingPathComponent("output.png")
+
+    let image = CIImage(cvPixelBuffer: buffer)
+    let context = CIContext()
+    guard let outputData = context.pngRepresentation(of: image, format: format, colorSpace: CGColorSpaceCreateDeviceRGB(), options: [:]) else {
+        assert(false, "Couldn't get PNG data.")
+        return
+    }
+    do {
+        try outputData.write(to: filename)
+    } catch {
+        assert(false, "Couldn't write file.")
+        return
+    }
+}
+
 func makeTextureFromCVPixelBuffer(
     pixelBuffer: CVPixelBuffer, 
     textureFormat: MTLPixelFormat,
