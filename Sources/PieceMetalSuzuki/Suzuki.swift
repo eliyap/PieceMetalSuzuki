@@ -177,14 +177,13 @@ func border(img: inout ImageBuffer) -> Void {
             }
         }
 
-        debugPrint(false, "Infinite loop detected")
+        assert(false, "Infinite loop detected")
     }
 
     for row in 1..<(img.height-1) {
         var LNBD: Int8 = 1
         for col in 1..<(img.width-1) {
             if (img[Point(x: col, y: row)] == 1) && (img[Point(x: col-1, y: row)] == 0) {
-                guard NBD < 127 else { continue }
                 NBD += 1
                 borderTypes[NBD] = .outer
                 let zeroPixel = Point(x: col-1, y: row)
@@ -197,7 +196,6 @@ func border(img: inout ImageBuffer) -> Void {
 
                 follow(borderStart: Point(x: col, y: row), zeroPixel: zeroPixel)
             } else if (img[Point(x: col, y: row)] >= 1) && (img[Point(x: col+1, y: row)] == 0) {
-                guard NBD < 127 else { continue }
                 NBD += 1
                 borderTypes[NBD] = .hole
                 let zeroPixel = Point(x: col+1, y: row)
@@ -220,5 +218,10 @@ func border(img: inout ImageBuffer) -> Void {
                 LNBD = abs(img[Point(x: col, y: row)])
             }
         }
+    }
+
+    /// Print out the border points
+    for (NBD, points) in borderPoints {
+        print("NBD \(NBD): \(points)")
     }
 }
