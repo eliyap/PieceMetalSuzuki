@@ -22,18 +22,6 @@ struct PixelPoint {
     uint32_t y;
 };
 
-struct ChainFragments {
-    device PixelPoint* points;
-    device Run* runs;
-};
-
-struct ChainStarter {
-    bool isSet;
-    uint8_t tailTriadFrom;
-    uint8_t headTriadTo;
-    struct PixelPoint point;
-};
-
 // Compute kernel
 kernel void startChain(
     texture2d<half, access::read>  inputTexture  [[ texture(0) ]],
