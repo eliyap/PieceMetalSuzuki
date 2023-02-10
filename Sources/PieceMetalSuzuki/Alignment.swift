@@ -60,6 +60,9 @@ extension ChainDirection: CustomStringConvertible {
     }
 }
 
+/// A lightweight structure used to get initial information from all pixels in the image.
+/// - Warning: to save time, this struct is *not* initialized, and may contain dirty memory.
+///            If `isSet` is false, disregard the other values.
 struct ChainStarter {
     var isSet: Bool = false
     var tailTriadFrom: ChainDirection.RawValue
