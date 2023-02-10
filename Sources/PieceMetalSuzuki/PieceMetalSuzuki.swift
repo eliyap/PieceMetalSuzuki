@@ -89,40 +89,7 @@ func applyMetalFilter(bufferA: CVPixelBuffer, bufferB: CVPixelBuffer) -> CVPixel
         return outBuffer
     }
     
-    guard
-        let kernelFunction = loadChainStarterFunction(device: device),
-        let pipelineState = try? device.makeComputePipelineState(function: kernelFunction),
-        let kernelBuffer = commandQueue.makeCommandBuffer(),
-        let kernelEncoder = kernelBuffer.makeComputeCommandEncoder()
-    else {
-        assert(false, "Failed to setup pipeline.")
-        return outBuffer
-    }
-
-    kernelEncoder.label = "Custom Kernel Encoder"
-    kernelEncoder.setComputePipelineState(pipelineState)
-    kernelEncoder.setTexture(textureA, index: 0)
-    kernelEncoder.setTexture(textureB, index: 1)
-
-    let count = textureA.width * textureA.height * 4
-    guard let (chainArr, argBuffer) = createChainStarterBuffer(device: device, count: count) else {
-        assert(false, "Failed to create buffer.")
-        return outBuffer
-    }
-    
-    kernelEncoder.setBuffer(argBuffer, offset: 0, index: 0)
-    kernelEncoder.setBytes(StarterLUT, length: MemoryLayout<ChainDirection.RawValue>.stride * StarterLUT.count, index: 1)
-
-    let (tPerTG, tgPerGrid) = pipelineState.threadgroupParameters(texture: textureA)
-    kernelEncoder.dispatchThreadgroups(tgPerGrid, threadsPerThreadgroup: tPerTG)
-    kernelEncoder.endEncoding()
-    kernelBuffer.commit()
-    kernelBuffer.waitUntilCompleted()
-    // DEBUG
-    for i in 0..<count where chainArr[i].isSet {
-        print(chainArr[i])
-    }
-    
+    createChainStarters(device: device, commandQueue: commandQueue, textureA: textureA, textureB: textureB)
     
     /// Apply a binary threshold.
     /// This is 1 in both signed and unsigned numbers.
@@ -225,6 +192,43 @@ func loadChainStarterFunction(device: MTLDevice) -> MTLFunction? {
         debugPrint(error)
         return nil
     }
+}
+
+func createChainStarters(
+    device: MTLDevice,
+    commandQueue: MTLCommandQueue,
+    textureA: MTLTexture,
+    textureB: MTLTexture
+) -> Void {
+    guard
+        let kernelFunction = loadChainStarterFunction(device: device),
+        let pipelineState = try? device.makeComputePipelineState(function: kernelFunction),
+        let cmdBuffer = commandQueue.makeCommandBuffer(),
+        let cmdEncoder = cmdBuffer.makeComputeCommandEncoder()
+    else {
+        assert(false, "Failed to setup pipeline.")
+        return
+    }
+
+    cmdEncoder.label = "Custom Kernel Encoder"
+    cmdEncoder.setComputePipelineState(pipelineState)
+    cmdEncoder.setTexture(textureA, index: 0)
+    cmdEncoder.setTexture(textureB, index: 1)
+
+    let count = textureA.width * textureA.height * 4
+    guard let (chainArr, argBuffer) = createChainStarterBuffer(device: device, count: count) else {
+        assert(false, "Failed to create buffer.")
+        return
+    }
+    
+    cmdEncoder.setBuffer(argBuffer, offset: 0, index: 0)
+    cmdEncoder.setBytes(StarterLUT, length: MemoryLayout<ChainDirection.RawValue>.stride * StarterLUT.count, index: 1)
+
+    let (tPerTG, tgPerGrid) = pipelineState.threadgroupParameters(texture: textureA)
+    cmdEncoder.dispatchThreadgroups(tgPerGrid, threadsPerThreadgroup: tPerTG)
+    cmdEncoder.endEncoding()
+    cmdBuffer.commit()
+    cmdBuffer.waitUntilCompleted()
 }
 
 extension MTLComputePipelineState {
