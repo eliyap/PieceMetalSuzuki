@@ -317,6 +317,13 @@ struct ChainFragments {
     static var initial = ChainFragments(points: [PixelPoint.zero], runs: .init(repeating: .initial, count: 4))
 }
 
+extension ChainFragments.PixelPoint: CustomStringConvertible {
+    var description: String { "(\(x), \(y))"}
+}
+extension ChainFragments.Run: CustomStringConvertible {
+    var description: String { "(old: [\(oldHead), \(oldTail)), new: [\(newHead), \(newTail)), \(tailTriadFrom), \(headTriadTo))"}
+}
+
 extension ChainFragments { 
     enum Source { case A, B }
     static func combine(a: inout ChainFragments, b: inout ChainFragments) -> [Run] {
