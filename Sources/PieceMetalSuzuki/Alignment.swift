@@ -35,6 +35,37 @@ enum ChainDirection: UInt8, Equatable {
     }
 }
 
+extension ChainDirection: CustomStringConvertible {
+    var description: String {
+        switch self {
+        case .closed:
+            return "⏺️"
+        case .up:
+            return "⬆️"
+        case .topRight:
+            return "↗️"
+        case .right:
+            return "➡️"
+        case .bottomRight:
+            return "↘️"
+        case .down:
+            return "⬇️"
+        case .bottomLeft:
+            return "↙️"
+        case .left:
+            return "⬅️"
+        case .topLeft:
+            return "↖️"
+        }
+    }
+}
+
+struct ChainStarter {
+    var isSet: Bool = false
+    var run: Run = .initial
+    var point: PixelPoint = .zero
+}
+
 /// Indexes a contiguous sub-section of the array which represents a chain fragment.
 struct Run {
     /// The indices in `[start, end)` format in the current `links` array.
@@ -83,9 +114,15 @@ struct PixelPoint: Equatable {
 }
 
 extension PixelPoint: CustomStringConvertible {
-    var description: String { "(\(x), \(y))"}
+    var description: String { "r\(y)c\(x)"}
 }
 
 extension Run: CustomStringConvertible {
-    var description: String { "(old: [\(oldHead), \(oldTail)), new: [\(newHead), \(newTail)), \(tailTriadFrom), \(headTriadTo))"}
+    var description: String {
+        ""
+        + "(old: [\(oldHead), \(oldTail)), "
+        +  "new: [\(newHead), \(newTail)), "
+        + "\(ChainDirection(rawValue: tailTriadFrom)!), \(ChainDirection(rawValue: headTriadTo)!))"
+        
+    }
 }
