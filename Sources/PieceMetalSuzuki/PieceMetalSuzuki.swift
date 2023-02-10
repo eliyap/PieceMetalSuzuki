@@ -137,9 +137,8 @@ func applyMetalFilter(bufferA: CVPixelBuffer, bufferB: CVPixelBuffer) -> CVPixel
     kernelBuffer.commit()
     kernelBuffer.waitUntilCompleted()
     // DEBUG
-    let result = argBuffer.contents().bindMemory(to: MyArguments.self, capacity: args.count)
-    for i in 0..<args.count {
-        print(result[i])
+    for i in 0..<count where chainArr[i].isSet {
+        print(chainArr[i])
     }
     
     
