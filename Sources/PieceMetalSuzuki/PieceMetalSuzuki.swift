@@ -97,7 +97,7 @@ func applyMetalFilter(bufferA: CVPixelBuffer, bufferB: CVPixelBuffer) -> CVPixel
         }
         let source = try String(contentsOf: libUrl)
         let library = try device.makeLibrary(source: source, options: nil)
-        guard let function = library.makeFunction(name: "rosyEffect") else {
+        guard let function = library.makeFunction(name: "startChain") else {
             assert(false, "Failed to get library.")
             return outBuffer
         }
