@@ -88,27 +88,9 @@ func applyMetalFilter(bufferA: CVPixelBuffer, bufferB: CVPixelBuffer) -> CVPixel
         assert(false, "Failed to create texture.")
         return outBuffer
     }
-
-    let kernelFunction: MTLFunction
-    do {
-        guard let libUrl = Bundle.module.url(forResource: "PieceSuzukiKernel", withExtension: "metal", subdirectory: "Metal") else {
-            assert(false, "Failed to get library.")
-            return outBuffer
-        }
-        let source = try String(contentsOf: libUrl)
-        let library = try device.makeLibrary(source: source, options: nil)
-        guard let function = library.makeFunction(name: "startChain") else {
-            assert(false, "Failed to get library.")
-            return outBuffer
-        }
-        kernelFunction = function
-    } catch {
-        debugPrint(error)
-        return outBuffer
-    }
-    
     
     guard
+        let kernelFunction = loadChainStarterFunction(device: device),
         let pipelineState = try? device.makeComputePipelineState(function: kernelFunction),
         let kernelBuffer = commandQueue.makeCommandBuffer(),
         let kernelEncoder = kernelBuffer.makeComputeCommandEncoder()
@@ -224,6 +206,25 @@ func createChainStarterBuffer(device: MTLDevice, count: Int) -> (UnsafeMutablePo
         return nil
     }
     return (array, buffer)
+}
+
+func loadChainStarterFunction(device: MTLDevice) -> MTLFunction? {
+    do {
+        guard let libUrl = Bundle.module.url(forResource: "PieceSuzukiKernel", withExtension: "metal", subdirectory: "Metal") else {
+            assert(false, "Failed to get library.")
+            return nil
+        }
+        let source = try String(contentsOf: libUrl)
+        let library = try device.makeLibrary(source: source, options: nil)
+        guard let function = library.makeFunction(name: "startChain") else {
+            assert(false, "Failed to get library.")
+            return nil
+        }
+        return function
+    } catch {
+        debugPrint(error)
+        return nil
+    }
 }
 
 extension MTLComputePipelineState {
