@@ -254,6 +254,9 @@ struct ChainFragments {
         /// 1-8 indicate directions from upwards, proceeding clockwise.
         var tailTriadFrom: Direction.RawValue
         var headTriadTo: Direction.RawValue
+        
+        /// An invalid value used to initialize the process.
+        static let initial = Run(oldHead: -1, oldTail: -1, newHead: -1, newTail: -1, tailTriadFrom: Direction.closed.rawValue, headTriadTo: Direction.closed.rawValue)
     }
     
     struct PixelPoint: Equatable {
@@ -275,6 +278,9 @@ struct ChainFragments {
             case .topLeft:     return PixelPoint(x: x - 1, y: y - 1)
             }
         }
+        
+        /// An invalid point, since the frame should never be analyzed.
+        static let zero = PixelPoint(x: .zero, y: .zero)
     }
     
     /// A set of pixel coordinates.
@@ -282,6 +288,8 @@ struct ChainFragments {
     var points: [PixelPoint]
     
     var runs: [Run]
+    
+    static var initial = ChainFragments(points: [PixelPoint.zero], runs: .init(repeating: .initial, count: 4))
 }
 
 extension ChainFragments { 
