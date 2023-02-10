@@ -89,7 +89,11 @@ func applyMetalFilter(bufferA: CVPixelBuffer, bufferB: CVPixelBuffer) -> CVPixel
         return outBuffer
     }
     
-    createChainStarters(device: device, commandQueue: commandQueue, textureA: textureA, textureB: textureB)
+    guard let result = createChainStarters(device: device, commandQueue: commandQueue, textureA: textureA, textureB: textureB) else {
+        assert(false, "Failed to run chain start kernel.")
+        return outBuffer
+    }
+    let (points, runs) = result
     
     /// Apply a binary threshold.
     /// This is 1 in both signed and unsigned numbers.
@@ -199,7 +203,7 @@ func createChainStarters(
     commandQueue: MTLCommandQueue,
     textureA: MTLTexture,
     textureB: MTLTexture
-) -> Void {
+) -> (UnsafeMutablePointer<PixelPoint>, UnsafeMutablePointer<Run>)? {
     guard
         let kernelFunction = loadChainStarterFunction(device: device),
         let pipelineState = try? device.makeComputePipelineState(function: kernelFunction),
@@ -207,7 +211,7 @@ func createChainStarters(
         let cmdEncoder = cmdBuffer.makeComputeCommandEncoder()
     else {
         assert(false, "Failed to setup pipeline.")
-        return
+        return nil
     }
 
     cmdEncoder.label = "Custom Kernel Encoder"
@@ -221,7 +225,7 @@ func createChainStarters(
         let (runArr, runBuffer) = createBuffer(of: Run.self, device: device, count: count)
     else {
         assert(false, "Failed to create buffer.")
-        return
+        return nil
     }
     
     cmdEncoder.setBuffer(pointBuffer, offset: 0, index: 0)
@@ -233,6 +237,8 @@ func createChainStarters(
     cmdEncoder.endEncoding()
     cmdBuffer.commit()
     cmdBuffer.waitUntilCompleted()
+    
+    return (pointArr, runArr)
 }
 
 extension MTLComputePipelineState {
