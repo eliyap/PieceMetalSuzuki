@@ -41,8 +41,20 @@ kernel void startChain(
 
     outputTexture.write(inputTexture.read(gid), gid);
 
+    // Setting invalid array indices signals a NULL value.
+    // Set before early exit checks.
+    for (int i = 0; i < 4; i++) {
+        runs[idx+i].oldHead = -1;
+        runs[idx+i].oldTail = -1;
+        runs[idx+i].newHead = -1;
+        runs[idx+i].newTail = -1;
+    }
+    
     // Don't touch frame.
     if ((gid.x == 0) || (gid.y == 0) || (gid.x == inputTexture.get_width() - 1) || (gid.y == inputTexture.get_height() - 1)) {
+        return;
+    }
+    if (inputTexture.read(gid).r == 0) {
         return;
     }
     
@@ -72,13 +84,16 @@ kernel void startChain(
         uint8_t from = starterLUT[(lutAddr*8)+(i*2)+0];
         if (from != 0) {
             uint8_t to = starterLUT[(lutAddr*8)+(i*2)+1];
-            starter[idx+i].isSet = true;
-            starter[idx+i].tailTriadFrom = from;
-            starter[idx+i].headTriadTo = to;
-            starter[idx+i].point.x = gid.x;
-            starter[idx+i].point.y = gid.y;
-        } else {
-            starter[idx+i].isSet = false;
+            runs[idx+i].tailTriadFrom = from;
+            runs[idx+i].headTriadTo = to;
+            points[idx+i].x = gid.x;
+            points[idx+i].y = gid.y;
+            
+            // Set indices to match 1-element array.
+            runs[idx+i].oldHead = 0;
+            runs[idx+i].oldTail = 0;
+            runs[idx+i].newHead = 0;
+            runs[idx+i].newTail = 0;
         }
     }    
     return;
