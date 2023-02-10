@@ -209,6 +209,33 @@ func makeTextureFromCVPixelBuffer(
     return texture
 }
 
+func createChainStarterBuffer(device: MTLDevice, count: Int) -> (UnsafeMutablePointer<ChainStarter>, MTLBuffer)? {
+    var ptr: UnsafeMutableRawPointer? = nil
+    
+    let alignment = Int(getpagesize())
+    let size = MemoryLayout<ChainStarter>.stride * count
+    
+    /// Turns on all bits above the current one.
+    /// e.g.`0x1000 -> 0x0FFF -> 0xF000`
+    let sizeMask = ~(alignment - 1)
+    
+    /// Round up size to the nearest page.
+    let roundedSize = (size + alignment - 1) & sizeMask
+    posix_memalign(&ptr, alignment, roundedSize)
+    
+    /// Initialize memory.
+    let array = ptr!.bindMemory(to: ChainStarter.self, capacity: count)
+    for i in 0..<count {
+        array[i] = ChainStarter()
+    }
+    
+    guard let buffer = device.makeBuffer(bytesNoCopy: ptr!, length: roundedSize, options: [.storageModeShared], deallocator: nil) else {
+        assert(false, "Failed to create buffer.")
+        return nil
+    }
+    return (array, buffer)
+}
+
 extension MTLComputePipelineState {
     func threadgroupParameters(texture: MTLTexture) -> (threadgroupsPerGrid: MTLSize, threadsPerThreadgroup: MTLSize) {
         let threadHeight = maxTotalThreadsPerThreadgroup / threadExecutionWidth
