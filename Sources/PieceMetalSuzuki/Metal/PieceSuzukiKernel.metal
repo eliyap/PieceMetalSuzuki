@@ -14,14 +14,23 @@ kernel void rosyEffect(
     texture2d<half, access::write> outputTexture [[ texture(1) ]],
     uint2                          gid           [[thread_position_in_grid]]
 ) {
-    // Don't read or write outside of the texture, or the frame
-    if ((gid.x == 0) || (gid.y == 0) || (gid.x >= inputTexture.get_width() - 1) || (gid.y >= inputTexture.get_height() - 1)) {
+    // Don't read or write outside of the texture.
+    if ((gid.x >= inputTexture.get_width()) || (gid.y >= inputTexture.get_height())) {
+        return;
+    }
+
+    half4 black = half4(0.0, 0.0, 0.0, 1.0);
+    
+    // Write black to frame.
+    if ((gid.x == 0) || (gid.y == 0) || (gid.x == inputTexture.get_width() - 1) || (gid.y == inputTexture.get_height() - 1)) {
+        outputTexture.write(black, gid);
         return;
     }
     
     // Check if is edge pixel (is 1, 0 in cross positions).
     half4 center = inputTexture.read(gid);
     if (center.r == 0.0) {
+        outputTexture.write(black, gid);
         return;
     }
     half4 up    = inputTexture.read(uint2(gid.x, gid.y - 1));
@@ -29,6 +38,7 @@ kernel void rosyEffect(
     half4 left  = inputTexture.read(uint2(gid.x - 1, gid.y));
     half4 right = inputTexture.read(uint2(gid.x + 1, gid.y));
     if (up.r != 0.0 && down.r != 0.0 && left.r != 0.0 && right.r != 0.0) {
+        outputTexture.write(black, gid);
         return;
     }
     
