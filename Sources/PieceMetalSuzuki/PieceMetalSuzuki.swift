@@ -241,13 +241,13 @@ struct ChainFragments {
     
     /// Indexes a contiguous sub-section of the array which represents a chain fragment.
     struct Run {
-        /// The indices in [start, end) format in the current `links` array.
-        var oldHead: PointArray.Index
-        var oldTail: PointArray.Index
+        /// The indices in `[start, end)` format in the current `links` array.
+        var oldHead: Int32
+        var oldTail: Int32
         
-        /// The indices in [start, end) format in the next `links` array.
-        var newHead: PointArray.Index
-        var newTail: PointArray.Index
+        /// The indices in `[start, end)` format in the next `links` array.
+        var newHead: Int32
+        var newTail: Int32
 
         /// Where the chain fragment should connect from and to.
         /// 0 indicates a closed border.
@@ -260,8 +260,11 @@ struct ChainFragments {
     }
     
     struct PixelPoint: Equatable {
-        let x: Int
-        let y: Int
+        /// Corresponds to `thread_position_in_grid` with type `uint2`.
+        /// https://developer.apple.com/documentation/metal/mtlattributeformat/uint2
+        /// > Two unsigned 32-bit values.
+        let x: UInt32
+        let y: UInt32
 
         subscript(_ direction: Direction) -> PixelPoint {
             switch direction {
