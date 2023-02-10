@@ -78,6 +78,9 @@ struct Run {
 
     /// An invalid value used to initialize the process.
     static let initial = Run(oldHead: -1, oldTail: -1, newHead: -1, newTail: -1, tailTriadFrom: ChainDirection.closed.rawValue, headTriadTo: ChainDirection.closed.rawValue)
+    
+    /// Negative values are used to indicate an invalid run that should be treated as `nil`.
+    var isValid: Bool { oldHead >= 0 }
 }
 
 struct PixelPoint: Equatable {
