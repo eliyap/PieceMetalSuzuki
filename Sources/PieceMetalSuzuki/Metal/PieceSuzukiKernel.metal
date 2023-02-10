@@ -27,12 +27,25 @@ struct ChainFragments {
     device Run* runs;
 };
 
+struct MyArguments
+{
+    float widgetTolerance;
+    uint32_t widgetHeight;
+};
+
 // Compute kernel
 kernel void rosyEffect(
     texture2d<half, access::read>  inputTexture  [[ texture(0) ]],
     texture2d<half, access::write> outputTexture [[ texture(1) ]],
+    device MyArguments*         fragments     [[ buffer (0) ]],
     uint2                          gid           [[thread_position_in_grid]]
 ) {
+    if (fragments[0].widgetHeight != 0) {
+        outputTexture.write(half4(0.5, 0.0, 1.0, 1.0), gid);
+        fragments[0].widgetHeight = 1000;
+        return;
+    }
+
     // Don't read or write outside of the texture.
     if ((gid.x >= inputTexture.get_width()) || (gid.y >= inputTexture.get_height())) {
         return;

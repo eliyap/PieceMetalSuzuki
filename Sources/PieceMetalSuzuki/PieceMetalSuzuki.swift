@@ -122,10 +122,27 @@ func applyMetalFilter(bufferA: CVPixelBuffer, bufferB: CVPixelBuffer) -> CVPixel
     kernelEncoder.setTexture(textureA, index: 0)
     kernelEncoder.setTexture(textureB, index: 1)
     
+    var args: PageAlignedContiguousArray<MyArguments> = [
+        MyArguments(widgetTolerance: 0.5, widgetHeight: 2   )
+    ]
+    guard let argBuffer = device.makeBufferWithPageAlignedArray(args) else {
+        assert(false, "Failed to create buffer.")
+        return outBuffer
+    }
+
+    kernelEncoder.setBuffer(argBuffer, offset: 0, index: 0)
+    
     let (tPerTG, tgPerGrid) = pipelineState.threadgroupParameters(texture: textureA)
     kernelEncoder.dispatchThreadgroups(tgPerGrid, threadsPerThreadgroup: tPerTG)
     kernelEncoder.endEncoding()
     kernelBuffer.commit()
+    kernelBuffer.waitUntilCompleted()
+    // DEBUG
+    let result = argBuffer.contents().bindMemory(to: MyArguments.self, capacity: args.count)
+    for i in 0..<args.count {
+        print(result[i])
+    }
+    
     
     /// Apply a binary threshold.
     /// This is 1 in both signed and unsigned numbers.
@@ -137,7 +154,12 @@ func applyMetalFilter(bufferA: CVPixelBuffer, bufferB: CVPixelBuffer) -> CVPixel
     
     return outBuffer
 }
- 
+
+struct MyArguments
+{
+    let widgetTolerance: Float
+    let widgetHeight: UInt32
+}
 
 func saveBufferToPng(buffer: CVPixelBuffer, format: CIFormat) -> Void { 
     let docUrls = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)
