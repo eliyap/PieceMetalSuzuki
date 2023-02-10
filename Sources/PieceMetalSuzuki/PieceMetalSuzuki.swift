@@ -51,8 +51,8 @@ public struct PieceMetalSuzuki {
         }
 
         /// Run Suzuki algorithm.
-        var img = ImageBuffer(ptr: ptr, width: width, height: height)
-        border(img: &img)
+//        var img = ImageBuffer(ptr: ptr, width: width, height: height)
+//        border(img: &img)
 
         /// Write image back out.
         saveBufferToPng(buffer: outBuffer, format: .RGBA8)
@@ -89,23 +89,36 @@ func applyMetalFilter(bufferA: CVPixelBuffer, bufferB: CVPixelBuffer) -> CVPixel
         return outBuffer
     }
 
-    /// Apply a binary threshold.
-    /// This is 1 in both signed and unsigned numbers.
-    let setVal: Float = 1.0/256.0
-    let binary = MPSImageThresholdBinary(device: metalDevice, thresholdValue: 0.5, maximumValue: setVal, linearGrayColorTransform: nil)
-    binary.encode(commandBuffer: binaryBuffer, sourceTexture: textureA, destinationTexture: textureB)
-    binaryBuffer.commit()
-    binaryBuffer.waitUntilCompleted()
-
     guard
         let libUrl = Bundle.module.url(forResource: "PieceSuzukiKernel", withExtension: "metal", subdirectory: "Metal"),
         let source = try? String(contentsOf: libUrl),
         let library = try? metalDevice.makeLibrary(source: source, options: nil),
-        let kernelFunction = library.makeFunction(name: "rosyEffect")
+        let kernelFunction = library.makeFunction(name: "rosyEffect"),
+        let pipelineState = try? metalDevice.makeComputePipelineState(function: kernelFunction),
+        let kernelBuffer = commandQueue.makeCommandBuffer(),
+        let kernelEncoder = kernelBuffer.makeComputeCommandEncoder()
     else {
         assert(false, "Failed to get library.")
         return outBuffer
     }
+    
+    kernelEncoder.label = "Custom Kernel Encoder"
+    kernelEncoder.setComputePipelineState(pipelineState)
+    kernelEncoder.setTexture(textureA, index: 0)
+    kernelEncoder.setTexture(textureB, index: 1)
+    
+    let (tPerTG, tgPerGrid) = pipelineState.threadgroupParameters(texture: textureA)
+    kernelEncoder.dispatchThreadgroups(tgPerGrid, threadsPerThreadgroup: tPerTG)
+    kernelEncoder.endEncoding()
+    kernelBuffer.commit()
+    
+    /// Apply a binary threshold.
+    /// This is 1 in both signed and unsigned numbers.
+//    let setVal: Float = 1.0/256.0
+//    let binary = MPSImageThresholdBinary(device: metalDevice, thresholdValue: 0.5, maximumValue: setVal, linearGrayColorTransform: nil)
+//    binary.encode(commandBuffer: binaryBuffer, sourceTexture: textureA, destinationTexture: textureB)
+//    binaryBuffer.commit()
+//    binaryBuffer.waitUntilCompleted()
     
     return outBuffer
 }
