@@ -8,6 +8,25 @@
 #include <metal_stdlib>
 using namespace metal;
 
+struct Run {
+    int32_t oldHead;
+    int32_t oldTail;
+    int32_t newHead;
+    int32_t newTail;
+    uint8_t tailTriadFrom;
+    uint8_t headTriadTo;
+};
+
+struct PixelPoint {
+    uint32_t x;
+    uint32_t y;
+};
+
+struct ChainFragments {
+    device PixelPoint* points;
+    device Run* runs;
+};
+
 // Compute kernel
 kernel void rosyEffect(
     texture2d<half, access::read>  inputTexture  [[ texture(0) ]],
