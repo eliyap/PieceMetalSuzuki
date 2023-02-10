@@ -66,8 +66,8 @@ func applyMetalFilter(bufferA: CVPixelBuffer, bufferB: CVPixelBuffer) -> CVPixel
 
     /// Apply Metal filter to pixel buffer.
     guard 
-        let metalDevice = MTLCreateSystemDefaultDevice(), 
-        let commandQueue = metalDevice.makeCommandQueue(),
+        let device = MTLCreateSystemDefaultDevice(),
+        let commandQueue = device.makeCommandQueue(),
         let binaryBuffer = commandQueue.makeCommandBuffer()
     else {
         assert(false, "Failed to get metal device.")
@@ -75,7 +75,7 @@ func applyMetalFilter(bufferA: CVPixelBuffer, bufferB: CVPixelBuffer) -> CVPixel
     }
     
     var metalTextureCache: CVMetalTextureCache!
-    guard CVMetalTextureCacheCreate(kCFAllocatorDefault, nil, metalDevice, nil, &metalTextureCache) == kCVReturnSuccess else {
+    guard CVMetalTextureCacheCreate(kCFAllocatorDefault, nil, device, nil, &metalTextureCache) == kCVReturnSuccess else {
         assert(false, "Unable to allocate texture cache")
         return outBuffer
     }
@@ -96,7 +96,7 @@ func applyMetalFilter(bufferA: CVPixelBuffer, bufferB: CVPixelBuffer) -> CVPixel
             return outBuffer
         }
         let source = try String(contentsOf: libUrl)
-        let library = try metalDevice.makeLibrary(source: source, options: nil)
+        let library = try device.makeLibrary(source: source, options: nil)
         guard let function = library.makeFunction(name: "rosyEffect") else {
             assert(false, "Failed to get library.")
             return outBuffer
@@ -109,7 +109,7 @@ func applyMetalFilter(bufferA: CVPixelBuffer, bufferB: CVPixelBuffer) -> CVPixel
     
     
     guard
-        let pipelineState = try? metalDevice.makeComputePipelineState(function: kernelFunction),
+        let pipelineState = try? device.makeComputePipelineState(function: kernelFunction),
         let kernelBuffer = commandQueue.makeCommandBuffer(),
         let kernelEncoder = kernelBuffer.makeComputeCommandEncoder()
     else {
