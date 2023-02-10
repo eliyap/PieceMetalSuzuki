@@ -116,7 +116,7 @@ func applyMetalFilter(bufferA: CVPixelBuffer, bufferB: CVPixelBuffer) -> CVPixel
         assert(false, "Failed to setup pipeline.")
         return outBuffer
     }
-    
+
     kernelEncoder.label = "Custom Kernel Encoder"
     kernelEncoder.setComputePipelineState(pipelineState)
     kernelEncoder.setTexture(textureA, index: 0)
@@ -207,11 +207,11 @@ func createChainStarterBuffer(device: MTLDevice, count: Int) -> (UnsafeMutablePo
     
     let alignment = Int(getpagesize())
     let size = MemoryLayout<ChainStarter>.stride * count
-    
+
     /// Turns on all bits above the current one.
     /// e.g.`0x1000 -> 0x0FFF -> 0xF000`
     let sizeMask = ~(alignment - 1)
-    
+
     /// Round up size to the nearest page.
     let roundedSize = (size + alignment - 1) & sizeMask
     posix_memalign(&ptr, alignment, roundedSize)
