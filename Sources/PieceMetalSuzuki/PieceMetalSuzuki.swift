@@ -151,11 +151,11 @@ func makeTextureFromCVPixelBuffer(
     return texture
 }
 
-func createChainStarterBuffer(device: MTLDevice, count: Int) -> (UnsafeMutablePointer<ChainStarter>, MTLBuffer)? {
+func createBuffer<T>(of type: T.Type, device: MTLDevice, count: Int) -> (UnsafeMutablePointer<T>, MTLBuffer)? {
     var ptr: UnsafeMutableRawPointer? = nil
     
     let alignment = Int(getpagesize())
-    let size = MemoryLayout<ChainStarter>.stride * count
+    let size = MemoryLayout<T>.stride * count
 
     /// Turns on all bits above the current one.
     /// e.g.`0x1000 -> 0x0FFF -> 0xF000`
@@ -166,7 +166,7 @@ func createChainStarterBuffer(device: MTLDevice, count: Int) -> (UnsafeMutablePo
     posix_memalign(&ptr, alignment, roundedSize)
 
     /// Type memory.
-    let array = ptr!.bindMemory(to: ChainStarter.self, capacity: count)
+    let array = ptr!.bindMemory(to: T.self, capacity: count)
     
     guard let buffer = device.makeBuffer(bytesNoCopy: ptr!, length: roundedSize, options: [.storageModeShared], deallocator: nil) else {
         assert(false, "Failed to create buffer.")
