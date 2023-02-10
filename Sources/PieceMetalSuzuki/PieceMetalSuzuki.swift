@@ -154,13 +154,7 @@ func applyMetalFilter(bufferA: CVPixelBuffer, bufferB: CVPixelBuffer) -> CVPixel
     return outBuffer
 }
 
-struct MyArguments
-{
-    let widgetTolerance: Float
-    let widgetHeight: UInt32
-}
-
-func saveBufferToPng(buffer: CVPixelBuffer, format: CIFormat) -> Void { 
+func saveBufferToPng(buffer: CVPixelBuffer, format: CIFormat) -> Void {
     let docUrls = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)
     guard let documentsUrl = docUrls.first else {
         assert(false, "Couldn't get documents directory.")
