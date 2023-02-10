@@ -9,18 +9,30 @@
 using namespace metal;
 
 // Compute kernel
-kernel void rosyEffect(texture2d<half, access::read>  inputTexture  [[ texture(0) ]],
-                       texture2d<half, access::write> outputTexture [[ texture(1) ]],
-                       uint2 gid [[thread_position_in_grid]])
-{
-    // Don't read or write outside of the texture.
-    if ((gid.x >= inputTexture.get_width()) || (gid.y >= inputTexture.get_height())) {
+kernel void rosyEffect(
+    texture2d<half, access::read>  inputTexture  [[ texture(0) ]],
+    texture2d<half, access::write> outputTexture [[ texture(1) ]],
+    uint2                          gid           [[thread_position_in_grid]]
+) {
+    // Don't read or write outside of the texture, or the frame
+    if ((gid.x == 0) || (gid.y == 0) || (gid.x >= inputTexture.get_width() - 1) || (gid.y >= inputTexture.get_height() - 1)) {
         return;
     }
     
-    half4 inputColor = inputTexture.read(gid);
+    // Check if is edge pixel (is 1, 0 in cross positions).
+    half4 center = inputTexture.read(gid);
+    if (center.r == 0.0) {
+        return;
+    }
+    half4 up    = inputTexture.read(uint2(gid.x, gid.y - 1));
+    half4 down  = inputTexture.read(uint2(gid.x, gid.y + 1));
+    half4 left  = inputTexture.read(uint2(gid.x - 1, gid.y));
+    half4 right = inputTexture.read(uint2(gid.x + 1, gid.y));
+    if (up.r != 0.0 && down.r != 0.0 && left.r != 0.0 && right.r != 0.0) {
+        return;
+    }
     
-    half luminosity = (inputColor.r * 0.2126) + (inputColor.g * 0.7152) + (inputColor.b * 0.0722);
+    half luminosity = (center.r * 0.2126) + (center.g * 0.7152) + (center.b * 0.0722);
     // Set the output color to the input color, excluding the green component.
     half4 outputColor = half4(luminosity, luminosity, luminosity, 1.0);
     
