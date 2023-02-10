@@ -121,17 +121,16 @@ func applyMetalFilter(bufferA: CVPixelBuffer, bufferB: CVPixelBuffer) -> CVPixel
     kernelEncoder.setComputePipelineState(pipelineState)
     kernelEncoder.setTexture(textureA, index: 0)
     kernelEncoder.setTexture(textureB, index: 1)
-    
-    var args: PageAlignedContiguousArray<MyArguments> = [
-        MyArguments(widgetTolerance: 0.5, widgetHeight: 2   )
-    ]
-    guard let argBuffer = device.makeBufferWithPageAlignedArray(args) else {
+
+    let count = textureA.width * textureA.height * 4
+    guard let (chainArr, argBuffer) = createChainStarterBuffer(device: device, count: count) else {
         assert(false, "Failed to create buffer.")
         return outBuffer
     }
-
-    kernelEncoder.setBuffer(argBuffer, offset: 0, index: 0)
     
+    kernelEncoder.setBuffer(argBuffer, offset: 0, index: 0)
+    kernelEncoder.setBytes(StarterLUT, length: MemoryLayout<ChainDirection.RawValue>.stride * StarterLUT.count, index: 1)
+
     let (tPerTG, tgPerGrid) = pipelineState.threadgroupParameters(texture: textureA)
     kernelEncoder.dispatchThreadgroups(tgPerGrid, threadsPerThreadgroup: tPerTG)
     kernelEncoder.endEncoding()
