@@ -216,13 +216,17 @@ func createChainStarters(
     cmdEncoder.setTexture(textureB, index: 1)
 
     let count = textureA.width * textureA.height * 4
-    guard let (chainArr, argBuffer) = createChainStarterBuffer(device: device, count: count) else {
+    guard
+        let (pointArr, pointBuffer) = createBuffer(of: PixelPoint.self, device: device, count: count),
+        let (runArr, runBuffer) = createBuffer(of: Run.self, device: device, count: count)
+    else {
         assert(false, "Failed to create buffer.")
         return
     }
     
-    cmdEncoder.setBuffer(argBuffer, offset: 0, index: 0)
-    cmdEncoder.setBytes(StarterLUT, length: MemoryLayout<ChainDirection.RawValue>.stride * StarterLUT.count, index: 1)
+    cmdEncoder.setBuffer(pointBuffer, offset: 0, index: 0)
+    cmdEncoder.setBuffer(runBuffer, offset: 0, index: 1)
+    cmdEncoder.setBytes(StarterLUT, length: MemoryLayout<ChainDirection.RawValue>.stride * StarterLUT.count, index: 2)
 
     let (tPerTG, tgPerGrid) = pipelineState.threadgroupParameters(texture: textureA)
     cmdEncoder.dispatchThreadgroups(tgPerGrid, threadsPerThreadgroup: tPerTG)
