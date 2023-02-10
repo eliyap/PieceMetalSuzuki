@@ -146,7 +146,7 @@ func applyMetalFilter(bufferA: CVPixelBuffer, bufferB: CVPixelBuffer) -> CVPixel
     /// Apply a binary threshold.
     /// This is 1 in both signed and unsigned numbers.
 //    let setVal: Float = 1.0/256.0
-//    let binary = MPSImageThresholdBinary(device: metalDevice, thresholdValue: 0.5, maximumValue: setVal, linearGrayColorTransform: nil)
+//    let binary = MPSImageThresholdBinary(device: device, thresholdValue: 0.5, maximumValue: setVal, linearGrayColorTransform: nil)
 //    binary.encode(commandBuffer: binaryBuffer, sourceTexture: textureA, destinationTexture: textureB)
 //    binaryBuffer.commit()
 //    binaryBuffer.waitUntilCompleted()
