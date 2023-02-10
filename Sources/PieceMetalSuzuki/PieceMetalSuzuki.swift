@@ -301,7 +301,7 @@ extension ChainFragments {
         var newRuns: [Run] = []
         var newARuns: [Run] = []
         var newBRuns: [Run] = []
-        var nextOffset = 0
+        var nextOffset: Int32 = 0
 
         func findTailForHead(point: PixelPoint, direction: Direction) -> (Run, Source)? { 
             precondition(direction != .closed)
@@ -310,10 +310,10 @@ extension ChainFragments {
             let tail: PixelPoint = point[direction]
             let from = direction.inverse.rawValue
             
-            if let aIdx = a.runs.firstIndex(where: { run in a.points[run.oldTail] == tail && run.tailTriadFrom == from }) {
+            if let aIdx = a.runs.firstIndex(where: { run in a.points[Int(run.oldTail-1)] == tail && run.tailTriadFrom == from }) {
                 return (a.runs.remove(at: aIdx), .A)
             }
-            if let bIdx = b.runs.firstIndex(where: { run in b.points[run.oldTail] == tail && run.tailTriadFrom == from }) {
+            if let bIdx = b.runs.firstIndex(where: { run in b.points[Int(run.oldTail-1)] == tail && run.tailTriadFrom == from }) {
                 return (b.runs.remove(at: bIdx), .B)
             }
             return nil
@@ -326,10 +326,10 @@ extension ChainFragments {
             let head: PixelPoint = point[direction]
             let to = direction.inverse.rawValue
             
-            if let aIdx = a.runs.firstIndex(where: { run in a.points[run.oldHead] == head && run.headTriadTo == to }) {
+            if let aIdx = a.runs.firstIndex(where: { run in a.points[Int(run.oldHead)] == head && run.headTriadTo == to }) {
                 return (a.runs.remove(at: aIdx), .A)
             }
-            if let bIdx = b.runs.firstIndex(where: { run in b.points[run.oldHead] == head && run.headTriadTo == to }) {
+            if let bIdx = b.runs.firstIndex(where: { run in b.points[Int(run.oldHead)] == head && run.headTriadTo == to }) {
                 return (b.runs.remove(at: bIdx), .B)
             }
             return nil
@@ -338,25 +338,25 @@ extension ChainFragments {
         func join(run: Run, source: Source) -> Void {
             var joinedRuns: [(Run, Source)] = [(run, source)]
             
-            var headPt = a.points[run.oldHead]
+            var headPt = a.points[Int(run.oldHead)]
             var headDxn = Direction(rawValue: run.headTriadTo)!
             while
                 headDxn != Direction.closed, /// Skip search if run is closed.
                 let (nextRun, src) = findTailForHead(point: headPt, direction: headDxn)
             {
                 joinedRuns.append((nextRun, src))
-                headPt = a.points[nextRun.oldHead]
+                headPt = a.points[Int(nextRun.oldHead)]
                 headDxn = Direction(rawValue: nextRun.headTriadTo)!
             }
 
-            var tailPt = a.points[run.oldTail]
+            var tailPt = a.points[Int(run.oldTail-1)]
             var tailDxn = Direction(rawValue: run.tailTriadFrom)!
             while
                 tailDxn != Direction.closed, /// Skip search if run is closed.
                 let (prevRun, src) = findHeadForTail(point: tailPt, direction: tailDxn)
             {
                 joinedRuns.insert((prevRun, src), at: 0)
-                tailPt = a.points[prevRun.oldTail]
+                tailPt = a.points[Int(prevRun.oldTail-1)]
                 tailDxn = Direction(rawValue: prevRun.tailTriadFrom)!
             }
 
@@ -365,9 +365,10 @@ extension ChainFragments {
                 var modifiedRun = oldRun
                 
                 /// First, assign each run its new array position.
-                modifiedRun.newHead = nextOffset + modifiedRun.oldHead
-                modifiedRun.newTail = nextOffset + modifiedRun.oldTail
-                nextOffset += modifiedRun.oldTail - modifiedRun.oldHead
+                let length = oldRun.oldTail - oldRun.oldHead
+                modifiedRun.newHead = nextOffset
+                modifiedRun.newTail = nextOffset + length
+                nextOffset += length
                 
                 switch src {
                     case .A: newARuns.append(modifiedRun)
