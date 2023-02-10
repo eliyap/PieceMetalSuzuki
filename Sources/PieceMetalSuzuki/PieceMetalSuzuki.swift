@@ -89,16 +89,31 @@ func applyMetalFilter(bufferA: CVPixelBuffer, bufferB: CVPixelBuffer) -> CVPixel
         return outBuffer
     }
 
+    let kernelFunction: MTLFunction
+    do {
+        guard let libUrl = Bundle.module.url(forResource: "PieceSuzukiKernel", withExtension: "metal", subdirectory: "Metal") else {
+            assert(false, "Failed to get library.")
+            return outBuffer
+        }
+        let source = try String(contentsOf: libUrl)
+        let library = try metalDevice.makeLibrary(source: source, options: nil)
+        guard let function = library.makeFunction(name: "rosyEffect") else {
+            assert(false, "Failed to get library.")
+            return outBuffer
+        }
+        kernelFunction = function
+    } catch {
+        debugPrint(error)
+        return outBuffer
+    }
+    
+    
     guard
-        let libUrl = Bundle.module.url(forResource: "PieceSuzukiKernel", withExtension: "metal", subdirectory: "Metal"),
-        let source = try? String(contentsOf: libUrl),
-        let library = try? metalDevice.makeLibrary(source: source, options: nil),
-        let kernelFunction = library.makeFunction(name: "rosyEffect"),
         let pipelineState = try? metalDevice.makeComputePipelineState(function: kernelFunction),
         let kernelBuffer = commandQueue.makeCommandBuffer(),
         let kernelEncoder = kernelBuffer.makeComputeCommandEncoder()
     else {
-        assert(false, "Failed to get library.")
+        assert(false, "Failed to setup pipeline.")
         return outBuffer
     }
     
