@@ -29,7 +29,8 @@ struct ChainFragments {
 
 struct ChainStarter {
     bool isSet;
-    struct Run run;
+    uint8_t tailTriadFrom;
+    uint8_t headTriadTo;
     struct PixelPoint point;
 };
 
@@ -83,11 +84,13 @@ kernel void startChain(
         if (from != 0) {
             uint8_t to = starterLUT[(lutAddr*8)+(i*2)+1];
             starter[idx+i].isSet = true;
-            starter[idx+i].run.tailTriadFrom = from;
-            starter[idx+i].run.headTriadTo = to;
+            starter[idx+i].tailTriadFrom = from;
+            starter[idx+i].headTriadTo = to;
+            starter[idx+i].point.x = gid.x;
+            starter[idx+i].point.y = gid.y;
+        } else {
+            starter[idx+i].isSet = false;
         }
-        starter[idx+i].point.x = gid.x;
-        starter[idx+i].point.y = gid.y;
     }    
     return;
 }

@@ -215,12 +215,9 @@ func createChainStarterBuffer(device: MTLDevice, count: Int) -> (UnsafeMutablePo
     /// Round up size to the nearest page.
     let roundedSize = (size + alignment - 1) & sizeMask
     posix_memalign(&ptr, alignment, roundedSize)
-    
-    /// Initialize memory.
+
+    /// Type memory.
     let array = ptr!.bindMemory(to: ChainStarter.self, capacity: count)
-    for i in 0..<count {
-        array[i] = ChainStarter()
-    }
     
     guard let buffer = device.makeBuffer(bytesNoCopy: ptr!, length: roundedSize, options: [.storageModeShared], deallocator: nil) else {
         assert(false, "Failed to create buffer.")

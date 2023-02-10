@@ -62,7 +62,8 @@ extension ChainDirection: CustomStringConvertible {
 
 struct ChainStarter {
     var isSet: Bool = false
-    var run: Run = .initial
+    var tailTriadFrom: ChainDirection.RawValue
+    var headTriadTo: ChainDirection.RawValue
     var point: PixelPoint = .zero
 }
 
