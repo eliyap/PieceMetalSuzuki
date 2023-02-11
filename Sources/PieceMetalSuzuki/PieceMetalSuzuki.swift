@@ -89,8 +89,8 @@ func applyMetalFilter(bufferA: CVPixelBuffer, bufferB: CVPixelBuffer) -> CVPixel
         return outBuffer
     }
     
-    guard let result = createChainStarters(device: device, commandQueue: commandQueue, textureA: textureA, textureB: textureB) else {
         assert(false, "Failed to run chain start kernel.")
+    guard let result = createChainStarters(device: device, commandQueue: commandQueue, textureA: textureA) else {
         return outBuffer
     }
     let (points, runs) = result
@@ -201,8 +201,7 @@ func loadChainStarterFunction(device: MTLDevice) -> MTLFunction? {
 func createChainStarters(
     device: MTLDevice,
     commandQueue: MTLCommandQueue,
-    textureA: MTLTexture,
-    textureB: MTLTexture
+    textureA: MTLTexture
 ) -> (UnsafeMutablePointer<PixelPoint>, UnsafeMutablePointer<Run>)? {
     guard
         let kernelFunction = loadChainStarterFunction(device: device),
@@ -217,7 +216,6 @@ func createChainStarters(
     cmdEncoder.label = "Custom Kernel Encoder"
     cmdEncoder.setComputePipelineState(pipelineState)
     cmdEncoder.setTexture(textureA, index: 0)
-    cmdEncoder.setTexture(textureB, index: 1)
 
     let count = textureA.width * textureA.height * 4
     guard

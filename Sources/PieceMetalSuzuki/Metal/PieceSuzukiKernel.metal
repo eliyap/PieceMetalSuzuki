@@ -25,7 +25,6 @@ struct PixelPoint {
 // Compute kernel
 kernel void startChain(
     texture2d<half, access::read>  tex  [[ texture(0) ]],
-    texture2d<half, access::write> outputTexture [[ texture(1) ]],
     device PixelPoint*             points        [[ buffer (0) ]],
     device Run*                    runs          [[ buffer (1) ]],
     device const uint8_t*          starterLUT    [[ buffer (2) ]],
@@ -38,8 +37,6 @@ kernel void startChain(
     if ((gid.x >= tex.get_width()) || (gid.y >= tex.get_height())) {
         return;
     }
-
-    outputTexture.write(tex.read(gid), gid);
 
     // Setting invalid array indices signals a NULL value.
     // Set before early exit checks.
