@@ -108,12 +108,6 @@ struct Grid {
                     }
                 }
                 gridSize = newGridSize
-                
-                #if SHOW_GRID_WORK
-                for reg in regions.joined() {
-                    dump(region: reg, points: dstPts, runs: dstRuns)
-                }
-                #endif
             
             case .vertical:
                 (srcRuns, dstRuns) = (runsHorizontal, runsVertical)
@@ -140,12 +134,14 @@ struct Grid {
                 }
                 gridSize = newGridSize
                 
-                #if SHOW_GRID_WORK
-                for reg in regions.joined() {
-                    dump(region: reg, points: dstPts, runs: dstRuns)
-                }
-                #endif
             }
+            
+            #if SHOW_GRID_WORK
+            for reg in regions.joined() {
+                dump(region: reg, points: dstPts, runs: dstRuns)
+            }
+            #endif
+            
             dxn.flip()
         }
     }
