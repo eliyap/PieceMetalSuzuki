@@ -47,7 +47,8 @@ kernel void startChain(
         runs[idx+i].newTail = -1;
     }
     
-    // Don't touch frame.
+    // Region outside of image bounds is treated as black border.
+    // However, do not attempt to read out of bounds.
     uint32_t minCol = 0;
     uint32_t maxCol = tex.get_width() - 1;
     uint32_t minRow = 0;
