@@ -102,7 +102,7 @@ struct Grid {
             
             switch dxn {
             case .horizontal:
-                (srcBuffer, dstBuffer) = (runsVertical, runsHorizontal)
+                (srcBuffer, dstBuffer) = (pointsVertical, pointsHorizontal)
                 (srcRuns, dstRuns) = (runsVertical.array, runsHorizontal.array)
                 (srcPts, dstPts) = (pointsVertical.array, pointsHorizontal.array)
 
@@ -138,7 +138,7 @@ struct Grid {
                 gridSize = newGridSize
             
             case .vertical:
-                (srcBuffer, dstBuffer) = (runsHorizontal, runsVertical)
+                (srcBuffer, dstBuffer) = (pointsHorizontal, pointsVertical)
                 (srcRuns, dstRuns) = (runsHorizontal.array, runsVertical.array)
                 (srcPts, dstPts) = (pointsHorizontal.array, pointsVertical.array)
 
