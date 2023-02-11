@@ -160,9 +160,10 @@ struct Grid {
         for offset in 0..<Int(region.runsCount) {
             let runBufferOffset = Int(offset + Int(baseOffset))
             let run = runs[runBufferOffset]
+            assert(run.isValid)
+            
             let chain = (run.oldTail..<run.oldHead).map { points[Int($0)] }
             debugPrint("- \(run) \(chain) @\(runBufferOffset)(\(baseOffset)+\(offset))")
-            assert(run.isValid)
         }
     }
     #endif
