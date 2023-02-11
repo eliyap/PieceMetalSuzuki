@@ -234,9 +234,10 @@ func createChainStarters(
     cmdBuffer.commit()
     cmdBuffer.waitUntilCompleted()
     var regions: [[Region]] = []
-    for row in 0..<textureA.height {
-        let regionRow = [Region](unsafeUninitializedCapacity: textureA.width) { buffer, initializedCount in
-            for col in 0..<textureA.width {
+    
+    for row in 0..<texture.height {
+        let regionRow = [Region](unsafeUninitializedCapacity: texture.width) { buffer, initializedCount in
+            for col in 0..<texture.width {
                 /// Count valid elements in each 1x1 region.
                 let bufferBase = ((row * texture.width) + col) * 4
                 var validCount = UInt32.zero
