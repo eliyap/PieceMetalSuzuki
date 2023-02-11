@@ -11,9 +11,10 @@ final class PieceMetalSuzukiTests: XCTestCase {
         // This is an example of a functional test case.
         // Use XCTAssert and related functions to verify your tests produce the correct
         // results.
-        PieceMetalSuzuki(imageUrl: url("waffle"))
-//        PieceMetalSuzuki(imageUrl: url("input"))
-        
+    }
+    
+    func testDoubleDonut() throws {
+        _ = PieceMetalSuzuki(imageUrl: url("input"))
     }
     
     func testWaffle() throws {
