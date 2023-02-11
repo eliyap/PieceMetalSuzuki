@@ -227,6 +227,8 @@ func createChainStarters(
         assert(false, "Failed to create buffer.")
         return nil
     }
+    let pointArrB = UnsafeMutablePointer<PixelPoint>.allocate(capacity: count)
+    let runArrB = UnsafeMutablePointer<Run>.allocate(capacity: count)
     
     cmdEncoder.setBuffer(pointBuffer, offset: 0, index: 0)
     cmdEncoder.setBuffer(runBuffer, offset: 0, index: 1)
