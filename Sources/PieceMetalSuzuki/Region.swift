@@ -163,7 +163,6 @@ struct Grid {
                     }
                 }
                 gridSize = newGridSize
-                
             }
             
             cpuBlit(runIndices: blitRequests, srcPts: srcPts, srcRuns: srcRuns, dstPts: dstPts)
@@ -176,6 +175,30 @@ struct Grid {
             
             dxn.flip()
         }
+        
+        /// Return final results.
+        let pointBuffer: UnsafeMutablePointer<PixelPoint>
+        let runBuffer: UnsafeMutablePointer<Run>
+        
+        switch dxn {
+        case .horizontal:
+            pointBuffer = pointsHorizontal
+            runBuffer = runsHorizontal
+        case .vertical:
+            pointBuffer = pointsVertical
+            runBuffer = runsVertical
+        }
+        
+        #if DEBUG
+        for runIdx in regions[0][0].runIndices(imageSize: imageSize, gridSize: gridSize) {
+            let run = runBuffer[runIdx]
+//            print((run.oldTail..<run.oldHead).map { pointBuffer[Int($0)] })
+            assert(run.isValid)
+        }
+        print("Found \(regions[0][0].runsCount) contours.")
+        #endif
+        
+        // return regions[0][0]
     }
     
     #if SHOW_GRID_WORK
