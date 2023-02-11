@@ -29,7 +29,7 @@ public struct PieceMetalSuzuki {
         context.render(ciImage, to: bufferA)
 
         /// Apply Metal filter to pixel buffer.
-        applyMetalSuzuki(bufferA: bufferA)
+        applyMetalSuzuki(pixelBuffer: bufferA)
         
 //        /// Read values from pixel buffer.
 //        CVPixelBufferLockBaseAddress(outBuffer, [])
@@ -92,7 +92,7 @@ func applyMetalFilter(bufferA: CVPixelBuffer, bufferB: CVPixelBuffer) -> CVPixel
     return outBuffer
 }
 
-func applyMetalSuzuki(bufferA: CVPixelBuffer) -> Void {
+func applyMetalSuzuki(pixelBuffer: CVPixelBuffer) -> Void {
     /// Apply Metal filter to pixel buffer.
     guard
         let device = MTLCreateSystemDefaultDevice(),
@@ -108,7 +108,7 @@ func applyMetalSuzuki(bufferA: CVPixelBuffer) -> Void {
         return
     }
     
-    guard let texture = makeTextureFromCVPixelBuffer(pixelBuffer: bufferA, textureFormat: .bgra8Unorm, textureCache: metalTextureCache) else {
+    guard let texture = makeTextureFromCVPixelBuffer(pixelBuffer: pixelBuffer, textureFormat: .bgra8Unorm, textureCache: metalTextureCache) else {
         assert(false, "Failed to create texture.")
         return
     }
