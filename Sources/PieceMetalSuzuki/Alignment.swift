@@ -122,8 +122,8 @@ extension PixelPoint: CustomStringConvertible {
 extension Run: CustomStringConvertible {
     var description: String {
         ""
-        + "(old: [\(oldHead), \(oldTail)), "
-        +  "new: [\(newHead), \(newTail)), "
+        + "([\(oldTail), \(oldHead))->"
+        +  "[\(newTail), \(newHead)), "
         + "\(ChainDirection(rawValue: tailTriadFrom)!)->\(ChainDirection(rawValue: headTriadTo)!))"
         
     }
