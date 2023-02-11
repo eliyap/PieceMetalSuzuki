@@ -1,4 +1,5 @@
 import Foundation
+import Metal
 
 struct PixelSize: Equatable, CustomStringConvertible {
     let width: UInt32
@@ -72,11 +73,19 @@ struct Grid {
     }
     
     mutating func combineAll(
-        pointsVertical: UnsafeMutablePointer<PixelPoint>,
-        runsVertical: UnsafeMutablePointer<Run>,
-        pointsHorizontal: UnsafeMutablePointer<PixelPoint>,
-        runsHorizontal: UnsafeMutablePointer<Run>
+        device: MTLDevice,
+        pointsHorizontal: Buffer<PixelPoint>,
+        runsHorizontal: Buffer<Run>,
+        commandQueue: MTLCommandQueue
     ) -> Void {
+        guard 
+            let pointsVertical = Buffer<PixelPoint>(device: device, count: pointsHorizontal.count),
+            let runsVertical = Buffer<Run>(device: device, count: runsHorizontal.count)
+        else {
+            assert(false, "Failed to create buffer.")
+            return
+        }
+        
         var dxn = ReduceDirection.vertical
         while (regions.count > 1) || (regions[0].count > 1) {
             let srcPts: UnsafeMutablePointer<PixelPoint>
@@ -91,8 +100,8 @@ struct Grid {
             
             switch dxn {
             case .horizontal:
-                (srcRuns, dstRuns) = (runsVertical, runsHorizontal)
-                (srcPts, dstPts) = (pointsVertical, pointsHorizontal)
+                (srcRuns, dstRuns) = (runsVertical.array, runsHorizontal.array)
+                (srcPts, dstPts) = (pointsVertical.array, pointsHorizontal.array)
 
                 if numCols.isMultiple(of: 2) == false {
                     /// Request last column blit.
@@ -126,8 +135,8 @@ struct Grid {
                 gridSize = newGridSize
             
             case .vertical:
-                (srcRuns, dstRuns) = (runsHorizontal, runsVertical)
-                (srcPts, dstPts) = (pointsHorizontal, pointsVertical)
+                (srcRuns, dstRuns) = (runsHorizontal.array, runsVertical.array)
+                (srcPts, dstPts) = (pointsHorizontal.array, pointsVertical.array)
 
                 if numRows.isMultiple(of: 2) == false {
                     /// Request last column blit.
@@ -182,11 +191,11 @@ struct Grid {
         
         switch dxn {
         case .horizontal:
-            pointBuffer = pointsHorizontal
-            runBuffer = runsHorizontal
+            pointBuffer = pointsHorizontal.array
+            runBuffer = runsHorizontal.array
         case .vertical:
-            pointBuffer = pointsVertical
-            runBuffer = runsVertical
+            pointBuffer = pointsVertical.array
+            runBuffer = runsVertical.array
         }
         
         #if DEBUG

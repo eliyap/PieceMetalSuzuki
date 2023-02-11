@@ -217,14 +217,14 @@ func createChainStarters(
 
     let count = texture.width * texture.height * 4
     guard
-        let (pointArr, pointBuffer) = createAlignedMTLBuffer(of: PixelPoint.self, device: device, count: count),
-        let (runArr, runBuffer) = createAlignedMTLBuffer(of: Run.self, device: device, count: count)
+        let pointBuffer = Buffer<PixelPoint>(device: device, count: count),
+        let runBuffer = Buffer<Run>(device: device, count: count)
     else {
         assert(false, "Failed to create buffer.")
         return nil
     }
-    cmdEncoder.setBuffer(pointBuffer, offset: 0, index: 0)
-    cmdEncoder.setBuffer(runBuffer, offset: 0, index: 1)
+    cmdEncoder.setBuffer(pointBuffer.mtlBuffer, offset: 0, index: 0)
+    cmdEncoder.setBuffer(runBuffer.mtlBuffer, offset: 0, index: 1)
     cmdEncoder.setBytes(StarterLUT, length: MemoryLayout<ChainDirection.RawValue>.stride * StarterLUT.count, index: 2)
 
     let (tPerTG, tgPerGrid) = pipelineState.threadgroupParameters(texture: texture)
@@ -249,7 +249,7 @@ func createChainStarters(
                 let bufferBase = ((row * texture.width) + col) * 4
                 var validCount = UInt32.zero
                 for offset in 0..<4 {
-                    if runArr[bufferBase + offset].isValid {
+                    if runBuffer.array[bufferBase + offset].isValid {
                         validCount += 1
                     } else {
                         break
@@ -274,13 +274,13 @@ func createChainStarters(
         regions: regions
     )
     grid.combineAll(
-        pointsVertical: UnsafeMutablePointer<PixelPoint>.allocate(capacity: count),
-        runsVertical: UnsafeMutablePointer<Run>.allocate(capacity: count),
-        pointsHorizontal: pointArr,
-        runsHorizontal: runArr
+        device: device,
+        pointsHorizontal: pointBuffer,
+        runsHorizontal: runBuffer,
+        commandQueue: commandQueue
     )
     
-    return (pointArr, runArr)
+    return (pointBuffer.array, runBuffer.array)
 }
 
 extension MTLComputePipelineState {
