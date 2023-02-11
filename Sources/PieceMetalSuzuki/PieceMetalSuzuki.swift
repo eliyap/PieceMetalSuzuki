@@ -84,9 +84,8 @@ func applyMetalFilter(bufferA: CVPixelBuffer, bufferB: CVPixelBuffer) -> CVPixel
         assert(false, "Failed to create texture.")
         return outBuffer
     }
-    
+    guard let result = createChainStarters(device: device, commandQueue: commandQueue, texture: textureA) else {
         assert(false, "Failed to run chain start kernel.")
-    guard let result = createChainStarters(device: device, commandQueue: commandQueue, textureA: textureA) else {
         return outBuffer
     }
     let (points, runs) = result
@@ -221,9 +220,6 @@ func createChainStarters(
         assert(false, "Failed to create buffer.")
         return nil
     }
-    let pointArrB = UnsafeMutablePointer<PixelPoint>.allocate(capacity: count)
-    let runArrB = UnsafeMutablePointer<Run>.allocate(capacity: count)
-    
     cmdEncoder.setBuffer(pointBuffer, offset: 0, index: 0)
     cmdEncoder.setBuffer(runBuffer, offset: 0, index: 1)
     cmdEncoder.setBytes(StarterLUT, length: MemoryLayout<ChainDirection.RawValue>.stride * StarterLUT.count, index: 2)
@@ -233,6 +229,11 @@ func createChainStarters(
     cmdEncoder.endEncoding()
     cmdBuffer.commit()
     cmdBuffer.waitUntilCompleted()
+    // DEBUG
+    for i in 0..<count where runArr[i].isValid {
+        print(runArr[i], pointArr[i])
+    }
+    
     var regions: [[Region]] = []
     
     for row in 0..<texture.height {
@@ -260,54 +261,21 @@ func createChainStarters(
         regions.append(regionRow)
     }
     
-    var dxn = ReduceDirection.horizontal
-    let imgSize = PixelSize(width: UInt32(texture.width), height: UInt32(texture.height))
-    var regionSize = PixelSize(width: 1, height: 1)
-    while (regions.count > 1) || (regions[0].count > 1) {
-        
-        let numRows = regions.count
-        let numCols = regions[0].count
-        
-        switch dxn {
-        case .horizontal:
-            for rowIdx in 0..<numRows {
-                for colIdx in stride(from: 0, to: numCols - 1, by: 2).reversed() {
-                    let a = regions[rowIdx][colIdx]
-                    let b = regions[rowIdx].remove(at: colIdx + 1)
-                    combine(a: a, b: b,
-                            srcPts: pointArr, srcRuns: runArr,
-                            dstPts: pointArrB, dstRuns: runArrB,
-                            imgSize: imgSize, regionSize: regionSize)
-                }
-            }
-            regionSize = PixelSize(width: regionSize.width * 2, height: regionSize.height)
-        
-        case .vertical:
-            for rowIdx in stride(from: 0, to: numRows - 1, by: 2).reversed() {
-                for colIdx in 0..<numCols {
-                    #warning("TODO: combine vertical")
-                    
-                }
-                /// Remove entire row at once.
-                regions.remove(at: rowIdx + 1)
-            }
-            regionSize = PixelSize(width: regionSize.width, height: regionSize.height * 2)
-            
-        }
-        dxn.flip()
-    }
+    var grid = Grid(
+        imageSize: PixelSize(width: UInt32(texture.width), height: UInt32(texture.height)),
+        regionSize: PixelSize(width: 1, height: 1),
+        regions: regions
+    )
+    grid.combineAll(
+        pointsVertical: UnsafeMutablePointer<PixelPoint>.allocate(capacity: count),
+        runsVertical: UnsafeMutablePointer<Run>.allocate(capacity: count),
+        pointsHorizontal: pointArr,
+        runsHorizontal: runArr
+    )
+    
+    
     
     return (pointArr, runArr)
-}
-
-enum ReduceDirection {
-    case horizontal, vertical
-    mutating func flip() {
-        switch self {
-        case .horizontal: self = .vertical
-        case .vertical: self = .horizontal
-        }
-    }
 }
 
 extension MTLComputePipelineState {

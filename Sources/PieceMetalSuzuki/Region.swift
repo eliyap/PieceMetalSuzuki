@@ -38,127 +38,244 @@ extension Region: CustomStringConvertible {
     }
 }
 
-enum Source { case A, B }
-func combine(
-    a: Region, b: Region,
-    srcPts: UnsafeMutablePointer<PixelPoint>, srcRuns: UnsafeMutablePointer<Run>, 
-    dstPts: UnsafeMutablePointer<PixelPoint>, dstRuns: UnsafeMutablePointer<Run>,
-    imgSize: PixelSize, regionSize: PixelSize
-) -> Void {
-    let aBaseOffset = a.base(imgSize: imgSize, regionSize: regionSize)
-    let bBaseOffset = b.base(imgSize: imgSize, regionSize: regionSize)
-
-    var aRunIndices = (0..<Int(a.runsCount)).map { $0 + Int(aBaseOffset) }
-    var bRunIndices = (0..<Int(b.runsCount)).map { $0 + Int(bBaseOffset) }
-
-    var nextPointOffset = Int32.zero
-    var nextRunOffset = 0
+struct Grid {
+    let imageSize: PixelSize
+    var regionSize: PixelSize
+    var regions: [[Region]]
     
-    func headPoint(for runIdx: Int) -> PixelPoint {
-        srcPts[Int(srcRuns[runIdx].oldHead - 1)]
+    enum ReduceDirection {
+        case horizontal, vertical
+        mutating func flip() {
+            switch self {
+            case .horizontal: self = .vertical
+            case .vertical: self = .horizontal
+            }
+        }
     }
-    func tailPoint(for runIdx: Int) -> PixelPoint {
-        srcPts[Int(srcRuns[runIdx].oldTail)]
+    
+    mutating func combineAll(
+        pointsVertical: UnsafeMutablePointer<PixelPoint>,
+        runsVertical: UnsafeMutablePointer<Run>,
+        pointsHorizontal: UnsafeMutablePointer<PixelPoint>,
+        runsHorizontal: UnsafeMutablePointer<Run>
+    ) -> Void {
+        var dxn = ReduceDirection.vertical
+        while (regions.count > 1) || (regions[0].count > 1) {
+            
+            let numRows = regions.count
+            let numCols = regions[0].count
+            
+            switch dxn {
+            case .horizontal:
+                for rowIdx in 0..<numRows {
+                    for colIdx in stride(from: 0, to: numCols - 1, by: 2).reversed() {
+                        let a = regions[rowIdx][colIdx]
+                        let b = regions[rowIdx].remove(at: colIdx + 1)
+                        combine(a: a, b: b,
+                                srcPts: pointsVertical, srcRuns: runsVertical,
+                                dstPts: pointsHorizontal, dstRuns: runsHorizontal)
+                        regions[rowIdx][colIdx].gridCol /= 2
+                    }
+                }
+                regionSize = PixelSize(width: regionSize.width * 2, height: regionSize.height)
+                
+                /// DEBUG
+                for reg in regions.joined() {
+                    dump(region: reg, points: pointsHorizontal, runs: runsHorizontal)
+                }
+                print("done")
+            
+            case .vertical:
+                for rowIdx in stride(from: 0, to: numRows - 1, by: 2).reversed() {
+                    for colIdx in 0..<numCols {
+                        let a = regions[rowIdx][colIdx]
+                        let b = regions[rowIdx+1][colIdx]
+                        combine(a: a, b: b,
+                                srcPts: pointsHorizontal, srcRuns: runsHorizontal,
+                                dstPts: pointsVertical, dstRuns: runsVertical)
+                        regions[rowIdx][colIdx].gridRow /= 2
+                    }
+                    /// Remove entire row at once.
+                    regions.remove(at: rowIdx + 1)
+                }
+                regionSize = PixelSize(width: regionSize.width, height: regionSize.height * 2)
+                
+                /// DEBUG
+                for reg in regions.joined() {
+                    dump(region: reg, points: pointsVertical, runs: runsVertical)
+                }
+                print("done")
+            }
+            dxn.flip()
+        }
     }
-
-    // Find run, if any, whose tail matches the head at this point, pointing in this direction.
-    func findTailForHead(point: PixelPoint, direction: ChainDirection) -> (Int, Source)? {
-        precondition(direction != .closed)
-
-        /// For the given head pointer, describe the corresponding tail pointer.
-        let tail: PixelPoint = point[direction]
-        let from = direction.inverse.rawValue
-        func tailDoesMatch(idx: Int) -> Bool {
-            return tail == tailPoint(for: idx) && srcRuns[idx].tailTriadFrom == from
+    
+    func dump(region: Region, points: UnsafeMutablePointer<PixelPoint>, runs: UnsafeMutablePointer<Run>) {
+        #if DEBUG
+        let baseOffset = region.base(imgSize: imageSize, regionSize: regionSize)
+        debugPrint("[DUMP]: \(region)")
+        for offset in 0..<Int(region.runsCount) {
+            let runBufferOffset = Int(offset + Int(baseOffset))
+            let run = runs[runBufferOffset]
+            let chain = (run.oldTail..<run.oldHead).map { points[Int($0)] }
+            debugPrint("- \(run) \(chain) @\(runBufferOffset)(\(baseOffset)+\(offset))")
         }
-        if let aIdx = aRunIndices.firstIndex(where: tailDoesMatch) {
-            return (aIdx, .A)
-        }
-        if let bIdx = bRunIndices.firstIndex(where: tailDoesMatch) {
-            return (bIdx, .B)
-        }
-        return nil
+        #endif
     }
+    
+    enum Source { case A, B }
+    func combine(
+        a: Region, b: Region,
+        srcPts: UnsafeMutablePointer<PixelPoint>, srcRuns: UnsafeMutablePointer<Run>,
+        dstPts: UnsafeMutablePointer<PixelPoint>, dstRuns: UnsafeMutablePointer<Run>
+    ) -> Void {
+        debugPrint("Combining \(a) and \(b)")
+        debugPrint("imgSize: \(imageSize), regionSize: \(regionSize)")
+        let aBaseOffset = a.base(imgSize: imageSize, regionSize: regionSize)
+        let bBaseOffset = b.base(imgSize: imageSize, regionSize: regionSize)
 
-    func findHeadForTail(point: PixelPoint, direction: ChainDirection) -> (Int, Source)? {
-        precondition(direction != .closed)
+        var aRunIndices = (0..<Int(a.runsCount)).map { $0 + Int(aBaseOffset) }
+        var bRunIndices = (0..<Int(b.runsCount)).map { $0 + Int(bBaseOffset) }
 
-        /// For the given tail pointer, describe the corresponding head pointer.
-        let head: PixelPoint = point[direction]
-        let to = direction.inverse.rawValue
-        func headDoesMatch(idx: Int) -> Bool {
-            return head == headPoint(for: idx) && srcRuns[idx].headTriadTo == to
+        var nextPointOffset = Int32.zero
+        var nextRunOffset = 0
+        
+        func headPoint(for runIdx: Int) -> PixelPoint {
+            srcPts[Int(srcRuns[runIdx].oldHead - 1)]
+        }
+        func tailPoint(for runIdx: Int) -> PixelPoint {
+            srcPts[Int(srcRuns[runIdx].oldTail)]
         }
 
-        if let aIdx = aRunIndices.firstIndex(where: headDoesMatch) {
-            return (aIdx, .A)
+        // Find run, if any, whose tail matches the head at this point, pointing in this direction.
+        func findTailForHead(point: PixelPoint, direction: ChainDirection) -> (Int, Source)? {
+            precondition(direction != .closed)
+
+            /// For the given head pointer, describe the corresponding tail pointer.
+            let tail: PixelPoint = point[direction]
+            let from = direction.inverse.rawValue
+            func tailDoesMatch(idx: Int) -> Bool {
+                return tail == tailPoint(for: idx) && srcRuns[idx].tailTriadFrom == from
+            }
+            if let aIdxIdx = aRunIndices.firstIndex(where: tailDoesMatch) {
+                let aRunIdx = aRunIndices.remove(at: aIdxIdx)
+                return (aRunIdx, .A)
+            }
+            if let bIdxIdx = bRunIndices.firstIndex(where: tailDoesMatch) {
+                let bRunIdx = bRunIndices.remove(at: bIdxIdx)
+                return (bRunIdx, .B)
+            }
+            return nil
         }
-        if let bIdx = bRunIndices.firstIndex(where: headDoesMatch) {
-            return (bIdx, .B)
+
+        func findHeadForTail(point: PixelPoint, direction: ChainDirection) -> (Int, Source)? {
+            precondition(direction != .closed)
+
+            /// For the given tail pointer, describe the corresponding head pointer.
+            let head: PixelPoint = point[direction]
+            let to = direction.inverse.rawValue
+            func headDoesMatch(idx: Int) -> Bool {
+                return head == headPoint(for: idx) && srcRuns[idx].headTriadTo == to
+            }
+            if let aIdxIdx = aRunIndices.firstIndex(where: headDoesMatch) {
+                let aRunIdx = aRunIndices.remove(at: aIdxIdx)
+                return (aRunIdx, .A)
+            }
+            if let bIdxIdx = bRunIndices.firstIndex(where: headDoesMatch) {
+                let bRunIdx = bRunIndices.remove(at: bIdxIdx)
+                return (bRunIdx, .B)
+            }
+            return nil
         }
-        return nil
+
+        func join(runIdx: Int, source: Source) -> Void {
+            precondition(srcRuns[runIdx].isValid)
+            var joinedRunsIndices: [(Int, Source)] = [(runIdx, source)]
+            
+            var headPt = headPoint(for: runIdx)
+            var headDxn = srcRuns[runIdx].headTriadTo
+            while
+                headDxn != ChainDirection.closed.rawValue, /// Skip search if run is closed.
+                let (nextRunIdx, src) = findTailForHead(point: headPt, direction: ChainDirection(rawValue: headDxn)!)
+            {
+                joinedRunsIndices.append((nextRunIdx, src))
+                headPt = headPoint(for: nextRunIdx)
+                headDxn = srcRuns[nextRunIdx].headTriadTo
+            }
+
+            var tailPt = tailPoint(for: runIdx)
+            var tailDxn = srcRuns[runIdx].tailTriadFrom
+            while
+                tailDxn != ChainDirection.closed.rawValue, /// Skip search if run is closed.
+                let (prevRunIdx, src) = findHeadForTail(point: tailPt, direction: ChainDirection(rawValue: tailDxn)!)
+            {
+                joinedRunsIndices.insert((prevRunIdx, src), at: 0)
+                tailPt = tailPoint(for: prevRunIdx)
+                tailDxn = srcRuns[prevRunIdx].tailTriadFrom
+            }
+
+            /// At this point, we have an array of connected runs.
+            let newRunTail = Int32(aBaseOffset) + nextPointOffset
+            for (srcRunIdx, src) in joinedRunsIndices {
+                /// First, assign each run its new array position.
+                let length = srcRuns[srcRunIdx].oldHead - srcRuns[srcRunIdx].oldTail
+                let moveTail = Int32(aBaseOffset) + nextPointOffset
+                srcRuns[srcRunIdx].newTail = moveTail
+                srcRuns[srcRunIdx].newHead = moveTail + length
+                nextPointOffset += length
+            }
+            let newRunHead = Int32(aBaseOffset) + nextPointOffset
+            print("newRunTail \(newRunTail)", "newRunHead \(newRunHead)")
+            
+            /// Finally, add the new run.
+            let newRun = Run(
+                oldTail: newRunTail, oldHead: newRunHead,
+                newTail: -1, newHead: -1,
+                tailTriadFrom: srcRuns[joinedRunsIndices.first!.0].tailTriadFrom,
+                headTriadTo:   srcRuns[joinedRunsIndices.last!.0].headTriadTo
+            )
+            
+            debugPrint("newRun \(newRun)")
+            // print all the points from all sources
+            for (srcRunIdx, src) in joinedRunsIndices {
+                switch src {
+                case .A:
+                    for i in srcRuns[srcRunIdx].oldTail..<srcRuns[srcRunIdx].oldHead {
+                        debugPrint("A", srcPts[Int(i)])
+                    }
+                case .B:
+                    for i in srcRuns[srcRunIdx].oldTail..<srcRuns[srcRunIdx].oldHead {
+                        debugPrint("B", srcPts[Int(i)])
+                    }
+                }
+            }
+            
+            dstRuns[Int(aBaseOffset) + nextRunOffset] = newRun
+            nextRunOffset += 1
+        }
+
+        while aRunIndices.isEmpty == false {
+            let aRunIdx = aRunIndices.removeLast()
+            debugPrint("DEBUG", "joining run \(srcRuns[aRunIdx]) with head \(headPoint(for: aRunIdx)) and tail \(tailPoint(for: aRunIdx))")
+            join(runIdx: aRunIdx, source: .A)
+        }
+        while bRunIndices.isEmpty == false {
+            let bRunIdx = bRunIndices.removeLast()
+            debugPrint("DEBUG", "joining run \(srcRuns[bRunIdx]) with head \(headPoint(for: bRunIdx)) and tail \(tailPoint(for: bRunIdx))")
+            join(runIdx: bRunIdx, source: .B)
+        }
+
+        #warning("TEMP: CPU BLIT")
+        /// For each source run, copy its points to the destination.
+        for aRunIdx in 0..<a.runsCount {
+            let srcRun = srcRuns[Int(aBaseOffset) + Int(aRunIdx)]
+            let length = srcRun.oldHead - srcRun.oldTail
+            for i in 0..<length {
+                dstPts[Int(srcRun.newTail + i)] = srcPts[Int(srcRun.oldTail + i)]
+            }
+        }
     }
-
-    func join(runIdx: Int, source: Source) -> Void {
-        precondition(srcRuns[runIdx].isValid)
-        var joinedRunsIndices: [(Int, Source)] = [(runIdx, source)]
-
-        var headPt = headPoint(for: runIdx)
-        var headDxn = srcRuns[runIdx].headTriadTo
-        while
-            headDxn != ChainDirection.closed.rawValue, /// Skip search if run is closed.
-            let (nextRunIdx, src) = findTailForHead(point: headPt, direction: ChainDirection(rawValue: headDxn)!)
-        {
-            joinedRunsIndices.append((nextRunIdx, src))
-            headPt = headPoint(for: nextRunIdx)
-            headDxn = srcRuns[nextRunIdx].headTriadTo
-        }
-
-        var tailPt = tailPoint(for: runIdx)
-        var tailDxn = srcRuns[runIdx].tailTriadFrom
-        while
-            tailDxn != ChainDirection.closed.rawValue, /// Skip search if run is closed.
-            let (prevRunIdx, src) = findHeadForTail(point: tailPt, direction: ChainDirection(rawValue: tailDxn)!)
-        {
-            joinedRunsIndices.insert((prevRunIdx, src), at: 0)
-            tailPt = tailPoint(for: prevRunIdx)
-            tailDxn = srcRuns[prevRunIdx].tailTriadFrom
-        }
-
-        /// At this point, we have an array of connected runs.
-        for (srcRunIdx, src) in joinedRunsIndices {
-            /// First, assign each run its new array position.
-            let length = srcRuns[srcRunIdx].oldTail - srcRuns[srcRunIdx].oldHead
-            let newHead = Int32(aBaseOffset) + nextPointOffset
-            srcRuns[srcRunIdx].newHead = newHead
-            srcRuns[srcRunIdx].newTail = newHead + length
-            nextPointOffset += length
-        }
-
-        /// Finally, add the new run.
-        dstRuns[Int(aBaseOffset) + nextRunOffset] = Run(
-            oldHead: srcRuns[joinedRunsIndices.last!.0].oldHead,
-            oldTail: srcRuns[joinedRunsIndices.first!.0].oldTail,
-            newHead: srcRuns[joinedRunsIndices.last!.0].oldHead,  /// This value is not used.
-            newTail: srcRuns[joinedRunsIndices.first!.0].oldTail, /// This value is not used.
-            tailTriadFrom: srcRuns[joinedRunsIndices.first!.0].tailTriadFrom,
-            headTriadTo:   srcRuns[joinedRunsIndices.last!.0].headTriadTo
-        )
-        nextRunOffset += 1
-    }
-
-    while aRunIndices.isEmpty == false {
-        join(runIdx: aRunIndices.removeLast(), source: .A)
-    }
-    while bRunIndices.isEmpty == false {
-        join(runIdx: bRunIndices.removeLast(), source: .B)
-    }
-
-    /// Create updated region.
-    #warning("TODO: fix region size")
-    Region(
-        origin: a.origin,
-        gridRow: a.gridRow, gridCol: a.gridCol,
-        runsCount: UInt32(nextRunOffset)
-    )
 }
+
+
+
