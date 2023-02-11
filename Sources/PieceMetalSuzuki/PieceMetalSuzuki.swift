@@ -215,9 +215,9 @@ func createChainStarters(
 
     cmdEncoder.label = "Custom Kernel Encoder"
     cmdEncoder.setComputePipelineState(pipelineState)
-    cmdEncoder.setTexture(textureA, index: 0)
+    cmdEncoder.setTexture(texture, index: 0)
 
-    let count = textureA.width * textureA.height * 4
+    let count = texture.width * texture.height * 4
     guard
         let (pointArr, pointBuffer) = createAlignedMTLBuffer(of: PixelPoint.self, device: device, count: count),
         let (runArr, runBuffer) = createAlignedMTLBuffer(of: Run.self, device: device, count: count)
@@ -232,7 +232,7 @@ func createChainStarters(
     cmdEncoder.setBuffer(runBuffer, offset: 0, index: 1)
     cmdEncoder.setBytes(StarterLUT, length: MemoryLayout<ChainDirection.RawValue>.stride * StarterLUT.count, index: 2)
 
-    let (tPerTG, tgPerGrid) = pipelineState.threadgroupParameters(texture: textureA)
+    let (tPerTG, tgPerGrid) = pipelineState.threadgroupParameters(texture: texture)
     cmdEncoder.dispatchThreadgroups(tgPerGrid, threadsPerThreadgroup: tPerTG)
     cmdEncoder.endEncoding()
     cmdBuffer.commit()
@@ -264,7 +264,7 @@ func createChainStarters(
     }
     
     var dxn = ReduceDirection.horizontal
-    let imgSize = PixelSize(width: UInt32(textureA.width), height: UInt32(textureA.height))
+    let imgSize = PixelSize(width: UInt32(texture.width), height: UInt32(texture.height))
     var regionSize = PixelSize(width: 1, height: 1)
     while (regions.count > 1) || (regions[0].count > 1) {
         
