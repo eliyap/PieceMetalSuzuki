@@ -401,6 +401,9 @@ func cpuBlit(
     srcPts: UnsafeMutablePointer<PixelPoint>,
     dstPts: UnsafeMutablePointer<PixelPoint>
 ) -> Void {
+    #if SHOW_GRID_WORK
+    debugPrint("[BLIT] \(run)")
+    #endif
     let length = run.oldHead - run.oldTail
     for i in 0..<length {
         dstPts[Int(run.newTail + i)] = srcPts[Int(run.oldTail + i)]
