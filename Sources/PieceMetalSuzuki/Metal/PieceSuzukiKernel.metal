@@ -9,10 +9,10 @@
 using namespace metal;
 
 struct Run {
-    int32_t oldHead;
     int32_t oldTail;
-    int32_t newHead;
+    int32_t oldHead;
     int32_t newTail;
+    int32_t newHead;
     uint8_t tailTriadFrom;
     uint8_t headTriadTo;
 };
@@ -88,10 +88,10 @@ kernel void startChain(
             points[idx+i].y = gid.y;
             
             // Index to current buffer position.
-            runs[idx+i].oldHead = idx+i;
             runs[idx+i].oldTail = idx+i;
-            runs[idx+i].newHead = idx+i;
+            runs[idx+i].oldHead = idx+i+1;
             runs[idx+i].newTail = idx+i;
+            runs[idx+i].newHead = idx+i+1;
         }
     }    
     return;

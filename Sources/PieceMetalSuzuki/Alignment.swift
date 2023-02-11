@@ -61,6 +61,11 @@ extension ChainDirection: CustomStringConvertible {
 }
 
 /// Indexes a contiguous sub-section of the array which represents a chain fragment.
+/// Think of it as a snake.
+// <- from to ->
+//  ~~~~~~~~~~~>
+//  ^          ^
+//  tail       head
 struct Run {
     /// The indices in `[start, end)` format, relative to the global buffer base.
     var oldTail: Int32
