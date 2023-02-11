@@ -200,7 +200,7 @@ func createChainStarters(
     device: MTLDevice,
     commandQueue: MTLCommandQueue,
     texture: MTLTexture
-) -> (UnsafeMutablePointer<PixelPoint>, UnsafeMutablePointer<Run>)? {
+) -> (Buffer<PixelPoint>, Buffer<Run>)? {
     guard
         let kernelFunction = loadChainStarterFunction(device: device),
         let pipelineState = try? device.makeComputePipelineState(function: kernelFunction),
@@ -280,7 +280,7 @@ func createChainStarters(
         commandQueue: commandQueue
     )
     
-    return (pointBuffer.array, runBuffer.array)
+    return (pointBuffer, runBuffer)
 }
 
 extension MTLComputePipelineState {
