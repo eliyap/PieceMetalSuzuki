@@ -31,7 +31,7 @@ kernel void startChain(
     uint2                          gid           [[thread_position_in_grid]]
 ) {
     // 4 elements per pixel, since each pixel can hold 4 triads.
-    uint32_t idx = ((tex.get_width() * gid.y) + gid.x) * 4;
+    int32_t idx = ((tex.get_width() * gid.y) + gid.x) * 4;
     
     // Don't exit the texture.
     if ((gid.x >= tex.get_width()) || (gid.y >= tex.get_height())) {
@@ -87,11 +87,11 @@ kernel void startChain(
             points[idx+i].x = gid.x;
             points[idx+i].y = gid.y;
             
-            // Set indices to match 1-element array.
-            runs[idx+i].oldHead = 0;
-            runs[idx+i].oldTail = 0;
-            runs[idx+i].newHead = 0;
-            runs[idx+i].newTail = 0;
+            // Index to current buffer position.
+            runs[idx+i].oldHead = idx+i;
+            runs[idx+i].oldTail = idx+i;
+            runs[idx+i].newHead = idx+i;
+            runs[idx+i].newTail = idx+i;
         }
     }    
     return;
