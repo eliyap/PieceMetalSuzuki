@@ -94,6 +94,19 @@ struct Grid {
                 (srcRuns, dstRuns) = (runsVertical, runsHorizontal)
                 (srcPts, dstPts) = (pointsVertical, pointsHorizontal)
 
+                if numCols.isMultiple(of: 2) == false {
+                    /// Request last column blit.
+                    for row in regions {
+                        let region = row.last!
+                        for runIdx in region.runIndices(imageSize: imageSize, gridSize: gridSize) {
+                            dstRuns[runIdx] = srcRuns[runIdx]
+                            srcRuns[runIdx].newTail = srcRuns[runIdx].oldTail
+                            srcRuns[runIdx].newHead = srcRuns[runIdx].oldHead
+                        }
+                        blitRequests += region.runIndices(imageSize: imageSize, gridSize: gridSize)
+                    }
+                }
+                
                 let newGridSize = PixelSize(width: gridSize.width * 2, height: gridSize.height)
                 for rowIdx in 0..<numRows {
                     for colIdx in stride(from: 0, to: numCols - 1, by: 2).reversed() {
@@ -116,6 +129,18 @@ struct Grid {
                 (srcRuns, dstRuns) = (runsHorizontal, runsVertical)
                 (srcPts, dstPts) = (pointsHorizontal, pointsVertical)
 
+                if numRows.isMultiple(of: 2) == false {
+                    /// Request last column blit.
+                    for region in regions.last! {
+                        for runIdx in region.runIndices(imageSize: imageSize, gridSize: gridSize) {
+                            dstRuns[runIdx] = srcRuns[runIdx]
+                            srcRuns[runIdx].newTail = srcRuns[runIdx].oldTail
+                            srcRuns[runIdx].newHead = srcRuns[runIdx].oldHead
+                        }
+                        blitRequests += region.runIndices(imageSize: imageSize, gridSize: gridSize)
+                    }
+                }
+                
                 let newGridSize = PixelSize(width: gridSize.width, height: gridSize.height * 2)
                 for rowIdx in stride(from: 0, to: numRows - 1, by: 2).reversed() {
                     for colIdx in 0..<numCols {
