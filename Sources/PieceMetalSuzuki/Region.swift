@@ -38,11 +38,13 @@ class Region {
         self.runsCount = runsCount
     }
 
-    /// Get the base offset of the region in the image buffer.
-//    func base(imgSize: PixelSize, regionSize: PixelSize) -> UInt32 {
-//        let pixelAddr = (imgSize.width * regionSize.height * gridRow) + (regionSize.width * regionSize.height * gridCol)
-//        return pixelAddr * 4
-//    }
+    /// Get run indices, given the present image size and grid size.
+    func runIndices(imageSize: PixelSize, gridSize: PixelSize) -> [Int] {
+        let base = baseOffset(imageSize: imageSize, gridSize: gridSize, regionSize: self.size, gridPos: self.gridPos)
+        return (0..<runsCount).map { idx in
+            Int(base + idx)
+        }
+    }
 }
 
 extension Region: CustomStringConvertible {
