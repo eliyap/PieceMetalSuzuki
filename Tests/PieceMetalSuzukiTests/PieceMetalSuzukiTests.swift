@@ -31,4 +31,8 @@ final class PieceMetalSuzukiTests: XCTestCase {
     func testDiamonds() throws {
         _ = PieceMetalSuzuki(imageUrl: url("diamonds"))
     }
+    
+    func testSquare() throws {
+        _ = PieceMetalSuzuki(imageUrl: url("square"))
+    }
 }
