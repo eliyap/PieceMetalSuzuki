@@ -238,7 +238,7 @@ func createChainStarters(
         let regionRow = [Region](unsafeUninitializedCapacity: textureA.width) { buffer, initializedCount in
             for col in 0..<textureA.width {
                 /// Count valid elements in each 1x1 region.
-                let bufferBase = (row * textureA.width) + col
+                let bufferBase = ((row * texture.width) + col) * 4
                 var validCount = UInt32.zero
                 for offset in 0..<4 {
                     if runArr[bufferBase + offset].isValid {
