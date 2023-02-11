@@ -79,12 +79,19 @@ struct Grid {
     ) -> Void {
         var dxn = ReduceDirection.vertical
         while (regions.count > 1) || (regions[0].count > 1) {
+            let srcPts: UnsafeMutablePointer<PixelPoint>
+            let dstPts: UnsafeMutablePointer<PixelPoint>
+            let srcRuns: UnsafeMutablePointer<Run>
+            let dstRuns: UnsafeMutablePointer<Run>
             
             let numRows = regions.count
             let numCols = regions[0].count
             
             switch dxn {
             case .horizontal:
+                (srcRuns, dstRuns) = (runsVertical, runsHorizontal)
+                (srcPts, dstPts) = (pointsVertical, pointsHorizontal)
+
                 let newGridSize = PixelSize(width: gridSize.width * 2, height: gridSize.height)
                 for rowIdx in 0..<numRows {
                     for colIdx in stride(from: 0, to: numCols - 1, by: 2).reversed() {
@@ -92,8 +99,8 @@ struct Grid {
                         let b = regions[rowIdx].remove(at: colIdx + 1)
                         combine(a: a, b: b,
                                 dxn: dxn, newGridSize: newGridSize,
-                                srcPts: pointsVertical, srcRuns: runsVertical,
-                                dstPts: pointsHorizontal, dstRuns: runsHorizontal)
+                                srcPts: srcPts, srcRuns: srcRuns,
+                                dstPts: dstPts, dstRuns: dstRuns)
                     }
                     /// Update grid position for remaining regions.
                     for region in regions[rowIdx] {
@@ -109,6 +116,9 @@ struct Grid {
                 #endif
             
             case .vertical:
+                (srcRuns, dstRuns) = (runsHorizontal, runsVertical)
+                (srcPts, dstPts) = (pointsHorizontal, pointsVertical)
+
                 let newGridSize = PixelSize(width: gridSize.width, height: gridSize.height * 2)
                 for rowIdx in stride(from: 0, to: numRows - 1, by: 2).reversed() {
                     for colIdx in 0..<numCols {
@@ -116,8 +126,8 @@ struct Grid {
                         let b = regions[rowIdx+1][colIdx]
                         combine(a: a, b: b,
                                 dxn: dxn, newGridSize: newGridSize,
-                                srcPts: pointsHorizontal, srcRuns: runsHorizontal,
-                                dstPts: pointsVertical, dstRuns: runsVertical)
+                                srcPts: srcPts, srcRuns: srcRuns,
+                                dstPts: dstPts, dstRuns: dstRuns)
                     }
                     /// Remove entire row at once.
                     regions.remove(at: rowIdx + 1)
