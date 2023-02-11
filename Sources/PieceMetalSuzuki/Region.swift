@@ -9,6 +9,15 @@ struct PixelSize: Equatable, CustomStringConvertible {
     }
 }
 
+/// Indicates where a `Region` is within the `Grid`.
+struct GridPosition: CustomStringConvertible {
+    var row: UInt32
+    var col: UInt32
+    var description: String {
+        return "gr\(row)gc\(col)"
+    }
+}
+
 /// A CPU only struct used to organize Runs.
 /// Class allows easy in-place manipulation.
 class Region { 
@@ -17,17 +26,15 @@ class Region {
     /// Spatial size of the grid, which may be smaller at the trailing and bottom edges.
     var size: PixelSize
     
-    var gridRow: UInt32
-    var gridCol: UInt32
+    var gridPos: GridPosition
 
     /// Number of elements in the region.
     var runsCount: UInt32
 
-    init(origin: PixelPoint, size: PixelSize, gridRow: UInt32, gridCol: UInt32, runsCount: UInt32) {
+    init(origin: PixelPoint, size: PixelSize, gridPos: GridPosition, runsCount: UInt32) {
         self.origin = origin
         self.size = size
-        self.gridRow = gridRow
-        self.gridCol = gridCol
+        self.gridPos = gridPos
         self.runsCount = runsCount
     }
 
@@ -40,7 +47,7 @@ class Region {
 
 extension Region: CustomStringConvertible {
     var description: String {
-        return "Region(origin: \(origin), gridRow: \(gridRow), gridCol: \(gridCol), \(runsCount) runs)"
+        return "Region(origin: \(origin), gridPos: \(gridPos), \(runsCount) runs)"
     }
 }
 
@@ -88,7 +95,7 @@ struct Grid {
                     }
                     /// Update grid position for remaining regions.
                     for region in regions[rowIdx] {
-                        region.gridCol /= 2
+                        region.gridPos.col /= 2
                     }
                 }
                 gridSize = newGridSize
@@ -116,7 +123,7 @@ struct Grid {
                 /// Update grid position for remaining regions.
                 for rowIdx in 0..<regions.count {
                     for colIdx in 0..<numCols {
-                        regions[rowIdx][colIdx].gridRow /= 2
+                        regions[rowIdx][colIdx].gridPos.row /= 2
                     }
                 }
                 gridSize = newGridSize
@@ -131,9 +138,13 @@ struct Grid {
         }
     }
     
+    func baseOffset(gridSize: PixelSize, regionSize: PixelSize, gridPos: GridPosition) -> UInt32 {
+        4 * ((imageSize.width * gridSize.height * gridPos.row) + (gridSize.width * regionSize.height * gridPos.col))
+    }
+    
     #if SHOW_GRID_WORK
     func dump(region: Region, points: UnsafeMutablePointer<PixelPoint>, runs: UnsafeMutablePointer<Run>) {
-        let baseOffset = 4 * ((imageSize.width * gridSize.height * region.gridRow) + (gridSize.width * region.size.height * region.gridCol))
+        let baseOffset = baseOffset(gridSize: gridSize, regionSize: region.size, gridPos: region.gridPos)
         debugPrint("[DUMP]: \(region)")
         for offset in 0..<Int(region.runsCount) {
             let runBufferOffset = Int(offset + Int(baseOffset))
@@ -155,24 +166,24 @@ struct Grid {
         debugPrint("Combining \(a) and \(b)")
         debugPrint("imgSize: \(imageSize), gridSize: \(gridSize)")
         #endif
-        let aBaseOffset: UInt32 = 4 * ((imageSize.width * gridSize.height * a.gridRow) + (gridSize.width * a.size.height * a.gridCol))
-        let bBaseOffset: UInt32 = 4 * ((imageSize.width * gridSize.height * b.gridRow) + (gridSize.width * b.size.height * b.gridCol))
+        let aBaseOffset: UInt32 = baseOffset(gridSize: gridSize, regionSize: a.size, gridPos: a.gridPos)
+        let bBaseOffset: UInt32 = baseOffset(gridSize: gridSize, regionSize: b.size, gridPos: b.gridPos)
         
         let newRegionSize: PixelSize
         switch dxn {
         case .vertical:
-            let bottomEdge = ((a.gridRow / 2) + 1) * newGridSize.height
+            let bottomEdge = ((a.gridPos.row / 2) + 1) * newGridSize.height
             let newRegionHeight = bottomEdge > imageSize.height
-                ? imageSize.height - (a.gridRow / 2) * newGridSize.height
+                ? imageSize.height - (a.gridPos.row / 2) * newGridSize.height
                 : newGridSize.height
             newRegionSize = PixelSize(
                 width: a.size.width,
                 height: newRegionHeight
             )
         case .horizontal:
-            let rightEdge = ((a.gridCol / 2) + 1) * newGridSize.width
+            let rightEdge = ((a.gridPos.col / 2) + 1) * newGridSize.width
             let newRegionWidth = rightEdge > imageSize.width
-                ? imageSize.width - (a.gridCol / 2) * newGridSize.width
+                ? imageSize.width - (a.gridPos.col / 2) * newGridSize.width
                 : newGridSize.width
             newRegionSize = PixelSize(
                 width: newRegionWidth,
@@ -183,9 +194,9 @@ struct Grid {
         let newBaseOffset: UInt32
         switch dxn {
         case .vertical:
-            newBaseOffset = 4 * ((imageSize.width * newGridSize.height * a.gridRow / 2) + (newGridSize.width * newRegionSize.height *  a.gridCol     ))
+            newBaseOffset = baseOffset(gridSize: newGridSize, regionSize: newRegionSize, gridPos: GridPosition(row: a.gridPos.row / 2, col: a.gridPos.col))
         case .horizontal:
-            newBaseOffset = 4 * ((imageSize.width * newGridSize.height * a.gridRow    ) + (newGridSize.width * newRegionSize.height * (a.gridCol / 2)))
+            newBaseOffset = baseOffset(gridSize: newGridSize, regionSize: newRegionSize, gridPos: GridPosition(row: a.gridPos.row, col: a.gridPos.col / 2))
         }
 
         var aRunIndices = (0..<Int(a.runsCount)).map { $0 + Int(aBaseOffset) }
@@ -340,6 +351,3 @@ struct Grid {
         a.size = newRegionSize
     }
 }
-
-
-
