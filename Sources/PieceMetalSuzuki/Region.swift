@@ -54,6 +54,39 @@ extension Region: CustomStringConvertible {
     }
 }
 
+func initializeRegions(
+    runBuffer: Buffer<Run>,
+    texture: MTLTexture
+) -> [[Region]] {
+    var regions: [[Region]] = []
+    for row in 0..<texture.height {
+        let regionRow = [Region](unsafeUninitializedCapacity: texture.width) { buffer, initializedCount in
+            for col in 0..<texture.width {
+                /// Count valid elements in each 1x1 region.
+                let bufferBase = ((row * texture.width) + col) * 4
+                var validCount = UInt32.zero
+                for offset in 0..<4 {
+                    if runBuffer.array[bufferBase + offset].isValid {
+                        validCount += 1
+                    } else {
+                        break
+                    }
+                }
+                
+                buffer.baseAddress!.advanced(by: col).initialize(to: Region(
+                    origin: PixelPoint(x: UInt32(col), y: UInt32(row)),
+                    size: PixelSize(width: 1, height: 1),
+                    gridPos: GridPosition(row: UInt32(row), col: UInt32(col)),
+                    runsCount: validCount
+                ))
+            }
+            initializedCount = texture.width
+        }
+        regions.append(regionRow)
+    }
+    return regions
+}
+
 struct Grid {
     let imageSize: PixelSize
     
