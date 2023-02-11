@@ -1,16 +1,12 @@
 import Foundation
 
-// struct PixelPoint: Equatable {
-//     /// Corresponds to `thread_position_in_grid` with type `uint2`.
-//     /// https://developer.apple.com/documentation/metal/mtlattributeformat/uint2
-//     /// > Two unsigned 32-bit values.
-//     let x: UInt32
-//     let y: UInt32
-// }
-
-struct PixelSize: Equatable {
+struct PixelSize: Equatable, CustomStringConvertible {
     let width: UInt32
     let height: UInt32
+
+    var description: String {
+        return "w\(width)h\(height)"
+    }
 }
 
 /// A CPU only struct used to organize Runs.
@@ -33,6 +29,12 @@ class Region {
     func base(imgSize: PixelSize, regionSize: PixelSize) -> UInt32 {
         let pixelAddr = (imgSize.width * regionSize.height * gridRow) + (regionSize.width * regionSize.height * gridCol)
         return pixelAddr * 4
+    }
+}
+
+extension Region: CustomStringConvertible {
+    var description: String {
+        return "Region(origin: \(origin), gridRow: \(gridRow), gridCol: \(gridCol), \(runsCount) runs)"
     }
 }
 
