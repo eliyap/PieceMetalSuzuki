@@ -247,6 +247,7 @@ func createChainStarters(
                         break
                     }
                 }
+                
                 buffer[col] = Region(
                     origin: PixelPoint(x: UInt32(col), y: UInt32(row)),
                     size: PixelSize(width: 1, height: 1),
@@ -254,7 +255,7 @@ func createChainStarters(
                     runsCount: validCount
                 )
             }
-            initializedCount = textureA.width
+            initializedCount = texture.width
         }
         regions.append(regionRow)
     }
