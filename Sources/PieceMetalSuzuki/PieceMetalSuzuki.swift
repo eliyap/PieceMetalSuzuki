@@ -84,10 +84,6 @@ func applyMetalFilter(bufferA: CVPixelBuffer, bufferB: CVPixelBuffer) -> CVPixel
         assert(false, "Failed to create texture.")
         return outBuffer
     }
-    guard let textureB = makeTextureFromCVPixelBuffer(pixelBuffer: bufferB, textureFormat: .bgra8Unorm, textureCache: metalTextureCache) else {
-        assert(false, "Failed to create texture.")
-        return outBuffer
-    }
     
         assert(false, "Failed to run chain start kernel.")
     guard let result = createChainStarters(device: device, commandQueue: commandQueue, textureA: textureA) else {
