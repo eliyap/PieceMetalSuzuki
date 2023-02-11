@@ -12,8 +12,8 @@ struct PixelSize: Equatable, CustomStringConvertible {
 /// A CPU only struct used to organize Runs.
 class Region { 
     let origin: PixelPoint
-    let gridRow: UInt32
-    let gridCol: UInt32
+    var gridRow: UInt32
+    var gridCol: UInt32
 
     // Number of elements in the region.
     let runsCount: UInt32
