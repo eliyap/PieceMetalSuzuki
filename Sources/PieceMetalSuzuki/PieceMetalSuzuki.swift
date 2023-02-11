@@ -197,7 +197,7 @@ func loadChainStarterFunction(device: MTLDevice) -> MTLFunction? {
 func createChainStarters(
     device: MTLDevice,
     commandQueue: MTLCommandQueue,
-    textureA: MTLTexture
+    texture: MTLTexture
 ) -> (UnsafeMutablePointer<PixelPoint>, UnsafeMutablePointer<Run>)? {
     guard
         let kernelFunction = loadChainStarterFunction(device: device),
