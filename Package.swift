@@ -27,7 +27,7 @@ let package = Package(
             ],
             swiftSettings: [
                 .unsafeFlags([
-//                    "-DSHOW_GRID_WORK"
+                    "-DSHOW_GRID_WORK"
                 ], nil)
             ]),
         .testTarget(
