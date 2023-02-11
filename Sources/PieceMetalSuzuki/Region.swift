@@ -178,7 +178,26 @@ struct Grid {
                 gridSize = newGridSize
             }
             
-            cpuBlit(runIndices: blitRunIndices, srcPts: srcPts, srcRuns: srcRuns, dstPts: dstPts)
+//            cpuBlit(runIndices: blitRunIndices, srcPts: srcPts, srcRuns: srcRuns, dstPts: dstPts)
+            guard let cmdBuffer = commandQueue.makeCommandBuffer() else {
+                assert(false, "Failed to create command buffer.")
+                return
+            }
+            for request in blitRunIndices {
+                guard let cmdEncoder = cmdBuffer.makeBlitCommandEncoder() else {
+                    assert(false, "Failed to create command encoder.")
+                    return
+                }
+                let run = srcRuns[request]
+                cmdEncoder.copy(
+                    from: srcBuffer.mtlBuffer, sourceOffset: MemoryLayout<PixelPoint>.stride * Int(run.oldTail),
+                    to: dstBuffer.mtlBuffer, destinationOffset: MemoryLayout<PixelPoint>.stride * Int(run.newTail),
+                    size: MemoryLayout<PixelPoint>.stride * Int(run.oldHead - run.oldTail)
+                )
+                cmdEncoder.endEncoding()
+            }
+            cmdBuffer.commit()
+            cmdBuffer.waitUntilCompleted()
             
             #if SHOW_GRID_WORK
             for reg in regions.joined() {
