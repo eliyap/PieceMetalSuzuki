@@ -144,14 +144,37 @@ struct Grid {
         debugPrint("Combining \(a) and \(b)")
         debugPrint("imgSize: \(imageSize), gridSize: \(gridSize)")
         #endif
-        let aBaseOffset: UInt32 = 4 * ((imageSize.width * regionSize.height * a.gridRow) + (regionSize.width * regionSize.height * a.gridCol))
-        let bBaseOffset: UInt32 = 4 * ((imageSize.width * regionSize.height * b.gridRow) + (regionSize.width * regionSize.height * b.gridCol))
+        let aBaseOffset: UInt32 = 4 * ((imageSize.width * gridSize.height * a.gridRow) + (gridSize.width * a.size.height * a.gridCol))
+        let bBaseOffset: UInt32 = 4 * ((imageSize.width * gridSize.height * b.gridRow) + (gridSize.width * b.size.height * b.gridCol))
+        
+        let newRegionSize: PixelSize
+        switch dxn {
+        case .vertical:
+            let bottomEdge = ((a.gridRow / 2) + 1) * newGridSize.height
+            let newRegionHeight = bottomEdge > imageSize.height
+                ? imageSize.height - (a.gridRow / 2) * newGridSize.height
+                : newGridSize.height
+            newRegionSize = PixelSize(
+                width: a.size.width,
+                height: newRegionHeight
+            )
+        case .horizontal:
+            let rightEdge = ((a.gridCol / 2) + 1) * newGridSize.width
+            let newRegionWidth = rightEdge > imageSize.width
+                ? imageSize.width - (a.gridCol / 2) * newGridSize.width
+                : newGridSize.width
+            newRegionSize = PixelSize(
+                width: newRegionWidth,
+                height: a.size.height
+            )
+        }
+        
         let newBaseOffset: UInt32
         switch dxn {
         case .vertical:
-            newBaseOffset = 4 * ((imageSize.width * (regionSize.height * 2) * (a.gridRow / 2)) +  (regionSize.width      * (regionSize.height * 2) * a.gridCol      ))
+            newBaseOffset = 4 * ((imageSize.width * newGridSize.height * a.gridRow / 2) + (newGridSize.width * newRegionSize.height *  a.gridCol     ))
         case .horizontal:
-            newBaseOffset = 4 * ((imageSize.width *  regionSize.height      *  a.gridRow     ) + ((regionSize.width * 2) *  regionSize.height      * (a.gridCol / 2)))
+            newBaseOffset = 4 * ((imageSize.width * newGridSize.height * a.gridRow    ) + (newGridSize.width * newRegionSize.height * (a.gridCol / 2)))
         }
 
         var aRunIndices = (0..<Int(a.runsCount)).map { $0 + Int(aBaseOffset) }
@@ -309,6 +332,7 @@ struct Grid {
             a.gridRow /= 2
         }
         a.runsCount = nextRunOffset
+        a.size = newRegionSize
     }
 }
 
