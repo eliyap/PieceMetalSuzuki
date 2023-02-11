@@ -22,7 +22,7 @@ let package = Package(
             name: "PieceMetalSuzuki",
             dependencies: [],
             resources: [
-                .copy("input.png"),
+                .copy("Images/"),
                 .copy("Metal/"),
             ],
             swiftSettings: [

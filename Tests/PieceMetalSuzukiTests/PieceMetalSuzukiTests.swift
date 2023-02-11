@@ -6,6 +6,6 @@ final class PieceMetalSuzukiTests: XCTestCase {
         // This is an example of a functional test case.
         // Use XCTAssert and related functions to verify your tests produce the correct
         // results.
-        PieceMetalSuzuki(imageUrl: Bundle.module.url(forResource: "input", withExtension: ".png")!)
+        PieceMetalSuzuki(imageUrl: Bundle.module.url(forResource: "input", withExtension: ".png", subdirectory: "Images")!)
     }
 }
