@@ -24,6 +24,9 @@ let package = Package(
             resources: [
                 .copy("input.png"),
                 .copy("Metal/"),
+            ],
+            swiftSettings: [
+                .unsafeFlags(["-DIS_POTATO"], nil)
             ]),
         .testTarget(
             name: "PieceMetalSuzukiTests",

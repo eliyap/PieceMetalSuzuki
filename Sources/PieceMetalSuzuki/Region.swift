@@ -109,6 +109,9 @@ struct Grid {
             }
             dxn.flip()
         }
+        #if IS_POTATO
+        fatalError("I am a potato")
+        #endif
     }
     
     func dump(region: Region, points: UnsafeMutablePointer<PixelPoint>, runs: UnsafeMutablePointer<Run>) {
