@@ -81,7 +81,8 @@ struct Grid {
                     for colIdx in stride(from: 0, to: numCols - 1, by: 2).reversed() {
                         let a = regions[rowIdx][colIdx]
                         let b = regions[rowIdx].remove(at: colIdx + 1)
-                        combine(a: a, b: b, dxn: dxn,
+                        combine(a: a, b: b,
+                                dxn: dxn, newGridSize: newGridSize,
                                 srcPts: pointsVertical, srcRuns: runsVertical,
                                 dstPts: pointsHorizontal, dstRuns: runsHorizontal)
                     }
@@ -100,7 +101,8 @@ struct Grid {
                     for colIdx in 0..<numCols {
                         let a = regions[rowIdx][colIdx]
                         let b = regions[rowIdx+1][colIdx]
-                        combine(a: a, b: b, dxn: dxn,
+                        combine(a: a, b: b,
+                                dxn: dxn, newGridSize: newGridSize,
                                 srcPts: pointsHorizontal, srcRuns: runsHorizontal,
                                 dstPts: pointsVertical, dstRuns: runsVertical)
                     }
@@ -133,7 +135,8 @@ struct Grid {
     #endif
     
     func combine(
-        a: Region, b: Region, dxn: ReduceDirection,
+        a: Region, b: Region,
+        dxn: ReduceDirection, newGridSize: PixelSize,
         srcPts: UnsafeMutablePointer<PixelPoint>, srcRuns: UnsafeMutablePointer<Run>,
         dstPts: UnsafeMutablePointer<PixelPoint>, dstRuns: UnsafeMutablePointer<Run>
     ) -> Void {
