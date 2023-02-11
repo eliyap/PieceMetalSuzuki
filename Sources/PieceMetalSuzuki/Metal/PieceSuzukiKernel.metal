@@ -90,8 +90,6 @@ kernel void startChain(
             // Index to current buffer position.
             runs[idx+i].oldTail = idx+i;
             runs[idx+i].oldHead = idx+i+1;
-            runs[idx+i].newTail = idx+i;
-            runs[idx+i].newHead = idx+i+1;
         }
     }    
     return;
