@@ -328,12 +328,33 @@ struct Grid {
             }
             let newRunHead = Int32(newBaseOffset) + nextPointOffset
             
+            var newTailFrom = srcRuns[joinedRunsIndices.first!].tailTriadFrom
+            var newHeadTo = srcRuns[joinedRunsIndices.last!].headTriadTo
+            
+            _ = {
+                let headDxn = ChainDirection(rawValue: headDxn)!
+                let tailDxn = ChainDirection(rawValue: tailDxn)!
+                
+                /// Check if already closed.
+                if headDxn == .closed {
+                    precondition(tailDxn == .closed)
+                    return
+                }
+                
+                /// Check if the new run is closed.
+                if headDxn.inverse == tailDxn && headPt[headDxn] == tailPt {
+                    precondition(tailPt[tailDxn] == headPt)
+                    newTailFrom = ChainDirection.closed.rawValue
+                    newHeadTo = ChainDirection.closed.rawValue
+                }
+            }()
+            
+            
             /// Finally, add the new run.
             let newRun = Run(
                 oldTail: newRunTail, oldHead: newRunHead,
                 newTail: -1, newHead: -1,
-                tailTriadFrom: srcRuns[joinedRunsIndices.first!].tailTriadFrom,
-                headTriadTo:   srcRuns[joinedRunsIndices.last!].headTriadTo
+                tailTriadFrom: newTailFrom, headTriadTo: newHeadTo
             )
             
             #if SHOW_GRID_WORK
