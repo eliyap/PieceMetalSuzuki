@@ -140,6 +140,7 @@ struct Grid {
             let run = runs[runBufferOffset]
             let chain = (run.oldTail..<run.oldHead).map { points[Int($0)] }
             debugPrint("- \(run) \(chain) @\(runBufferOffset)(\(baseOffset)+\(offset))")
+            assert(run.isValid)
         }
     }
     #endif
