@@ -63,13 +63,13 @@ extension ChainDirection: CustomStringConvertible {
 /// Indexes a contiguous sub-section of the array which represents a chain fragment.
 struct Run {
     /// The indices in `[start, end)` format, relative to the global buffer base.
-    var oldHead: Int32
     var oldTail: Int32
-
+    var oldHead: Int32
+    
     /// The indices in `[start, end)` format, relative to the global buffer base.
-    var newHead: Int32
     var newTail: Int32
-
+    var newHead: Int32
+    
     /// Where the chain fragment should connect from and to.
     /// 0 indicates a closed border.
     /// 1-8 indicate directions from upwards, proceeding clockwise.
@@ -77,7 +77,7 @@ struct Run {
     var headTriadTo: ChainDirection.RawValue
 
     /// An invalid value used to initialize the process.
-    static let initial = Run(oldHead: -1, oldTail: -1, newHead: -1, newTail: -1, tailTriadFrom: ChainDirection.closed.rawValue, headTriadTo: ChainDirection.closed.rawValue)
+    static let initial = Run(oldTail: -1, oldHead: -1, newTail: -1, newHead: -1, tailTriadFrom: ChainDirection.closed.rawValue, headTriadTo: ChainDirection.closed.rawValue)
     
     /// Negative values are used to indicate an invalid run that should be treated as `nil`.
     var isValid: Bool { oldHead >= 0 }
@@ -119,7 +119,7 @@ extension Run: CustomStringConvertible {
         ""
         + "(old: [\(oldHead), \(oldTail)), "
         +  "new: [\(newHead), \(newTail)), "
-        + "\(ChainDirection(rawValue: tailTriadFrom)!), \(ChainDirection(rawValue: headTriadTo)!))"
+        + "\(ChainDirection(rawValue: tailTriadFrom)!)->\(ChainDirection(rawValue: headTriadTo)!))"
         
     }
 }
