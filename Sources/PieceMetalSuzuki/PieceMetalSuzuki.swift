@@ -248,12 +248,12 @@ func createChainStarters(
                     }
                 }
                 
-                buffer[col] = Region(
+                buffer.baseAddress!.advanced(by: col).initialize(to: Region(
                     origin: PixelPoint(x: UInt32(col), y: UInt32(row)),
                     size: PixelSize(width: 1, height: 1),
                     gridPos: GridPosition(row: UInt32(row), col: UInt32(col)),
                     runsCount: validCount
-                )
+                ))
             }
             initializedCount = texture.width
         }
@@ -271,8 +271,6 @@ func createChainStarters(
         pointsHorizontal: pointArr,
         runsHorizontal: runArr
     )
-    
-    
     
     return (pointArr, runArr)
 }
