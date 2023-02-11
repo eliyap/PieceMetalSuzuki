@@ -100,6 +100,7 @@ func combine(
     }
 
     func join(runIdx: Int, source: Source) -> Void {
+        precondition(srcRuns[runIdx].isValid)
         var joinedRunsIndices: [(Int, Source)] = [(runIdx, source)]
 
         var headPt = headPoint(for: runIdx)
