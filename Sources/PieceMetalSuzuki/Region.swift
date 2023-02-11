@@ -76,7 +76,7 @@ struct Grid {
             
             switch dxn {
             case .horizontal:
-                let newRegionSize = PixelSize(width: regionSize.width * 2, height: regionSize.height)
+                let newGridSize = PixelSize(width: gridSize.width * 2, height: gridSize.height)
                 for rowIdx in 0..<numRows {
                     for colIdx in stride(from: 0, to: numCols - 1, by: 2).reversed() {
                         let a = regions[rowIdx][colIdx]
@@ -86,7 +86,7 @@ struct Grid {
                                 dstPts: pointsHorizontal, dstRuns: runsHorizontal)
                     }
                 }
-                regionSize = newRegionSize
+                gridSize = newGridSize
                 
                 #if SHOW_GRID_WORK
                 for reg in regions.joined() {
@@ -95,7 +95,7 @@ struct Grid {
                 #endif
             
             case .vertical:
-                let newRegionSize = PixelSize(width: regionSize.width, height: regionSize.height * 2)
+                let newGridSize = PixelSize(width: gridSize.width, height: gridSize.height * 2)
                 for rowIdx in stride(from: 0, to: numRows - 1, by: 2).reversed() {
                     for colIdx in 0..<numCols {
                         let a = regions[rowIdx][colIdx]
@@ -107,7 +107,7 @@ struct Grid {
                     /// Remove entire row at once.
                     regions.remove(at: rowIdx + 1)
                 }
-                regionSize = newRegionSize
+                gridSize = newGridSize
                 
                 #if SHOW_GRID_WORK
                 for reg in regions.joined() {
