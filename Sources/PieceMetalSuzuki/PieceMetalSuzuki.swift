@@ -241,6 +241,16 @@ func createChainStarters(
     return (pointArr, runArr)
 }
 
+enum ReduceDirection {
+    case horizontal, vertical
+    mutating func flip() {
+        switch self {
+        case .horizontal: self = .vertical
+        case .vertical: self = .horizontal
+        }
+    }
+}
+
 extension MTLComputePipelineState {
     func threadgroupParameters(texture: MTLTexture) -> (threadgroupsPerGrid: MTLSize, threadsPerThreadgroup: MTLSize) {
         let threadHeight = maxTotalThreadsPerThreadgroup / threadExecutionWidth
