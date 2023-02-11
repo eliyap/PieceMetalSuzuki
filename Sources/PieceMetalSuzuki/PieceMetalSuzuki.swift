@@ -155,7 +155,7 @@ func makeTextureFromCVPixelBuffer(
     return texture
 }
 
-func createBuffer<T>(of type: T.Type, device: MTLDevice, count: Int) -> (UnsafeMutablePointer<T>, MTLBuffer)? {
+func createAlignedMTLBuffer<T>(of type: T.Type, device: MTLDevice, count: Int) -> (UnsafeMutablePointer<T>, MTLBuffer)? {
     var ptr: UnsafeMutableRawPointer? = nil
     
     let alignment = Int(getpagesize())
@@ -221,8 +221,8 @@ func createChainStarters(
 
     let count = textureA.width * textureA.height * 4
     guard
-        let (pointArr, pointBuffer) = createBuffer(of: PixelPoint.self, device: device, count: count),
-        let (runArr, runBuffer) = createBuffer(of: Run.self, device: device, count: count)
+        let (pointArr, pointBuffer) = createAlignedMTLBuffer(of: PixelPoint.self, device: device, count: count),
+        let (runArr, runBuffer) = createAlignedMTLBuffer(of: Run.self, device: device, count: count)
     else {
         assert(false, "Failed to create buffer.")
         return nil
