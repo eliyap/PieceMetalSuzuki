@@ -335,15 +335,15 @@ struct Grid {
 
         #warning("TEMP: CPU BLIT")
         /// For each source run, copy its points to the destination.
-        for aRunIdx in 0..<a.runsCount {
-            let srcRun = srcRuns[Int(aBaseOffset) + Int(aRunIdx)]
+        for aRunIdx in a.runIndices(imageSize: imageSize, gridSize: gridSize) {
+            let srcRun = srcRuns[aRunIdx]
             let length = srcRun.oldHead - srcRun.oldTail
             for i in 0..<length {
                 dstPts[Int(srcRun.newTail + i)] = srcPts[Int(srcRun.oldTail + i)]
             }
         }
-        for bRunIdx in 0..<b.runsCount {
-            let srcRun = srcRuns[Int(bBaseOffset) + Int(bRunIdx)]
+        for bRunIdx in b.runIndices(imageSize: imageSize, gridSize: gridSize) {
+            let srcRun = srcRuns[bRunIdx]
             let length = srcRun.oldHead - srcRun.oldTail
             for i in 0..<length {
                 dstPts[Int(srcRun.newTail + i)] = srcPts[Int(srcRun.oldTail + i)]
