@@ -33,24 +33,24 @@ public struct PieceMetalSuzuki {
         context.render(ciImage, to: bufferA)
 
         /// Apply Metal filter to pixel buffer.
-        let outBuffer = applyMetalFilter(bufferA: bufferA, bufferB: bufferB)
+        applyMetalSuzuki(bufferA: bufferA, bufferB: bufferB)
         
-        /// Read values from pixel buffer.
-        CVPixelBufferLockBaseAddress(outBuffer, [])
-        defer {
-            CVPixelBufferUnlockBaseAddress(outBuffer, [])
-        }
-        guard let ptr = CVPixelBufferGetBaseAddress(outBuffer) else {
-            assert(false, "Failed to get base address.")
-            return
-        }
-
-        /// Run Suzuki algorithm.
-//        var img = ImageBuffer(ptr: ptr, width: width, height: height)
-//        border(img: &img)
-
-        /// Write image back out.
-        saveBufferToPng(buffer: outBuffer, format: .RGBA8)
+//        /// Read values from pixel buffer.
+//        CVPixelBufferLockBaseAddress(outBuffer, [])
+//        defer {
+//            CVPixelBufferUnlockBaseAddress(outBuffer, [])
+//        }
+//        guard let ptr = CVPixelBufferGetBaseAddress(outBuffer) else {
+//            assert(false, "Failed to get base address.")
+//            return
+//        }
+//
+//        /// Run Suzuki algorithm.
+////        var img = ImageBuffer(ptr: ptr, width: width, height: height)
+////        border(img: &img)
+//
+//        /// Write image back out.
+//        saveBufferToPng(buffer: outBuffer, format: .RGBA8)
 
         print("so far so good")
     }
