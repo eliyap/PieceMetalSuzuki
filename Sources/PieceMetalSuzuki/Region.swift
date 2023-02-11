@@ -333,17 +333,12 @@ struct Grid {
             join(runIdx: bRunIdx)
         }
 
+        let blitRequests = a.runIndices(imageSize: imageSize, gridSize: gridSize) + b.runIndices(imageSize: imageSize, gridSize: gridSize)
+        
         #warning("TEMP: CPU BLIT")
         /// For each source run, copy its points to the destination.
-        for aRunIdx in a.runIndices(imageSize: imageSize, gridSize: gridSize) {
-            let srcRun = srcRuns[aRunIdx]
-            let length = srcRun.oldHead - srcRun.oldTail
-            for i in 0..<length {
-                dstPts[Int(srcRun.newTail + i)] = srcPts[Int(srcRun.oldTail + i)]
-            }
-        }
-        for bRunIdx in b.runIndices(imageSize: imageSize, gridSize: gridSize) {
-            let srcRun = srcRuns[bRunIdx]
+        for runIdx in blitRequests {
+            let srcRun = srcRuns[runIdx]
             let length = srcRun.oldHead - srcRun.oldTail
             for i in 0..<length {
                 dstPts[Int(srcRun.newTail + i)] = srcPts[Int(srcRun.oldTail + i)]
