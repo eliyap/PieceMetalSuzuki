@@ -49,7 +49,7 @@ class Region {
 
 extension Region: CustomStringConvertible {
     var description: String {
-        return "Region(origin: \(origin), gridPos: \(gridPos), \(runsCount) runs)"
+        return "Region(origin: \(origin), size: \(size), gridPos: \(gridPos), \(runsCount) runs)"
     }
 }
 
