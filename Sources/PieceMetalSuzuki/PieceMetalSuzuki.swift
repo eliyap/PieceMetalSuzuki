@@ -19,11 +19,7 @@ public struct PieceMetalSuzuki {
             kCVPixelBufferMetalCompatibilityKey: true,
         ]
         var bufferA: CVPixelBuffer!
-        var bufferB: CVPixelBuffer!
-        guard
-            CVPixelBufferCreate(kCFAllocatorDefault, width, height, format, options, &bufferA) == kCVReturnSuccess,
-            CVPixelBufferCreate(kCFAllocatorDefault, width, height, format, options, &bufferB) == kCVReturnSuccess
-        else {
+        guard CVPixelBufferCreate(kCFAllocatorDefault, width, height, format, options, &bufferA) == kCVReturnSuccess else {
             assert(false, "Failed to create pixel buffer.")
             return
         }
@@ -33,7 +29,7 @@ public struct PieceMetalSuzuki {
         context.render(ciImage, to: bufferA)
 
         /// Apply Metal filter to pixel buffer.
-        applyMetalSuzuki(bufferA: bufferA, bufferB: bufferB)
+        applyMetalSuzuki(bufferA: bufferA)
         
 //        /// Read values from pixel buffer.
 //        CVPixelBufferLockBaseAddress(outBuffer, [])
@@ -96,12 +92,11 @@ func applyMetalFilter(bufferA: CVPixelBuffer, bufferB: CVPixelBuffer) -> CVPixel
     return outBuffer
 }
 
-func applyMetalSuzuki(bufferA: CVPixelBuffer, bufferB: CVPixelBuffer) -> Void {
+func applyMetalSuzuki(bufferA: CVPixelBuffer) -> Void {
     /// Apply Metal filter to pixel buffer.
     guard
         let device = MTLCreateSystemDefaultDevice(),
-        let commandQueue = device.makeCommandQueue(),
-        let binaryBuffer = commandQueue.makeCommandBuffer()
+        let commandQueue = device.makeCommandQueue()
     else {
         assert(false, "Failed to get metal device.")
         return
