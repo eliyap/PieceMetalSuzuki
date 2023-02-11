@@ -96,7 +96,7 @@ struct Grid {
             let numRows = regions.count
             let numCols = regions[0].count
             
-            var blitRequests: [Int] = []
+            var blitRunIndices: [Int] = []
             
             switch dxn {
             case .horizontal:
@@ -112,7 +112,7 @@ struct Grid {
                             srcRuns[runIdx].newTail = srcRuns[runIdx].oldTail
                             srcRuns[runIdx].newHead = srcRuns[runIdx].oldHead
                         }
-                        blitRequests += region.runIndices(imageSize: imageSize, gridSize: gridSize)
+                        blitRunIndices += region.runIndices(imageSize: imageSize, gridSize: gridSize)
                     }
                 }
                 
@@ -125,7 +125,7 @@ struct Grid {
                                 dxn: dxn, newGridSize: newGridSize,
                                 srcPts: srcPts, srcRuns: srcRuns,
                                 dstPts: dstPts, dstRuns: dstRuns)
-                        blitRequests += newRequests
+                        blitRunIndices += newRequests
                     }
                     /// Update grid position for remaining regions.
                     for region in regions[rowIdx] {
@@ -146,7 +146,7 @@ struct Grid {
                             srcRuns[runIdx].newTail = srcRuns[runIdx].oldTail
                             srcRuns[runIdx].newHead = srcRuns[runIdx].oldHead
                         }
-                        blitRequests += region.runIndices(imageSize: imageSize, gridSize: gridSize)
+                        blitRunIndices += region.runIndices(imageSize: imageSize, gridSize: gridSize)
                     }
                 }
                 
@@ -159,7 +159,7 @@ struct Grid {
                                 dxn: dxn, newGridSize: newGridSize,
                                 srcPts: srcPts, srcRuns: srcRuns,
                                 dstPts: dstPts, dstRuns: dstRuns)
-                        blitRequests += newRequests
+                        blitRunIndices += newRequests
                         
                     }
                     /// Remove entire row at once.
@@ -174,7 +174,7 @@ struct Grid {
                 gridSize = newGridSize
             }
             
-            cpuBlit(runIndices: blitRequests, srcPts: srcPts, srcRuns: srcRuns, dstPts: dstPts)
+            cpuBlit(runIndices: blitRunIndices, srcPts: srcPts, srcRuns: srcRuns, dstPts: dstPts)
             
             #if SHOW_GRID_WORK
             for reg in regions.joined() {
