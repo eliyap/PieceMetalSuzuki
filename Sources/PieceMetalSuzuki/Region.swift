@@ -13,14 +13,19 @@ struct PixelSize: Equatable, CustomStringConvertible {
 /// Class allows easy in-place manipulation.
 class Region { 
     let origin: PixelPoint
+    
+    /// Spatial size of the grid, which may be smaller at the trailing and bottom edges.
+    var size: PixelSize
+    
     var gridRow: UInt32
     var gridCol: UInt32
 
     /// Number of elements in the region.
     var runsCount: UInt32
 
-    init(origin: PixelPoint, gridRow: UInt32, gridCol: UInt32, runsCount: UInt32) {
+    init(origin: PixelPoint, size: PixelSize, gridRow: UInt32, gridCol: UInt32, runsCount: UInt32) {
         self.origin = origin
+        self.size = size
         self.gridRow = gridRow
         self.gridCol = gridCol
         self.runsCount = runsCount
