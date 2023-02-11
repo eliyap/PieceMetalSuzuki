@@ -24,7 +24,7 @@ struct PixelPoint {
 
 // Compute kernel
 kernel void startChain(
-    texture2d<half, access::read>  inputTexture  [[ texture(0) ]],
+    texture2d<half, access::read>  tex  [[ texture(0) ]],
     texture2d<half, access::write> outputTexture [[ texture(1) ]],
     device PixelPoint*             points        [[ buffer (0) ]],
     device Run*                    runs          [[ buffer (1) ]],
@@ -32,14 +32,14 @@ kernel void startChain(
     uint2                          gid           [[thread_position_in_grid]]
 ) {
     // 4 elements per pixel, since each pixel can hold 4 triads.
-    uint32_t idx = ((inputTexture.get_width() * gid.y) + gid.x) * 4;
+    uint32_t idx = ((tex.get_width() * gid.y) + gid.x) * 4;
     
     // Don't exit the texture.
-    if ((gid.x >= inputTexture.get_width()) || (gid.y >= inputTexture.get_height())) {
+    if ((gid.x >= tex.get_width()) || (gid.y >= tex.get_height())) {
         return;
     }
 
-    outputTexture.write(inputTexture.read(gid), gid);
+    outputTexture.write(tex.read(gid), gid);
 
     // Setting invalid array indices signals a NULL value.
     // Set before early exit checks.
@@ -51,33 +51,33 @@ kernel void startChain(
     }
     
     // Don't touch frame.
-    if ((gid.x == 0) || (gid.y == 0) || (gid.x == inputTexture.get_width() - 1) || (gid.y == inputTexture.get_height() - 1)) {
+    if ((gid.x == 0) || (gid.y == 0) || (gid.x == tex.get_width() - 1) || (gid.y == tex.get_height() - 1)) {
         return;
     }
-    if (inputTexture.read(gid).r == 0) {
+    if (tex.read(gid).r == 0) {
         return;
     }
     
-    half4 upL = inputTexture.read(uint2(gid.x - 1, gid.y - 1));
-    half4 up_ = inputTexture.read(uint2(gid.x    , gid.y - 1));
-    half4 upR = inputTexture.read(uint2(gid.x + 1, gid.y - 1));
-    half4 _L_ = inputTexture.read(uint2(gid.x - 1, gid.y    ));
-    half4 _R_ = inputTexture.read(uint2(gid.x + 1, gid.y    ));
-    half4 dnL = inputTexture.read(uint2(gid.x - 1, gid.y + 1));
-    half4 dn_ = inputTexture.read(uint2(gid.x    , gid.y + 1));
-    half4 dnR = inputTexture.read(uint2(gid.x + 1, gid.y + 1));
+    bool upL = (gid.x != 0) && (tex.read(uint2(gid.x - 1, gid.y - 1)).r != 0.0);
+    bool up_ = (tex.read(uint2(gid.x    , gid.y - 1)).r != 0.0);
+    bool upR = (tex.read(uint2(gid.x + 1, gid.y - 1)).r != 0.0);
+    bool _L_ = (tex.read(uint2(gid.x - 1, gid.y    )).r != 0.0);
+    bool _R_ = (tex.read(uint2(gid.x + 1, gid.y    )).r != 0.0);
+    bool dnL = (tex.read(uint2(gid.x - 1, gid.y + 1)).r != 0.0);
+    bool dn_ = (tex.read(uint2(gid.x    , gid.y + 1)).r != 0.0);
+    bool dnR = (tex.read(uint2(gid.x + 1, gid.y + 1)).r != 0.0);
     
     // Compose the lookup table address.
     // Bit order inverted due I think to an endianess issue.
     uint32_t lutAddr = 0
-        | ((upL.r != 0.0) << 0)
-        | ((up_.r != 0.0) << 1)
-        | ((upR.r != 0.0) << 2)
-        | ((_L_.r != 0.0) << 3)
-        | ((_R_.r != 0.0) << 4)
-        | ((dnL.r != 0.0) << 5)
-        | ((dn_.r != 0.0) << 6)
-        | ((dnR.r != 0.0) << 7);
+        | (upL << 0)
+        | (up_ << 1)
+        | (upR << 2)
+        | (_L_ << 3)
+        | (_R_ << 4)
+        | (dnL << 5)
+        | (dn_ << 6)
+        | (dnR << 7);
     
     // Loop over the lookup table's 4 columns of 2 values each.
     for (int i = 0; i < 4; i++) {
