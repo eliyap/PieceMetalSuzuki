@@ -142,7 +142,7 @@ struct Grid {
     
     #if SHOW_GRID_WORK
     func dump(region: Region, points: UnsafeMutablePointer<PixelPoint>, runs: UnsafeMutablePointer<Run>) {
-        let baseOffset = baseOffset(gridSize: gridSize, regionSize: region.size, gridPos: region.gridPos)
+        let baseOffset = baseOffset(grid: self, region: region)
         debugPrint("[DUMP]: \(region)")
         for offset in 0..<Int(region.runsCount) {
             let runBufferOffset = Int(offset + Int(baseOffset))
