@@ -64,8 +64,8 @@ extension ChainDirection: CustomStringConvertible {
 /// Think of it as a snake.
 // <- from to ->
 //  ~~~~~~~~~~~>
-//  ^          ^
-//  tail       head
+//  ^           ^
+//  tail        head (past the end)
 struct Run {
     /// The indices in `[start, end)` format, relative to the global buffer base.
     var oldTail: Int32
