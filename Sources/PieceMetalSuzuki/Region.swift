@@ -16,16 +16,14 @@ struct PixelSize: Equatable {
 /// A CPU only struct used to organize Runs.
 class Region { 
     let origin: PixelPoint
-    let size: PixelSize
     let gridRow: UInt32
     let gridCol: UInt32
 
     // Number of elements in the region.
     let runsCount: UInt32
 
-    init(origin: PixelPoint, size: PixelSize, gridRow: UInt32, gridCol: UInt32, runsCount: UInt32) {
+    init(origin: PixelPoint, gridRow: UInt32, gridCol: UInt32, runsCount: UInt32) {
         self.origin = origin
-        self.size = size
         self.gridRow = gridRow
         self.gridCol = gridCol
         self.runsCount = runsCount
@@ -157,7 +155,6 @@ func combine(
     #warning("TODO: fix region size")
     Region(
         origin: a.origin,
-        size: regionSize,
         gridRow: a.gridRow, gridCol: a.gridCol,
         runsCount: UInt32(nextRunOffset)
     )

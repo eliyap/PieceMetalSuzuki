@@ -251,7 +251,6 @@ func createChainStarters(
                 
                 buffer[col] = Region(
                     origin: PixelPoint(x: UInt32(col), y: UInt32(row)),
-                    size: PixelSize(width: 1, height: 1),
                     gridRow: UInt32(row), gridCol: UInt32(col),
                     runsCount: validCount
                 )
