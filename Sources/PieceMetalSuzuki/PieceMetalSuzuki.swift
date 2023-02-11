@@ -145,28 +145,36 @@ func makeTextureFromCVPixelBuffer(
     return texture
 }
 
-func createAlignedMTLBuffer<T>(of type: T.Type, device: MTLDevice, count: Int) -> (UnsafeMutablePointer<T>, MTLBuffer)? {
-    var ptr: UnsafeMutableRawPointer? = nil
+class Buffer<Element> {
+    public let count: Int
+    public let array: UnsafeMutablePointer<Element>
+    public let mtlBuffer: MTLBuffer
+    init?(device: MTLDevice, count: Int) {
+        var ptr: UnsafeMutableRawPointer? = nil
     
-    let alignment = Int(getpagesize())
-    let size = MemoryLayout<T>.stride * count
+        let alignment = Int(getpagesize())
+        let size = MemoryLayout<Element>.stride * count
 
-    /// Turns on all bits above the current one.
-    /// e.g.`0x1000 -> 0x0FFF -> 0xF000`
-    let sizeMask = ~(alignment - 1)
+        /// Turns on all bits above the current one.
+        /// e.g.`0x1000 -> 0x0FFF -> 0xF000`
+        let sizeMask = ~(alignment - 1)
 
-    /// Round up size to the nearest page.
-    let roundedSize = (size + alignment - 1) & sizeMask
-    posix_memalign(&ptr, alignment, roundedSize)
+        /// Round up size to the nearest page.
+        let roundedSize = (size + alignment - 1) & sizeMask
+        posix_memalign(&ptr, alignment, roundedSize)
 
-    /// Type memory.
-    let array = ptr!.bindMemory(to: T.self, capacity: count)
-    
-    guard let buffer = device.makeBuffer(bytesNoCopy: ptr!, length: roundedSize, options: [.storageModeShared], deallocator: nil) else {
-        assert(false, "Failed to create buffer.")
-        return nil
+        /// Type memory.
+        let array = ptr!.bindMemory(to: Element.self, capacity: count)
+        
+        guard let buffer = device.makeBuffer(bytesNoCopy: ptr!, length: roundedSize, options: [.storageModeShared], deallocator: nil) else {
+            assert(false, "Failed to create buffer.")
+            return nil
+        }
+        
+        self.count = count
+        self.array = array
+        self.mtlBuffer = buffer
     }
-    return (array, buffer)
 }
 
 func loadChainStarterFunction(device: MTLDevice) -> MTLFunction? {
