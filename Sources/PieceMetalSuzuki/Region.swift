@@ -88,6 +88,8 @@ struct Grid {
         
         var dxn = ReduceDirection.vertical
         while (regions.count > 1) || (regions[0].count > 1) {
+            let srcBuffer: Buffer<PixelPoint>
+            let dstBuffer: Buffer<PixelPoint>
             let srcPts: UnsafeMutablePointer<PixelPoint>
             let dstPts: UnsafeMutablePointer<PixelPoint>
             let srcRuns: UnsafeMutablePointer<Run>
@@ -100,6 +102,7 @@ struct Grid {
             
             switch dxn {
             case .horizontal:
+                (srcBuffer, dstBuffer) = (runsVertical, runsHorizontal)
                 (srcRuns, dstRuns) = (runsVertical.array, runsHorizontal.array)
                 (srcPts, dstPts) = (pointsVertical.array, pointsHorizontal.array)
 
@@ -135,6 +138,7 @@ struct Grid {
                 gridSize = newGridSize
             
             case .vertical:
+                (srcBuffer, dstBuffer) = (runsHorizontal, runsVertical)
                 (srcRuns, dstRuns) = (runsHorizontal.array, runsVertical.array)
                 (srcPts, dstPts) = (pointsHorizontal.array, pointsVertical.array)
 
