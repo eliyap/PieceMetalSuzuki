@@ -229,10 +229,13 @@ func createChainStarters(
     cmdEncoder.endEncoding()
     cmdBuffer.commit()
     cmdBuffer.waitUntilCompleted()
-    // DEBUG
+    
+    #if SHOW_GRID_WORK
+    debugPrint("[Initial Points]")
     for i in 0..<count where runArr[i].isValid {
         print(runArr[i], pointArr[i])
     }
+    #endif
     
     var regions: [[Region]] = []
     

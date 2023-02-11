@@ -26,7 +26,9 @@ let package = Package(
                 .copy("Metal/"),
             ],
             swiftSettings: [
-                .unsafeFlags(["-DIS_POTATO"], nil)
+                .unsafeFlags([
+//                    "-DSHOW_GRID_WORK"
+                ], nil)
             ]),
         .testTarget(
             name: "PieceMetalSuzukiTests",

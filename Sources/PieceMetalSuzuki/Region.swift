@@ -80,11 +80,11 @@ struct Grid {
                 }
                 regionSize = newRegionSize
                 
-                /// DEBUG
+                #if SHOW_GRID_WORK
                 for reg in regions.joined() {
                     dump(region: reg, points: pointsHorizontal, runs: runsHorizontal)
                 }
-                print("done")
+                #endif
             
             case .vertical:
                 let newRegionSize = PixelSize(width: regionSize.width, height: regionSize.height * 2)
@@ -101,21 +101,18 @@ struct Grid {
                 }
                 regionSize = newRegionSize
                 
-                /// DEBUG
+                #if SHOW_GRID_WORK
                 for reg in regions.joined() {
                     dump(region: reg, points: pointsVertical, runs: runsVertical)
                 }
-                print("done")
+                #endif
             }
             dxn.flip()
         }
-        #if IS_POTATO
-        fatalError("I am a potato")
-        #endif
     }
     
+    #if SHOW_GRID_WORK
     func dump(region: Region, points: UnsafeMutablePointer<PixelPoint>, runs: UnsafeMutablePointer<Run>) {
-        #if DEBUG
         let baseOffset = 4 * ((imageSize.width * regionSize.height * region.gridRow) + (regionSize.width * regionSize.height * region.gridCol))
         debugPrint("[DUMP]: \(region)")
         for offset in 0..<Int(region.runsCount) {
@@ -124,16 +121,18 @@ struct Grid {
             let chain = (run.oldTail..<run.oldHead).map { points[Int($0)] }
             debugPrint("- \(run) \(chain) @\(runBufferOffset)(\(baseOffset)+\(offset))")
         }
-        #endif
     }
+    #endif
     
     func combine(
         a: Region, b: Region, dxn: ReduceDirection,
         srcPts: UnsafeMutablePointer<PixelPoint>, srcRuns: UnsafeMutablePointer<Run>,
         dstPts: UnsafeMutablePointer<PixelPoint>, dstRuns: UnsafeMutablePointer<Run>
     ) -> Void {
+        #if SHOW_GRID_WORK
         debugPrint("Combining \(a) and \(b)")
         debugPrint("imgSize: \(imageSize), regionSize: \(regionSize)")
+        #endif
         let aBaseOffset: UInt32 = 4 * ((imageSize.width * regionSize.height * a.gridRow) + (regionSize.width * regionSize.height * a.gridCol))
         let bBaseOffset: UInt32 = 4 * ((imageSize.width * regionSize.height * b.gridRow) + (regionSize.width * regionSize.height * b.gridCol))
         let newBaseOffset: UInt32
@@ -235,7 +234,6 @@ struct Grid {
                 nextPointOffset += length
             }
             let newRunHead = Int32(newBaseOffset) + nextPointOffset
-            print("newRunTail \(newRunTail)", "newRunHead \(newRunHead)")
             
             /// Finally, add the new run.
             let newRun = Run(
@@ -245,13 +243,16 @@ struct Grid {
                 headTriadTo:   srcRuns[joinedRunsIndices.last!].headTriadTo
             )
             
-            debugPrint("newRun \(newRun)")
-            // print all the points from all sources
+            #if SHOW_GRID_WORK
+            /// Print all the points from all sources
+            var __pts: [PixelPoint] = []
             for srcRunIdx in joinedRunsIndices {
                 for i in srcRuns[srcRunIdx].oldTail..<srcRuns[srcRunIdx].oldHead {
-                    debugPrint(srcPts[Int(i)])
+                    __pts.append(srcPts[Int(i)])
                 }
             }
+            debugPrint("newRun \(newRun) \(__pts)")
+            #endif
             
             dstRuns[Int(newBaseOffset + nextRunOffset)] = newRun
             nextRunOffset += 1
@@ -259,12 +260,16 @@ struct Grid {
 
         while aRunIndices.isEmpty == false {
             let aRunIdx = aRunIndices.removeLast()
-            debugPrint("DEBUG", "joining run \(srcRuns[aRunIdx]) with head \(headPoint(for: aRunIdx)) and tail \(tailPoint(for: aRunIdx))")
+            #if SHOW_GRID_WORK
+            debugPrint("joining run \(srcRuns[aRunIdx]) with head \(headPoint(for: aRunIdx)) and tail \(tailPoint(for: aRunIdx))")
+            #endif
             join(runIdx: aRunIdx)
         }
         while bRunIndices.isEmpty == false {
             let bRunIdx = bRunIndices.removeLast()
-            debugPrint("DEBUG", "joining run \(srcRuns[bRunIdx]) with head \(headPoint(for: bRunIdx)) and tail \(tailPoint(for: bRunIdx))")
+            #if SHOW_GRID_WORK
+            debugPrint("joining run \(srcRuns[bRunIdx]) with head \(headPoint(for: bRunIdx)) and tail \(tailPoint(for: bRunIdx))")
+            #endif
             join(runIdx: bRunIdx)
         }
 
