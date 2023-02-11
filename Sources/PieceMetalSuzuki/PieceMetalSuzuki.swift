@@ -237,6 +237,68 @@ func createChainStarters(
     cmdEncoder.endEncoding()
     cmdBuffer.commit()
     cmdBuffer.waitUntilCompleted()
+    var regions: [[Region]] = []
+    for row in 0..<textureA.height {
+        let regionRow = [Region](unsafeUninitializedCapacity: textureA.width) { buffer, initializedCount in
+            for col in 0..<textureA.width {
+                /// Count valid elements in each 1x1 region.
+                let bufferBase = (row * textureA.width) + col
+                var validCount = UInt32.zero
+                for offset in 0..<4 {
+                    if runArr[bufferBase + offset].isValid {
+                        validCount += 1
+                    } else {
+                        break
+                    }
+                }
+                buffer[col] = Region(
+                    origin: PixelPoint(x: UInt32(col), y: UInt32(row)),
+                    size: PixelSize(width: 1, height: 1),
+                    gridRow: UInt32(row), gridCol: UInt32(col),
+                    runsCount: validCount
+                )
+            }
+            initializedCount = textureA.width
+        }
+        regions.append(regionRow)
+    }
+    
+    var dxn = ReduceDirection.horizontal
+    let imgSize = PixelSize(width: UInt32(textureA.width), height: UInt32(textureA.height))
+    var regionSize = PixelSize(width: 1, height: 1)
+    while (regions.count > 1) || (regions[0].count > 1) {
+        
+        let numRows = regions.count
+        let numCols = regions[0].count
+        
+        switch dxn {
+        case .horizontal:
+            for rowIdx in 0..<numRows {
+                for colIdx in stride(from: 0, to: numCols - 1, by: 2).reversed() {
+                    let a = regions[rowIdx][colIdx]
+                    let b = regions[rowIdx].remove(at: colIdx + 1)
+                    combine(a: a, b: b,
+                            srcPts: pointArr, srcRuns: runArr,
+                            dstPts: pointArrB, dstRuns: runArrB,
+                            imgSize: imgSize, regionSize: regionSize)
+                }
+            }
+            regionSize = PixelSize(width: regionSize.width * 2, height: regionSize.height)
+        
+        case .vertical:
+            for rowIdx in stride(from: 0, to: numRows - 1, by: 2).reversed() {
+                for colIdx in 0..<numCols {
+                    #warning("TODO: combine vertical")
+                    
+                }
+                /// Remove entire row at once.
+                regions.remove(at: rowIdx + 1)
+            }
+            regionSize = PixelSize(width: regionSize.width, height: regionSize.height * 2)
+            
+        }
+        dxn.flip()
+    }
     
     return (pointArr, runArr)
 }
