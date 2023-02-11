@@ -138,10 +138,6 @@ struct Grid {
         }
     }
     
-    func baseOffset(gridSize: PixelSize, regionSize: PixelSize, gridPos: GridPosition) -> UInt32 {
-        4 * ((imageSize.width * gridSize.height * gridPos.row) + (gridSize.width * regionSize.height * gridPos.col))
-    }
-    
     #if SHOW_GRID_WORK
     func dump(region: Region, points: UnsafeMutablePointer<PixelPoint>, runs: UnsafeMutablePointer<Run>) {
         let baseOffset = baseOffset(gridSize: gridSize, regionSize: region.size, gridPos: region.gridPos)
@@ -166,8 +162,8 @@ struct Grid {
         debugPrint("Combining \(a) and \(b)")
         debugPrint("imgSize: \(imageSize), gridSize: \(gridSize)")
         #endif
-        let aBaseOffset: UInt32 = baseOffset(gridSize: gridSize, regionSize: a.size, gridPos: a.gridPos)
-        let bBaseOffset: UInt32 = baseOffset(gridSize: gridSize, regionSize: b.size, gridPos: b.gridPos)
+        let aBaseOffset: UInt32 = baseOffset(grid: self, region: a)
+        let bBaseOffset: UInt32 = baseOffset(grid: self, region: b)
         
         let newRegionSize: PixelSize
         switch dxn {
@@ -194,9 +190,9 @@ struct Grid {
         let newBaseOffset: UInt32
         switch dxn {
         case .vertical:
-            newBaseOffset = baseOffset(gridSize: newGridSize, regionSize: newRegionSize, gridPos: GridPosition(row: a.gridPos.row / 2, col: a.gridPos.col))
+            newBaseOffset = baseOffset(imageSize: imageSize, gridSize: newGridSize, regionSize: newRegionSize, gridPos: GridPosition(row: a.gridPos.row / 2, col: a.gridPos.col))
         case .horizontal:
-            newBaseOffset = baseOffset(gridSize: newGridSize, regionSize: newRegionSize, gridPos: GridPosition(row: a.gridPos.row, col: a.gridPos.col / 2))
+            newBaseOffset = baseOffset(imageSize: imageSize, gridSize: newGridSize, regionSize: newRegionSize, gridPos: GridPosition(row: a.gridPos.row, col: a.gridPos.col / 2))
         }
 
         var aRunIndices = (0..<Int(a.runsCount)).map { $0 + Int(aBaseOffset) }
@@ -350,4 +346,12 @@ struct Grid {
         a.runsCount = nextRunOffset
         a.size = newRegionSize
     }
+}
+
+func baseOffset(imageSize: PixelSize, gridSize: PixelSize, regionSize: PixelSize, gridPos: GridPosition) -> UInt32 {
+    4 * ((imageSize.width * gridSize.height * gridPos.row) + (gridSize.width * regionSize.height * gridPos.col))
+}
+
+func baseOffset(grid: Grid, region: Region) -> UInt32 {
+    baseOffset(imageSize: grid.imageSize, gridSize: grid.gridSize, regionSize: region.size, gridPos: region.gridPos)
 }
