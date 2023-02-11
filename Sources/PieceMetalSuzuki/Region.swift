@@ -97,10 +97,11 @@ struct Grid {
                     for colIdx in stride(from: 0, to: numCols - 1, by: 2).reversed() {
                         let a = regions[rowIdx][colIdx]
                         let b = regions[rowIdx].remove(at: colIdx + 1)
-                        combine(a: a, b: b,
+                        let blitRequests = combine(a: a, b: b,
                                 dxn: dxn, newGridSize: newGridSize,
                                 srcPts: srcPts, srcRuns: srcRuns,
                                 dstPts: dstPts, dstRuns: dstRuns)
+                        cpuBlit(runIndices: blitRequests, srcPts: srcPts, srcRuns: srcRuns, dstPts: dstPts)
                     }
                     /// Update grid position for remaining regions.
                     for region in regions[rowIdx] {
@@ -118,10 +119,11 @@ struct Grid {
                     for colIdx in 0..<numCols {
                         let a = regions[rowIdx][colIdx]
                         let b = regions[rowIdx+1][colIdx]
-                        combine(a: a, b: b,
+                        let blitRequests = combine(a: a, b: b,
                                 dxn: dxn, newGridSize: newGridSize,
                                 srcPts: srcPts, srcRuns: srcRuns,
                                 dstPts: dstPts, dstRuns: dstRuns)
+                        cpuBlit(runIndices: blitRequests, srcPts: srcPts, srcRuns: srcRuns, dstPts: dstPts)
                     }
                     /// Remove entire row at once.
                     regions.remove(at: rowIdx + 1)
@@ -165,7 +167,7 @@ struct Grid {
         dxn: ReduceDirection, newGridSize: PixelSize,
         srcPts: UnsafeMutablePointer<PixelPoint>, srcRuns: UnsafeMutablePointer<Run>,
         dstPts: UnsafeMutablePointer<PixelPoint>, dstRuns: UnsafeMutablePointer<Run>
-    ) -> Void {
+    ) -> [Int] {
         #if SHOW_GRID_WORK
         debugPrint("Combining \(a) and \(b)")
         debugPrint("imgSize: \(imageSize), gridSize: \(gridSize)")
@@ -335,19 +337,11 @@ struct Grid {
 
         let blitRequests = a.runIndices(imageSize: imageSize, gridSize: gridSize) + b.runIndices(imageSize: imageSize, gridSize: gridSize)
         
-        #warning("TEMP: CPU BLIT")
-        /// For each source run, copy its points to the destination.
-        for runIdx in blitRequests {
-            let srcRun = srcRuns[runIdx]
-            let length = srcRun.oldHead - srcRun.oldTail
-            for i in 0..<length {
-                dstPts[Int(srcRun.newTail + i)] = srcPts[Int(srcRun.oldTail + i)]
-            }
-        }
-        
         /// Update remaining region
         a.runsCount = nextRunOffset
         a.size = newRegionSize
+        
+        return blitRequests
     }
 }
 
@@ -357,4 +351,27 @@ func baseOffset(imageSize: PixelSize, gridSize: PixelSize, regionSize: PixelSize
 
 func baseOffset(grid: Grid, region: Region) -> UInt32 {
     baseOffset(imageSize: grid.imageSize, gridSize: grid.gridSize, regionSize: region.size, gridPos: region.gridPos)
+}
+
+#warning("TEMP: CPU BLIT")
+/// For each source run, copy its points to the destination.
+func cpuBlit(
+    runIndices: [Int],
+    srcPts: UnsafeMutablePointer<PixelPoint>, srcRuns: UnsafeMutablePointer<Run>,
+    dstPts: UnsafeMutablePointer<PixelPoint>
+) -> Void {
+    for runIdx in runIndices {
+        cpuBlit(run: srcRuns[runIdx], srcPts: srcPts, dstPts: dstPts)
+    }
+}
+
+func cpuBlit(
+    run: Run,
+    srcPts: UnsafeMutablePointer<PixelPoint>,
+    dstPts: UnsafeMutablePointer<PixelPoint>
+) -> Void {
+    let length = run.oldHead - run.oldTail
+    for i in 0..<length {
+        dstPts[Int(run.newTail + i)] = srcPts[Int(run.oldTail + i)]
+    }
 }
