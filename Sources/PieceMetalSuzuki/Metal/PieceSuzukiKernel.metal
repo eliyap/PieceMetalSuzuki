@@ -51,21 +51,22 @@ kernel void startChain(
     }
     
     // Don't touch frame.
-    if ((gid.x == 0) || (gid.y == 0) || (gid.x == tex.get_width() - 1) || (gid.y == tex.get_height() - 1)) {
-        return;
-    }
+    uint32_t minCol = 0;
+    uint32_t maxCol = tex.get_width() - 1;
+    uint32_t minRow = 0;
+    uint32_t maxRow = tex.get_height() - 1;
     if (tex.read(gid).r == 0) {
         return;
     }
     
-    bool upL = (gid.x != 0) && (tex.read(uint2(gid.x - 1, gid.y - 1)).r != 0.0);
-    bool up_ = (tex.read(uint2(gid.x    , gid.y - 1)).r != 0.0);
-    bool upR = (tex.read(uint2(gid.x + 1, gid.y - 1)).r != 0.0);
-    bool _L_ = (tex.read(uint2(gid.x - 1, gid.y    )).r != 0.0);
-    bool _R_ = (tex.read(uint2(gid.x + 1, gid.y    )).r != 0.0);
-    bool dnL = (tex.read(uint2(gid.x - 1, gid.y + 1)).r != 0.0);
-    bool dn_ = (tex.read(uint2(gid.x    , gid.y + 1)).r != 0.0);
-    bool dnR = (tex.read(uint2(gid.x + 1, gid.y + 1)).r != 0.0);
+    bool upL = (gid.x != minCol) && (gid.y != minRow) && (tex.read(uint2(gid.x - 1, gid.y - 1)).r != 0.0);
+    bool up_ =                      (gid.y != minRow) && (tex.read(uint2(gid.x    , gid.y - 1)).r != 0.0);
+    bool upR = (gid.x != maxCol) && (gid.y != minRow) && (tex.read(uint2(gid.x + 1, gid.y - 1)).r != 0.0);
+    bool _L_ = (gid.x != minCol) &&                      (tex.read(uint2(gid.x - 1, gid.y    )).r != 0.0);
+    bool _R_ = (gid.x != maxCol) &&                      (tex.read(uint2(gid.x + 1, gid.y    )).r != 0.0);
+    bool dnL = (gid.x != minCol) && (gid.y != maxRow) && (tex.read(uint2(gid.x - 1, gid.y + 1)).r != 0.0);
+    bool dn_ =                      (gid.y != maxRow) && (tex.read(uint2(gid.x    , gid.y + 1)).r != 0.0);
+    bool dnR = (gid.x != maxCol) && (gid.y != maxRow) && (tex.read(uint2(gid.x + 1, gid.y + 1)).r != 0.0);
     
     // Compose the lookup table address.
     // Bit order inverted due I think to an endianess issue.
