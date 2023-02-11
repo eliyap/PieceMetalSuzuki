@@ -121,7 +121,53 @@ func applyMetalSuzuki(bufferA: CVPixelBuffer, bufferB: CVPixelBuffer) -> Void {
         assert(false, "Failed to run chain start kernel.")
         return
     }
-    let (points, runs) = result
+    let (pointBuffer, runBuffer) = result
+    
+    #if SHOW_GRID_WORK
+    debugPrint("[Initial Points]")
+    for i in 0..<count where runArr[i].isValid {
+        print(runArr[i], pointArr[i])
+    }
+    #endif
+    
+    var regions: [[Region]] = []
+    for row in 0..<texture.height {
+        let regionRow = [Region](unsafeUninitializedCapacity: texture.width) { buffer, initializedCount in
+            for col in 0..<texture.width {
+                /// Count valid elements in each 1x1 region.
+                let bufferBase = ((row * texture.width) + col) * 4
+                var validCount = UInt32.zero
+                for offset in 0..<4 {
+                    if runBuffer.array[bufferBase + offset].isValid {
+                        validCount += 1
+                    } else {
+                        break
+                    }
+                }
+                
+                buffer.baseAddress!.advanced(by: col).initialize(to: Region(
+                    origin: PixelPoint(x: UInt32(col), y: UInt32(row)),
+                    size: PixelSize(width: 1, height: 1),
+                    gridPos: GridPosition(row: UInt32(row), col: UInt32(col)),
+                    runsCount: validCount
+                ))
+            }
+            initializedCount = texture.width
+        }
+        regions.append(regionRow)
+    }
+    
+    var grid = Grid(
+        imageSize: PixelSize(width: UInt32(texture.width), height: UInt32(texture.height)),
+        gridSize: PixelSize(width: 1, height: 1),
+        regions: regions
+    )
+    grid.combineAll(
+        device: device,
+        pointsHorizontal: pointBuffer,
+        runsHorizontal: runBuffer,
+        commandQueue: commandQueue
+    )
     
     return
 }
@@ -262,53 +308,6 @@ func createChainStarters(
     cmdEncoder.endEncoding()
     cmdBuffer.commit()
     cmdBuffer.waitUntilCompleted()
-    
-    #if SHOW_GRID_WORK
-    debugPrint("[Initial Points]")
-    for i in 0..<count where runArr[i].isValid {
-        print(runArr[i], pointArr[i])
-    }
-    #endif
-    
-    var regions: [[Region]] = []
-    
-    for row in 0..<texture.height {
-        let regionRow = [Region](unsafeUninitializedCapacity: texture.width) { buffer, initializedCount in
-            for col in 0..<texture.width {
-                /// Count valid elements in each 1x1 region.
-                let bufferBase = ((row * texture.width) + col) * 4
-                var validCount = UInt32.zero
-                for offset in 0..<4 {
-                    if runBuffer.array[bufferBase + offset].isValid {
-                        validCount += 1
-                    } else {
-                        break
-                    }
-                }
-                
-                buffer.baseAddress!.advanced(by: col).initialize(to: Region(
-                    origin: PixelPoint(x: UInt32(col), y: UInt32(row)),
-                    size: PixelSize(width: 1, height: 1),
-                    gridPos: GridPosition(row: UInt32(row), col: UInt32(col)),
-                    runsCount: validCount
-                ))
-            }
-            initializedCount = texture.width
-        }
-        regions.append(regionRow)
-    }
-    
-    var grid = Grid(
-        imageSize: PixelSize(width: UInt32(texture.width), height: UInt32(texture.height)),
-        gridSize: PixelSize(width: 1, height: 1),
-        regions: regions
-    )
-    grid.combineAll(
-        device: device,
-        pointsHorizontal: pointBuffer,
-        runsHorizontal: runBuffer,
-        commandQueue: commandQueue
-    )
     
     return (pointBuffer, runBuffer)
 }
