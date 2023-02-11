@@ -123,7 +123,7 @@ struct Grid {
     
     #if SHOW_GRID_WORK
     func dump(region: Region, points: UnsafeMutablePointer<PixelPoint>, runs: UnsafeMutablePointer<Run>) {
-        let baseOffset = 4 * ((imageSize.width * regionSize.height * region.gridRow) + (regionSize.width * regionSize.height * region.gridCol))
+        let baseOffset = 4 * ((imageSize.width * gridSize.height * region.gridRow) + (gridSize.width * region.size.height * region.gridCol))
         debugPrint("[DUMP]: \(region)")
         for offset in 0..<Int(region.runsCount) {
             let runBufferOffset = Int(offset + Int(baseOffset))
@@ -142,7 +142,7 @@ struct Grid {
     ) -> Void {
         #if SHOW_GRID_WORK
         debugPrint("Combining \(a) and \(b)")
-        debugPrint("imgSize: \(imageSize), regionSize: \(regionSize)")
+        debugPrint("imgSize: \(imageSize), gridSize: \(gridSize)")
         #endif
         let aBaseOffset: UInt32 = 4 * ((imageSize.width * regionSize.height * a.gridRow) + (regionSize.width * regionSize.height * a.gridCol))
         let bBaseOffset: UInt32 = 4 * ((imageSize.width * regionSize.height * b.gridRow) + (regionSize.width * regionSize.height * b.gridCol))
