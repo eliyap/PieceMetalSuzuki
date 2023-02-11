@@ -46,7 +46,10 @@ extension Region: CustomStringConvertible {
 
 struct Grid {
     let imageSize: PixelSize
-    var regionSize: PixelSize
+    
+    /// Assumed region size. Actual region size is smaller at the bottom and trailing edges.
+    var gridSize: PixelSize
+    
     var regions: [[Region]]
     
     enum ReduceDirection {

@@ -262,7 +262,7 @@ func createChainStarters(
     
     var grid = Grid(
         imageSize: PixelSize(width: UInt32(texture.width), height: UInt32(texture.height)),
-        regionSize: PixelSize(width: 1, height: 1),
+        gridSize: PixelSize(width: 1, height: 1),
         regions: regions
     )
     grid.combineAll(
