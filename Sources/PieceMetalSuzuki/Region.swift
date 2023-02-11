@@ -10,13 +10,14 @@ struct PixelSize: Equatable, CustomStringConvertible {
 }
 
 /// A CPU only struct used to organize Runs.
+/// Class allows easy in-place manipulation.
 class Region { 
     let origin: PixelPoint
     var gridRow: UInt32
     var gridCol: UInt32
 
-    // Number of elements in the region.
-    let runsCount: UInt32
+    /// Number of elements in the region.
+    var runsCount: UInt32
 
     init(origin: PixelPoint, gridRow: UInt32, gridCol: UInt32, runsCount: UInt32) {
         self.origin = origin
@@ -26,10 +27,10 @@ class Region {
     }
 
     /// Get the base offset of the region in the image buffer.
-    func base(imgSize: PixelSize, regionSize: PixelSize) -> UInt32 {
-        let pixelAddr = (imgSize.width * regionSize.height * gridRow) + (regionSize.width * regionSize.height * gridCol)
-        return pixelAddr * 4
-    }
+//    func base(imgSize: PixelSize, regionSize: PixelSize) -> UInt32 {
+//        let pixelAddr = (imgSize.width * regionSize.height * gridRow) + (regionSize.width * regionSize.height * gridCol)
+//        return pixelAddr * 4
+//    }
 }
 
 extension Region: CustomStringConvertible {
@@ -67,17 +68,17 @@ struct Grid {
             
             switch dxn {
             case .horizontal:
+                let newRegionSize = PixelSize(width: regionSize.width * 2, height: regionSize.height)
                 for rowIdx in 0..<numRows {
                     for colIdx in stride(from: 0, to: numCols - 1, by: 2).reversed() {
                         let a = regions[rowIdx][colIdx]
                         let b = regions[rowIdx].remove(at: colIdx + 1)
-                        combine(a: a, b: b,
+                        combine(a: a, b: b, dxn: dxn,
                                 srcPts: pointsVertical, srcRuns: runsVertical,
                                 dstPts: pointsHorizontal, dstRuns: runsHorizontal)
-                        regions[rowIdx][colIdx].gridCol /= 2
                     }
                 }
-                regionSize = PixelSize(width: regionSize.width * 2, height: regionSize.height)
+                regionSize = newRegionSize
                 
                 /// DEBUG
                 for reg in regions.joined() {
@@ -86,19 +87,19 @@ struct Grid {
                 print("done")
             
             case .vertical:
+                let newRegionSize = PixelSize(width: regionSize.width, height: regionSize.height * 2)
                 for rowIdx in stride(from: 0, to: numRows - 1, by: 2).reversed() {
                     for colIdx in 0..<numCols {
                         let a = regions[rowIdx][colIdx]
                         let b = regions[rowIdx+1][colIdx]
-                        combine(a: a, b: b,
+                        combine(a: a, b: b, dxn: dxn,
                                 srcPts: pointsHorizontal, srcRuns: runsHorizontal,
                                 dstPts: pointsVertical, dstRuns: runsVertical)
-                        regions[rowIdx][colIdx].gridRow /= 2
                     }
                     /// Remove entire row at once.
                     regions.remove(at: rowIdx + 1)
                 }
-                regionSize = PixelSize(width: regionSize.width, height: regionSize.height * 2)
+                regionSize = newRegionSize
                 
                 /// DEBUG
                 for reg in regions.joined() {
@@ -112,7 +113,7 @@ struct Grid {
     
     func dump(region: Region, points: UnsafeMutablePointer<PixelPoint>, runs: UnsafeMutablePointer<Run>) {
         #if DEBUG
-        let baseOffset = region.base(imgSize: imageSize, regionSize: regionSize)
+        let baseOffset = 4 * ((imageSize.width * regionSize.height * region.gridRow) + (regionSize.width * regionSize.height * region.gridCol))
         debugPrint("[DUMP]: \(region)")
         for offset in 0..<Int(region.runsCount) {
             let runBufferOffset = Int(offset + Int(baseOffset))
@@ -124,20 +125,27 @@ struct Grid {
     }
     
     func combine(
-        a: Region, b: Region,
+        a: Region, b: Region, dxn: ReduceDirection,
         srcPts: UnsafeMutablePointer<PixelPoint>, srcRuns: UnsafeMutablePointer<Run>,
         dstPts: UnsafeMutablePointer<PixelPoint>, dstRuns: UnsafeMutablePointer<Run>
     ) -> Void {
         debugPrint("Combining \(a) and \(b)")
         debugPrint("imgSize: \(imageSize), regionSize: \(regionSize)")
-        let aBaseOffset = a.base(imgSize: imageSize, regionSize: regionSize)
-        let bBaseOffset = b.base(imgSize: imageSize, regionSize: regionSize)
+        let aBaseOffset: UInt32 = 4 * ((imageSize.width * regionSize.height * a.gridRow) + (regionSize.width * regionSize.height * a.gridCol))
+        let bBaseOffset: UInt32 = 4 * ((imageSize.width * regionSize.height * b.gridRow) + (regionSize.width * regionSize.height * b.gridCol))
+        let newBaseOffset: UInt32
+        switch dxn {
+        case .vertical:
+            newBaseOffset = 4 * ((imageSize.width * (regionSize.height * 2) * (a.gridRow / 2)) +  (regionSize.width      * (regionSize.height * 2) * a.gridCol      ))
+        case .horizontal:
+            newBaseOffset = 4 * ((imageSize.width *  regionSize.height      *  a.gridRow     ) + ((regionSize.width * 2) *  regionSize.height      * (a.gridCol / 2)))
+        }
 
         var aRunIndices = (0..<Int(a.runsCount)).map { $0 + Int(aBaseOffset) }
         var bRunIndices = (0..<Int(b.runsCount)).map { $0 + Int(bBaseOffset) }
 
         var nextPointOffset = Int32.zero
-        var nextRunOffset = 0
+        var nextRunOffset = UInt32.zero
         
         func headPoint(for runIdx: Int) -> PixelPoint {
             srcPts[Int(srcRuns[runIdx].oldHead - 1)]
@@ -214,16 +222,16 @@ struct Grid {
             }
 
             /// At this point, we have an array of connected runs.
-            let newRunTail = Int32(aBaseOffset) + nextPointOffset
+            let newRunTail = Int32(newBaseOffset) + nextPointOffset
             for srcRunIdx in joinedRunsIndices {
                 /// First, assign each run its new array position.
                 let length = srcRuns[srcRunIdx].oldHead - srcRuns[srcRunIdx].oldTail
-                let moveTail = Int32(aBaseOffset) + nextPointOffset
+                let moveTail = Int32(newBaseOffset) + nextPointOffset
                 srcRuns[srcRunIdx].newTail = moveTail
                 srcRuns[srcRunIdx].newHead = moveTail + length
                 nextPointOffset += length
             }
-            let newRunHead = Int32(aBaseOffset) + nextPointOffset
+            let newRunHead = Int32(newBaseOffset) + nextPointOffset
             print("newRunTail \(newRunTail)", "newRunHead \(newRunHead)")
             
             /// Finally, add the new run.
@@ -242,7 +250,7 @@ struct Grid {
                 }
             }
             
-            dstRuns[Int(aBaseOffset) + nextRunOffset] = newRun
+            dstRuns[Int(newBaseOffset + nextRunOffset)] = newRun
             nextRunOffset += 1
         }
 
@@ -266,6 +274,22 @@ struct Grid {
                 dstPts[Int(srcRun.newTail + i)] = srcPts[Int(srcRun.oldTail + i)]
             }
         }
+        for bRunIdx in 0..<b.runsCount {
+            let srcRun = srcRuns[Int(bBaseOffset) + Int(bRunIdx)]
+            let length = srcRun.oldHead - srcRun.oldTail
+            for i in 0..<length {
+                dstPts[Int(srcRun.newTail + i)] = srcPts[Int(srcRun.oldTail + i)]
+            }
+        }
+        
+        /// Update remaining region
+        switch dxn {
+        case .horizontal:
+            a.gridCol /= 2
+        case .vertical:
+            a.gridRow /= 2
+        }
+        a.runsCount = nextRunOffset
     }
 }
 
