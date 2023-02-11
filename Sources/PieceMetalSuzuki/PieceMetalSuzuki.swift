@@ -96,6 +96,36 @@ func applyMetalFilter(bufferA: CVPixelBuffer, bufferB: CVPixelBuffer) -> CVPixel
     return outBuffer
 }
 
+func applyMetalSuzuki(bufferA: CVPixelBuffer, bufferB: CVPixelBuffer) -> Void {
+    /// Apply Metal filter to pixel buffer.
+    guard
+        let device = MTLCreateSystemDefaultDevice(),
+        let commandQueue = device.makeCommandQueue(),
+        let binaryBuffer = commandQueue.makeCommandBuffer()
+    else {
+        assert(false, "Failed to get metal device.")
+        return
+    }
+    
+    var metalTextureCache: CVMetalTextureCache!
+    guard CVMetalTextureCacheCreate(kCFAllocatorDefault, nil, device, nil, &metalTextureCache) == kCVReturnSuccess else {
+        assert(false, "Unable to allocate texture cache")
+        return
+    }
+    
+    guard let texture = makeTextureFromCVPixelBuffer(pixelBuffer: bufferA, textureFormat: .bgra8Unorm, textureCache: metalTextureCache) else {
+        assert(false, "Failed to create texture.")
+        return
+    }
+    guard let result = createChainStarters(device: device, commandQueue: commandQueue, texture: texture) else {
+        assert(false, "Failed to run chain start kernel.")
+        return
+    }
+    let (points, runs) = result
+    
+    return
+}
+
 func saveBufferToPng(buffer: CVPixelBuffer, format: CIFormat) -> Void {
     let docUrls = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)
     guard let documentsUrl = docUrls.first else {
