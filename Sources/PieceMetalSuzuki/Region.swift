@@ -86,6 +86,10 @@ struct Grid {
                                 srcPts: pointsVertical, srcRuns: runsVertical,
                                 dstPts: pointsHorizontal, dstRuns: runsHorizontal)
                     }
+                    /// Update grid position for remaining regions.
+                    for region in regions[rowIdx] {
+                        region.gridCol /= 2
+                    }
                 }
                 gridSize = newGridSize
                 
@@ -108,6 +112,12 @@ struct Grid {
                     }
                     /// Remove entire row at once.
                     regions.remove(at: rowIdx + 1)
+                }
+                /// Update grid position for remaining regions.
+                for rowIdx in 0..<regions.count {
+                    for colIdx in 0..<numCols {
+                        regions[rowIdx][colIdx].gridRow /= 2
+                    }
                 }
                 gridSize = newGridSize
                 
@@ -325,12 +335,6 @@ struct Grid {
         }
         
         /// Update remaining region
-        switch dxn {
-        case .horizontal:
-            a.gridCol /= 2
-        case .vertical:
-            a.gridRow /= 2
-        }
         a.runsCount = nextRunOffset
         a.size = newRegionSize
     }
