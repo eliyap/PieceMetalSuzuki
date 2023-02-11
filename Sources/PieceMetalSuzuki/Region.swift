@@ -111,7 +111,7 @@ struct Grid {
                 
                 #if SHOW_GRID_WORK
                 for reg in regions.joined() {
-                    dump(region: reg, points: pointsHorizontal, runs: runsHorizontal)
+                    dump(region: reg, points: dstPts, runs: dstRuns)
                 }
                 #endif
             
@@ -142,7 +142,7 @@ struct Grid {
                 
                 #if SHOW_GRID_WORK
                 for reg in regions.joined() {
-                    dump(region: reg, points: pointsVertical, runs: runsVertical)
+                    dump(region: reg, points: dstPts, runs: dstRuns)
                 }
                 #endif
             }
