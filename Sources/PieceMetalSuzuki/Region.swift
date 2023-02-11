@@ -55,7 +55,7 @@ func combine(
     var nextRunOffset = 0
     
     func headPoint(for runIdx: Int) -> PixelPoint {
-        srcPts[Int(srcRuns[runIdx].oldHead)]
+        srcPts[Int(srcRuns[runIdx].oldHead - 1)]
     }
     func tailPoint(for runIdx: Int) -> PixelPoint {
         srcPts[Int(srcRuns[runIdx].oldTail)]
