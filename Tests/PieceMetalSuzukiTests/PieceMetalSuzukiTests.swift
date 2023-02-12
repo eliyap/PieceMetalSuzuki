@@ -14,7 +14,10 @@ final class PieceMetalSuzukiTests: XCTestCase {
     }
     
     func testDoubleDonut() throws {
-        _ = PieceMetalSuzuki(imageUrl: url("input"))
+        measure {
+            _ = PieceMetalSuzuki(imageUrl: url("input"))
+        }
+        Profiler.report()
     }
     
     func testWaffle() throws {
@@ -35,5 +38,9 @@ final class PieceMetalSuzukiTests: XCTestCase {
     
     func testSquare() throws {
         _ = PieceMetalSuzuki(imageUrl: url("square"))
+    }
+    
+    func testDonut() throws {
+        _ = PieceMetalSuzuki(imageUrl: url("donut"))
     }
 }
