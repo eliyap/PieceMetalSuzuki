@@ -66,28 +66,28 @@ public struct PieceMetalSuzuki {
         /// Apply Metal filter to pixel buffer.
         applyMetalSuzuki(pixelBuffer: bufferA)
         
-        guard let filteredBuffer = applyMetalFilter(bufferA: bufferA) else {
-            assert(false, "Failed to create pixel buffer.")
-            return
-        }
-        bufferA = filteredBuffer
-        
-        /// Read values from pixel buffer.
-        CVPixelBufferLockBaseAddress(bufferA, [])
-        defer {
-            CVPixelBufferUnlockBaseAddress(bufferA, [])
-        }
-        guard let ptr = CVPixelBufferGetBaseAddress(bufferA) else {
-            assert(false, "Failed to get base address.")
-            return
-        }
-
-        /// Run Suzuki algorithm.
-        var img = ImageBuffer(ptr: ptr, width: width, height: height)
-        border(img: &img)
-
-        /// Write image back out.
-        saveBufferToPng(buffer: bufferA, format: .RGBA8)
+//        guard let filteredBuffer = applyMetalFilter(bufferA: bufferA) else {
+//            assert(false, "Failed to create pixel buffer.")
+//            return
+//        }
+//        bufferA = filteredBuffer
+//
+//        /// Read values from pixel buffer.
+//        CVPixelBufferLockBaseAddress(bufferA, [])
+//        defer {
+//            CVPixelBufferUnlockBaseAddress(bufferA, [])
+//        }
+//        guard let ptr = CVPixelBufferGetBaseAddress(bufferA) else {
+//            assert(false, "Failed to get base address.")
+//            return
+//        }
+//
+//        /// Run Suzuki algorithm.
+//        var img = ImageBuffer(ptr: ptr, width: width, height: height)
+//        border(img: &img)
+//
+//        /// Write image back out.
+//        saveBufferToPng(buffer: bufferA, format: .RGBA8)
 
         print("so far so good")
     }
