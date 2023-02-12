@@ -556,7 +556,8 @@ func cpuBlit(
     srcPts: UnsafeMutablePointer<PixelPoint>, srcRuns: UnsafeMutablePointer<Run>,
     dstPts: UnsafeMutablePointer<PixelPoint>
 ) -> Void {
-    for runIdx in runIndices {
+    DispatchQueue.concurrentPerform(iterations: runIndices.count) { runIdxIdx in
+        let runIdx = runIndices[runIdxIdx]
         #if SHOW_GRID_WORK
         debugPrint("[BLIT] \(run)")
         #endif
