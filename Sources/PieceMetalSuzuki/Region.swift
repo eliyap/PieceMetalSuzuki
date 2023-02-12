@@ -159,7 +159,9 @@ struct Grid {
                     let group = DispatchGroup()
                     let queue = DispatchQueue(label: "swiftlee.concurrent.queue")
                     DispatchQueue.concurrentPerform(iterations: numRows) { rowIdx in
-                        for colIdx in stride(from: 0, to: numCols - 1, by: 2).reversed() {
+                        let colIndices = stride(from: 0, to: numCols - 1, by: 2).reversed()
+                        DispatchQueue.concurrentPerform(iterations: colIndices.count) { colIdxIdx in
+                            let colIdx = colIndices[colIdxIdx]
                             let a = regions[rowIdx][colIdx]
                             let b = regions[rowIdx][colIdx + 1]
                             let newRequests = combine(a: a, b: b,
