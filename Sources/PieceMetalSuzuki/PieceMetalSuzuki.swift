@@ -5,7 +5,7 @@ import MetalPerformanceShaders
 
 public class Profiler {
     enum CodeRegion: CaseIterable { 
-        case blit, combine, trailingCopy, binarize, startChains, overall, makeTexture
+        case blit, combine, trailingCopy, binarize, startChains, overall, makeTexture, initRegions
     }
 
     static var timing: [CodeRegion: (Int, TimeInterval)] = {
@@ -28,6 +28,14 @@ public class Profiler {
         block()
         let end = CFAbsoluteTimeGetCurrent()
         Profiler.add(end - start, to: region)
+    }
+    
+    static func time<Result>(_ region: CodeRegion, _ block: () -> Result) -> Result {
+        let start = CFAbsoluteTimeGetCurrent()
+        let result = block()
+        let end = CFAbsoluteTimeGetCurrent()
+        Profiler.add(end - start, to: region)
+        return result
     }
 
     static func report() {
@@ -187,7 +195,9 @@ func applyMetalSuzuki(pixelBuffer: CVPixelBuffer) -> Void {
     var grid = Grid(
         imageSize: PixelSize(width: UInt32(texture.width), height: UInt32(texture.height)),
         gridSize: PixelSize(width: 1, height: 1),
-        regions: initializeRegions(runBuffer: runBuffer, texture: texture)
+        regions: Profiler.time(.initRegions) {
+            return initializeRegions(runBuffer: runBuffer, texture: texture)
+        }
     )
     grid.combineAll(
         device: device,
