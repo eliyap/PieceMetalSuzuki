@@ -157,7 +157,7 @@ struct Grid {
                 let newGridSize = PixelSize(width: gridSize.width * 2, height: gridSize.height)
                 Profiler.time(.combine) {
                     let group = DispatchGroup()
-                    let queue = DispatchQueue(label: "swiftlee.concurrent.queue")
+                    let queue = DispatchQueue(label: "serial.queue")
                     DispatchQueue.concurrentPerform(iterations: numRows) { rowIdx in
                         let colIndices = stride(from: 0, to: numCols - 1, by: 2).reversed()
                         DispatchQueue.concurrentPerform(iterations: colIndices.count) { colIdxIdx in
@@ -211,7 +211,7 @@ struct Grid {
                 let newGridSize = PixelSize(width: gridSize.width, height: gridSize.height * 2)
                 Profiler.time(.combine) {
                     let group = DispatchGroup()
-                    let queue = DispatchQueue(label: "swiftlee.concurrent.queue")
+                    let queue = DispatchQueue(label: "serial.queue")
                     let rowIndices = stride(from: 0, to: numRows - 1, by: 2).reversed()
                     DispatchQueue.concurrentPerform(iterations: rowIndices.count) { rowIdxIdx in
                         let rowIdx = rowIndices[rowIdxIdx]
