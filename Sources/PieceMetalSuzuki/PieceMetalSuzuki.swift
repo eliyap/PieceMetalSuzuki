@@ -164,6 +164,7 @@ func applyMetalSuzuki(pixelBuffer: CVPixelBuffer) -> Void {
         return
     }
     
+    let start = CFAbsoluteTimeGetCurrent()
     var metalTextureCache: CVMetalTextureCache!
     guard CVMetalTextureCacheCreate(kCFAllocatorDefault, nil, device, nil, &metalTextureCache) == kCVReturnSuccess else {
         assert(false, "Unable to allocate texture cache")
@@ -174,6 +175,8 @@ func applyMetalSuzuki(pixelBuffer: CVPixelBuffer) -> Void {
         assert(false, "Failed to create texture.")
         return
     }
+    let end = CFAbsoluteTimeGetCurrent()
+    Profiler.add(end - start, to: .makeTexture)
     
     guard let result = createChainStarters(device: device, commandQueue: commandQueue, texture: texture) else {
         assert(false, "Failed to run chain start kernel.")
