@@ -210,7 +210,11 @@ struct Grid {
                 
                 let newGridSize = PixelSize(width: gridSize.width, height: gridSize.height * 2)
                 Profiler.time(.combine) {
-                    for rowIdx in stride(from: 0, to: numRows - 1, by: 2).reversed() {
+                    let group = DispatchGroup()
+                    let queue = DispatchQueue(label: "swiftlee.concurrent.queue")
+                    let rowIndices = stride(from: 0, to: numRows - 1, by: 2).reversed()
+                    DispatchQueue.concurrentPerform(iterations: rowIndices.count) { rowIdxIdx in
+                        let rowIdx = rowIndices[rowIdxIdx]
                         for colIdx in 0..<numCols {
                             let a = regions[rowIdx][colIdx]
                             let b = regions[rowIdx+1][colIdx]
@@ -218,10 +222,14 @@ struct Grid {
                                     dxn: dxn, newGridSize: newGridSize,
                                     srcPts: srcPts, srcRuns: srcRuns,
                                     dstPts: dstPts, dstRuns: dstRuns)
-                            blitRunIndices += newRequests
-                            
+                            group.enter()
+                            queue.async {
+                                blitRunIndices += newRequests
+                                group.leave()
+                            }
                         }
                     }
+                    group.wait()
                     for rowIdx in stride(from: 0, to: numRows - 1, by: 2).reversed() {
                         /// Remove entire row at once.
                         regions.remove(at: rowIdx + 1)
