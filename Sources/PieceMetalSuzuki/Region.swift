@@ -244,13 +244,13 @@ struct Grid {
                 gridSize = newGridSize
             }
             
-            let start = CFAbsoluteTimeGetCurrent()
-            guard blit(device: device, commandQueue: commandQueue, blitRunIndices: blitRunIndices, srcRuns: srcRuns, srcPts: srcBuffer, dstPts: dstBuffer) else {
+            let blitSuccess = Profiler.time(.blit) {
+                blit(device: device, commandQueue: commandQueue, blitRunIndices: blitRunIndices, srcRuns: srcRuns, srcPts: srcBuffer, dstPts: dstBuffer)
+            }
+            guard blitSuccess else {
                 assert(false, "blit failed")
                 return
             }
-            let end = CFAbsoluteTimeGetCurrent()
-            Profiler.add(end - start, to: .blit)
                 
             #if SHOW_GRID_WORK
             for reg in regions.joined() {
