@@ -61,7 +61,7 @@ func initializeRegions(
     var regions: [[Region]] = []
     for row in 0..<texture.height {
         let regionRow = [Region](unsafeUninitializedCapacity: texture.width) { buffer, initializedCount in
-            for col in 0..<texture.width {
+            DispatchQueue.concurrentPerform(iterations: texture.width) { col in
                 /// Count valid elements in each 1x1 region.
                 let bufferBase = ((row * texture.width) + col) * 4
                 var validCount = UInt32.zero
