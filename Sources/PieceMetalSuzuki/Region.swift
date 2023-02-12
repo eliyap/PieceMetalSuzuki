@@ -215,7 +215,7 @@ struct Grid {
                     let rowIndices = stride(from: 0, to: numRows - 1, by: 2).reversed()
                     DispatchQueue.concurrentPerform(iterations: rowIndices.count) { rowIdxIdx in
                         let rowIdx = rowIndices[rowIdxIdx]
-                        for colIdx in 0..<numCols {
+                        DispatchQueue.concurrentPerform(iterations: numCols) { colIdx in
                             let a = regions[rowIdx][colIdx]
                             let b = regions[rowIdx+1][colIdx]
                             let newRequests = combine(a: a, b: b,
