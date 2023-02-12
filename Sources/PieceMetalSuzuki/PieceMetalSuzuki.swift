@@ -2,6 +2,13 @@ import Foundation
 import CoreImage
 import CoreVideo
 import MetalPerformanceShaders
+import os.log
+
+public enum Signpost {
+    public static let subsystem = "Suzuki"
+    public static let category = "Suzuki"
+    public static let poster = OSSignposter(subsystem: Signpost.subsystem, category: Signpost.category)
+}
 
 public struct PieceMetalSuzuki {
     public init(imageUrl: URL) {
