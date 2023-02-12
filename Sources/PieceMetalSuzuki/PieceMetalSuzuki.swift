@@ -5,7 +5,7 @@ import MetalPerformanceShaders
 
 public class Profiler {
     enum CodeRegion: CaseIterable { 
-        case blit, combine, trailingCopy, binarize
+        case blit, combine, trailingCopy, binarize, startChains, overall, makeTexture
     }
 
     static var timing: [CodeRegion: (Int, TimeInterval)] = {
@@ -63,18 +63,20 @@ public struct PieceMetalSuzuki {
         let context = CIContext()
         context.render(ciImage, to: bufferA)
         
-        let start = CFAbsoluteTimeGetCurrent()
-        guard let filteredBuffer = applyMetalFilter(to: bufferA) else {
-            assert(false, "Failed to create pixel buffer.")
-            return
+        Profiler.time(.overall) {
+            let start = CFAbsoluteTimeGetCurrent()
+            guard let filteredBuffer = applyMetalFilter(to: bufferA) else {
+                assert(false, "Failed to create pixel buffer.")
+                return
+            }
+            let end = CFAbsoluteTimeGetCurrent()
+            Profiler.add(end - start, to: .binarize)
+            
+
+            /// Apply Metal filter to pixel buffer.
+            applyMetalSuzuki(pixelBuffer: filteredBuffer)
         }
-        let end = CFAbsoluteTimeGetCurrent()
-        Profiler.add(end - start, to: .binarize)
         
-
-        /// Apply Metal filter to pixel buffer.
-        applyMetalSuzuki(pixelBuffer: filteredBuffer)
-
         //        bufferA = filteredBuffer
 //
 //        /// Read values from pixel buffer.
@@ -172,6 +174,7 @@ func applyMetalSuzuki(pixelBuffer: CVPixelBuffer) -> Void {
         assert(false, "Failed to create texture.")
         return
     }
+    
     guard let result = createChainStarters(device: device, commandQueue: commandQueue, texture: texture) else {
         assert(false, "Failed to run chain start kernel.")
         return
@@ -304,6 +307,8 @@ func createChainStarters(
     commandQueue: MTLCommandQueue,
     texture: MTLTexture
 ) -> (Buffer<PixelPoint>, Buffer<Run>)? {
+    let start = CFAbsoluteTimeGetCurrent()
+    
     guard
         let kernelFunction = loadChainStarterFunction(device: device),
         let pipelineState = try? device.makeComputePipelineState(function: kernelFunction),
@@ -342,6 +347,9 @@ func createChainStarters(
         print(runBuffer.array[i], pointBuffer.array[i])
     }
     #endif
+    
+    let end = CFAbsoluteTimeGetCurrent()
+    Profiler.add(end - start, to: .startChains)
     
     return (pointBuffer, runBuffer)
 }
