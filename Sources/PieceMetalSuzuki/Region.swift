@@ -159,7 +159,7 @@ struct Grid {
                     for rowIdx in 0..<numRows {
                         for colIdx in stride(from: 0, to: numCols - 1, by: 2).reversed() {
                             let a = regions[rowIdx][colIdx]
-                            let b = regions[rowIdx].remove(at: colIdx + 1)
+                            let b = regions[rowIdx][colIdx + 1]
                             let newRequests = combine(a: a, b: b,
                                     dxn: dxn, newGridSize: newGridSize,
                                     srcPts: srcPts, srcRuns: srcRuns,
@@ -169,6 +169,12 @@ struct Grid {
                         /// Update grid position for remaining regions.
                         for region in regions[rowIdx] {
                             region.gridPos.col /= 2
+                        }
+                    }
+                    
+                    for rowIdx in 0..<numRows {
+                        for colIdx in stride(from: 0, to: numCols - 1, by: 2).reversed() {
+                            regions[rowIdx].remove(at: colIdx + 1)
                         }
                     }
                 }
