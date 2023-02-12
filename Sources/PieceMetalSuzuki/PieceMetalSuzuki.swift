@@ -261,45 +261,26 @@ func makeTextureFromCVPixelBuffer(
 }
 
 final class Buffer<Element> {
-    private let ptr: UnsafeMutableRawPointer
+    
     public let count: Int
     public let array: UnsafeMutablePointer<Element>
     public let mtlBuffer: MTLBuffer
+    
     init?(device: MTLDevice, count: Int) {
         let start = CFAbsoluteTimeGetCurrent()
         
-        var ptr: UnsafeMutableRawPointer? = nil
-    
-        let alignment = Int(getpagesize())
         let size = MemoryLayout<Element>.stride * count
-
-        /// Turns on all bits above the current one.
-        /// e.g.`0x1000 -> 0x0FFF -> 0xF000`
-        let sizeMask = ~(alignment - 1)
-
-        /// Round up size to the nearest page.
-        let roundedSize = (size + alignment - 1) & sizeMask
-        posix_memalign(&ptr, alignment, roundedSize)
-
-        /// Type memory.
-        let array = ptr!.bindMemory(to: Element.self, capacity: count)
-        
-        guard let buffer = device.makeBuffer(bytesNoCopy: ptr!, length: roundedSize, options: [.storageModeShared], deallocator: nil) else {
+        guard let buffer = device.makeBuffer(length: size) else {
             assert(false, "Failed to create buffer.")
             return nil
         }
         
-        self.ptr = ptr!
         self.count = count
-        self.array = array
         self.mtlBuffer = buffer
+        self.array = buffer.contents().bindMemory(to: Element.self, capacity: count)
         
         let end = CFAbsoluteTimeGetCurrent()
         Profiler.add(end - start, to: .bufferInit)
-    }
-    
-    deinit {
-        ptr.deallocate()
     }
 }
 
