@@ -557,22 +557,14 @@ func cpuBlit(
     dstPts: UnsafeMutablePointer<PixelPoint>
 ) -> Void {
     for runIdx in runIndices {
-        cpuBlit(run: srcRuns[runIdx], srcPts: srcPts, dstPts: dstPts)
+        #if SHOW_GRID_WORK
+        debugPrint("[BLIT] \(run)")
+        #endif
+        let run = srcRuns[runIdx]
+        memmove(
+            dstPts.advanced(by: Int(run.newTail)),
+            srcPts.advanced(by: Int(run.oldTail)),
+            MemoryLayout<PixelPoint>.stride * Int(run.oldHead - run.oldTail)
+        )
     }
-}
-
-func cpuBlit(
-    run: Run,
-    srcPts: UnsafeMutablePointer<PixelPoint>,
-    dstPts: UnsafeMutablePointer<PixelPoint>
-) -> Void {
-    #if SHOW_GRID_WORK
-    debugPrint("[BLIT] \(run)")
-    #endif
-    let length = run.oldHead - run.oldTail
-    memmove(
-        dstPts.advanced(by: Int(run.newTail)),
-        srcPts.advanced(by: Int(run.oldTail)),
-        MemoryLayout<PixelPoint>.stride * Int(length)
-    )
 }
