@@ -5,7 +5,7 @@ import MetalPerformanceShaders
 
 public class Profiler {
     enum CodeRegion: CaseIterable { 
-        case blit, combine, trailingCopy, binarize, startChains, overall, makeTexture, initRegions
+        case blit, combine, trailingCopy, binarize, startChains, overall, makeTexture, initRegions, combineAll, bufferInit
     }
 
     static var timing: [CodeRegion: (Int, TimeInterval)] = {
@@ -163,6 +163,7 @@ func applyMetalFilter(to buffer: CVPixelBuffer) -> CVPixelBuffer? {
 }
 
 func applyMetalSuzuki(pixelBuffer: CVPixelBuffer) -> Void {
+    let start = CFAbsoluteTimeGetCurrent()
     /// Apply Metal filter to pixel buffer.
     guard
         let device = MTLCreateSystemDefaultDevice(),
@@ -172,7 +173,6 @@ func applyMetalSuzuki(pixelBuffer: CVPixelBuffer) -> Void {
         return
     }
     
-    let start = CFAbsoluteTimeGetCurrent()
     var metalTextureCache: CVMetalTextureCache!
     guard CVMetalTextureCacheCreate(kCFAllocatorDefault, nil, device, nil, &metalTextureCache) == kCVReturnSuccess else {
         assert(false, "Unable to allocate texture cache")
@@ -199,12 +199,14 @@ func applyMetalSuzuki(pixelBuffer: CVPixelBuffer) -> Void {
             return initializeRegions(runBuffer: runBuffer, texture: texture)
         }
     )
-    grid.combineAll(
-        device: device,
-        pointsHorizontal: pointBuffer,
-        runsHorizontal: runBuffer,
-        commandQueue: commandQueue
-    )
+    Profiler.time(.combineAll) {
+        grid.combineAll(
+            device: device,
+            pointsHorizontal: pointBuffer,
+            runsHorizontal: runBuffer,
+            commandQueue: commandQueue
+        )
+    }
     
     return
 }
@@ -264,6 +266,8 @@ final class Buffer<Element> {
     public let array: UnsafeMutablePointer<Element>
     public let mtlBuffer: MTLBuffer
     init?(device: MTLDevice, count: Int) {
+        let start = CFAbsoluteTimeGetCurrent()
+        
         var ptr: UnsafeMutableRawPointer? = nil
     
         let alignment = Int(getpagesize())
@@ -289,6 +293,9 @@ final class Buffer<Element> {
         self.count = count
         self.array = array
         self.mtlBuffer = buffer
+        
+        let end = CFAbsoluteTimeGetCurrent()
+        Profiler.add(end - start, to: .bufferInit)
     }
     
     deinit {
