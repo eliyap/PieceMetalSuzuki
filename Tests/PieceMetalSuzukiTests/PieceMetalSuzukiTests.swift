@@ -14,7 +14,11 @@ final class PieceMetalSuzukiTests: XCTestCase {
     }
     
     func testDoubleDonut() throws {
-        _ = PieceMetalSuzuki(imageUrl: url("input"))
+        measure(metrics: [
+            XCTOSSignpostMetric(subsystem: Signpost.subsystem, category: Signpost.category, name: "blit"),
+        ]) {
+            _ = PieceMetalSuzuki(imageUrl: url("input"))
+        }
     }
     
     func testWaffle() throws {
