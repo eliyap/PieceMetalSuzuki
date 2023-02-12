@@ -118,13 +118,6 @@ func applyMetalSuzuki(pixelBuffer: CVPixelBuffer) -> Void {
     }
     let (pointBuffer, runBuffer) = result
     
-    #if SHOW_GRID_WORK
-    debugPrint("[Initial Points]")
-    for i in 0..<count where runArr[i].isValid {
-        print(runArr[i], pointArr[i])
-    }
-    #endif
-    
     var grid = Grid(
         imageSize: PixelSize(width: UInt32(texture.width), height: UInt32(texture.height)),
         gridSize: PixelSize(width: 1, height: 1),
@@ -276,6 +269,13 @@ func createChainStarters(
     cmdEncoder.endEncoding()
     cmdBuffer.commit()
     cmdBuffer.waitUntilCompleted()
+    
+    #if SHOW_GRID_WORK
+    debugPrint("[Initial Points]")
+    for i in 0..<count where runBuffer.array[i].isValid {
+        print(runBuffer.array[i], pointBuffer.array[i])
+    }
+    #endif
     
     return (pointBuffer, runBuffer)
 }
