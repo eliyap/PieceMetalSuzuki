@@ -189,7 +189,8 @@ func makeTextureFromCVPixelBuffer(
     return texture
 }
 
-class Buffer<Element> {
+final class Buffer<Element> {
+    private let ptr: UnsafeMutableRawPointer
     public let count: Int
     public let array: UnsafeMutablePointer<Element>
     public let mtlBuffer: MTLBuffer
@@ -215,9 +216,14 @@ class Buffer<Element> {
             return nil
         }
         
+        self.ptr = ptr!
         self.count = count
         self.array = array
         self.mtlBuffer = buffer
+    }
+    
+    deinit {
+        ptr.deallocate()
     }
 }
 
