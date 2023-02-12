@@ -418,14 +418,13 @@ struct Grid {
             self.aRunIndices = (0..<Int(a.runsCount)).map { $0 + Int(aBaseOffset) }
             self.bRunIndices = (0..<Int(b.runsCount)).map { $0 + Int(bBaseOffset) }
             
-            let newRegionSize: PixelSize
             switch dxn {
             case .vertical:
                 let bottomEdge = ((a.gridPos.row / 2) + 1) * newGridSize.height
                 let newRegionHeight = bottomEdge > grid.imageSize.height
                     ? grid.imageSize.height - (a.gridPos.row / 2) * newGridSize.height
                     : newGridSize.height
-                newRegionSize = PixelSize(
+                self.newRegionSize = PixelSize(
                     width: a.size.width,
                     height: newRegionHeight
                 )
@@ -434,12 +433,11 @@ struct Grid {
                 let newRegionWidth = rightEdge > grid.imageSize.width
                     ? grid.imageSize.width - (a.gridPos.col / 2) * newGridSize.width
                     : newGridSize.width
-                newRegionSize = PixelSize(
+                self.newRegionSize = PixelSize(
                     width: newRegionWidth,
                     height: a.size.height
                 )
             }
-            self.newRegionSize = newRegionSize
 
             switch dxn {
             case .vertical:
@@ -449,15 +447,16 @@ struct Grid {
             }
         }
         
-        func headPoint(for runIdx: Int) -> PixelPoint {
+        private func headPoint(for runIdx: Int) -> PixelPoint {
             srcPts[Int(srcRuns[runIdx].oldHead - 1)]
         }
-        func tailPoint(for runIdx: Int) -> PixelPoint {
+        
+        private func tailPoint(for runIdx: Int) -> PixelPoint {
             srcPts[Int(srcRuns[runIdx].oldTail)]
         }
         
         /// Find run, if any, whose tail matches the head at this point, pointing in this direction.
-        mutating func findTailForHead(point: PixelPoint, direction: ChainDirection) -> Int? {
+        private mutating func findTailForHead(point: PixelPoint, direction: ChainDirection) -> Int? {
             precondition(direction != .closed)
 
             /// For the given head pointer, describe the corresponding tail pointer.
@@ -477,7 +476,7 @@ struct Grid {
             return nil
         }
 
-        mutating func findHeadForTail(point: PixelPoint, direction: ChainDirection) -> Int? {
+        private mutating func findHeadForTail(point: PixelPoint, direction: ChainDirection) -> Int? {
             precondition(direction != .closed)
 
             /// For the given tail pointer, describe the corresponding head pointer.
@@ -497,7 +496,7 @@ struct Grid {
             return nil
         }
 
-        mutating func join(runIdx: Int) -> Void {
+        private mutating func join(runIdx: Int) -> Void {
             precondition(srcRuns[runIdx].isValid)
             var joinedRunsIndices: [Int] = [runIdx]
             
