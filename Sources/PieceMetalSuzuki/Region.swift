@@ -367,48 +367,87 @@ struct Grid {
         srcPts: UnsafeMutablePointer<PixelPoint>, srcRuns: UnsafeMutablePointer<Run>,
         dstRuns: UnsafeMutablePointer<Run>
     ) -> [Int] {
-        #if SHOW_GRID_WORK
-        debugPrint("Combining \(a) and \(b)")
-        debugPrint("imgSize: \(imageSize), gridSize: \(gridSize)")
-        #endif
-        let aBaseOffset: UInt32 = baseOffset(grid: self, region: a)
-        let bBaseOffset: UInt32 = baseOffset(grid: self, region: b)
+        var combiner = Combiner(a: a, b: b, dxn: dxn, newGridSize: newGridSize, srcPts: srcPts, srcRuns: srcRuns, dstRuns: dstRuns, grid: self)
+        combiner.work()
+
+        let blitRequests = a.runIndices(imageSize: imageSize, gridSize: gridSize) + b.runIndices(imageSize: imageSize, gridSize: gridSize)
         
-        let newRegionSize: PixelSize
-        switch dxn {
-        case .vertical:
-            let bottomEdge = ((a.gridPos.row / 2) + 1) * newGridSize.height
-            let newRegionHeight = bottomEdge > imageSize.height
-                ? imageSize.height - (a.gridPos.row / 2) * newGridSize.height
-                : newGridSize.height
-            newRegionSize = PixelSize(
-                width: a.size.width,
-                height: newRegionHeight
-            )
-        case .horizontal:
-            let rightEdge = ((a.gridPos.col / 2) + 1) * newGridSize.width
-            let newRegionWidth = rightEdge > imageSize.width
-                ? imageSize.width - (a.gridPos.col / 2) * newGridSize.width
-                : newGridSize.width
-            newRegionSize = PixelSize(
-                width: newRegionWidth,
-                height: a.size.height
-            )
-        }
+        /// Update remaining region
+        a.runsCount = combiner.nextRunOffset
+        a.size = combiner.newRegionSize
         
+        return blitRequests
+    }
+    
+    struct Combiner {
+        
+        let aBaseOffset: UInt32
+        let bBaseOffset: UInt32
         let newBaseOffset: UInt32
-        switch dxn {
-        case .vertical:
-            newBaseOffset = baseOffset(imageSize: imageSize, gridSize: newGridSize, regionSize: newRegionSize, gridPos: GridPosition(row: a.gridPos.row / 2, col: a.gridPos.col))
-        case .horizontal:
-            newBaseOffset = baseOffset(imageSize: imageSize, gridSize: newGridSize, regionSize: newRegionSize, gridPos: GridPosition(row: a.gridPos.row, col: a.gridPos.col / 2))
-        }
-
-        var aRunIndices = (0..<Int(a.runsCount)).map { $0 + Int(aBaseOffset) }
-        var bRunIndices = (0..<Int(b.runsCount)).map { $0 + Int(bBaseOffset) }
-
+        let newRegionSize: PixelSize
+        
+        var aRunIndices: [Int]
+        var bRunIndices: [Int]
+        
         var nextPointOffset = Int32.zero
         var nextRunOffset = UInt32.zero
+        
+        let srcPts: UnsafeMutablePointer<PixelPoint>
+        let srcRuns: UnsafeMutablePointer<Run>
+        let dstRuns: UnsafeMutablePointer<Run>
+        
+        init(
+            a: Region, b: Region,
+            dxn: ReduceDirection, newGridSize: PixelSize,
+            srcPts: UnsafeMutablePointer<PixelPoint>, srcRuns: UnsafeMutablePointer<Run>,
+            dstRuns: UnsafeMutablePointer<Run>,
+            grid: Grid
+        ) {
+            self.srcPts = srcPts
+            self.srcRuns = srcRuns
+            self.dstRuns = dstRuns
+            
+            #if SHOW_GRID_WORK
+            debugPrint("Combining \(a) and \(b)")
+            debugPrint("imgSize: \(imageSize), gridSize: \(gridSize)")
+            #endif
+            let aBaseOffset = baseOffset(grid: grid, region: a)
+            let bBaseOffset = baseOffset(grid: grid, region: b)
+            self.aBaseOffset = aBaseOffset
+            self.bBaseOffset = bBaseOffset
+            self.aRunIndices = (0..<Int(a.runsCount)).map { $0 + Int(aBaseOffset) }
+            self.bRunIndices = (0..<Int(b.runsCount)).map { $0 + Int(bBaseOffset) }
+            
+            let newRegionSize: PixelSize
+            switch dxn {
+            case .vertical:
+                let bottomEdge = ((a.gridPos.row / 2) + 1) * newGridSize.height
+                let newRegionHeight = bottomEdge > grid.imageSize.height
+                    ? grid.imageSize.height - (a.gridPos.row / 2) * newGridSize.height
+                    : newGridSize.height
+                newRegionSize = PixelSize(
+                    width: a.size.width,
+                    height: newRegionHeight
+                )
+            case .horizontal:
+                let rightEdge = ((a.gridPos.col / 2) + 1) * newGridSize.width
+                let newRegionWidth = rightEdge > grid.imageSize.width
+                    ? grid.imageSize.width - (a.gridPos.col / 2) * newGridSize.width
+                    : newGridSize.width
+                newRegionSize = PixelSize(
+                    width: newRegionWidth,
+                    height: a.size.height
+                )
+            }
+            self.newRegionSize = newRegionSize
+
+            switch dxn {
+            case .vertical:
+                self.newBaseOffset = baseOffset(imageSize: grid.imageSize, gridSize: newGridSize, regionSize: newRegionSize, gridPos: GridPosition(row: a.gridPos.row / 2, col: a.gridPos.col))
+            case .horizontal:
+                self.newBaseOffset = baseOffset(imageSize: grid.imageSize, gridSize: newGridSize, regionSize: newRegionSize, gridPos: GridPosition(row: a.gridPos.row, col: a.gridPos.col / 2))
+            }
+        }
         
         func headPoint(for runIdx: Int) -> PixelPoint {
             srcPts[Int(srcRuns[runIdx].oldHead - 1)]
@@ -416,9 +455,9 @@ struct Grid {
         func tailPoint(for runIdx: Int) -> PixelPoint {
             srcPts[Int(srcRuns[runIdx].oldTail)]
         }
-
-        // Find run, if any, whose tail matches the head at this point, pointing in this direction.
-        func findTailForHead(point: PixelPoint, direction: ChainDirection) -> Int? {
+        
+        /// Find run, if any, whose tail matches the head at this point, pointing in this direction.
+        mutating func findTailForHead(point: PixelPoint, direction: ChainDirection) -> Int? {
             precondition(direction != .closed)
 
             /// For the given head pointer, describe the corresponding tail pointer.
@@ -438,7 +477,7 @@ struct Grid {
             return nil
         }
 
-        func findHeadForTail(point: PixelPoint, direction: ChainDirection) -> Int? {
+        mutating func findHeadForTail(point: PixelPoint, direction: ChainDirection) -> Int? {
             precondition(direction != .closed)
 
             /// For the given tail pointer, describe the corresponding head pointer.
@@ -458,7 +497,7 @@ struct Grid {
             return nil
         }
 
-        func join(runIdx: Int) -> Void {
+        mutating func join(runIdx: Int) -> Void {
             precondition(srcRuns[runIdx].isValid)
             var joinedRunsIndices: [Int] = [runIdx]
             
@@ -538,29 +577,23 @@ struct Grid {
             dstRuns[Int(newBaseOffset + nextRunOffset)] = newRun
             nextRunOffset += 1
         }
-
-        while aRunIndices.isEmpty == false {
-            let aRunIdx = aRunIndices.removeLast()
-            #if SHOW_GRID_WORK
-            debugPrint("joining run \(srcRuns[aRunIdx]) with head \(headPoint(for: aRunIdx)) and tail \(tailPoint(for: aRunIdx))")
-            #endif
-            join(runIdx: aRunIdx)
-        }
-        while bRunIndices.isEmpty == false {
-            let bRunIdx = bRunIndices.removeLast()
-            #if SHOW_GRID_WORK
-            debugPrint("joining run \(srcRuns[bRunIdx]) with head \(headPoint(for: bRunIdx)) and tail \(tailPoint(for: bRunIdx))")
-            #endif
-            join(runIdx: bRunIdx)
-        }
-
-        let blitRequests = a.runIndices(imageSize: imageSize, gridSize: gridSize) + b.runIndices(imageSize: imageSize, gridSize: gridSize)
         
-        /// Update remaining region
-        a.runsCount = nextRunOffset
-        a.size = newRegionSize
-        
-        return blitRequests
+        mutating func work() -> Void {
+            while aRunIndices.isEmpty == false {
+                let aRunIdx = aRunIndices.removeLast()
+                #if SHOW_GRID_WORK
+                debugPrint("joining run \(srcRuns[aRunIdx]) with head \(headPoint(for: aRunIdx)) and tail \(tailPoint(for: aRunIdx))")
+                #endif
+                join(runIdx: aRunIdx)
+            }
+            while bRunIndices.isEmpty == false {
+                let bRunIdx = bRunIndices.removeLast()
+                #if SHOW_GRID_WORK
+                debugPrint("joining run \(srcRuns[bRunIdx]) with head \(headPoint(for: bRunIdx)) and tail \(tailPoint(for: bRunIdx))")
+                #endif
+                join(runIdx: bRunIdx)
+            }
+        }
     }
 }
 
