@@ -19,14 +19,18 @@ import Metal
  The memory location of the runs in this region is derived from information in this class and the grid structure.
  */
 class Region {
+    /// Location of the pixel's top left corner in the image.
     let origin: PixelPoint
     
-    /// Spatial size of the grid, which may be smaller at the trailing and bottom edges.
+    /// Pixel size of the region.
+    /// May be smaller than `Grid.gridSize` is this region covers the bottom or right edge of the image.
     var size: PixelSize
     
+    /// Region's index in the grid.
+    /// Changes as the number of regions grows smaller.
     var gridPos: GridPosition
 
-    /// Number of elements in the region.
+    /// Number of runs in this region.
     var runsCount: UInt32
 
     init(origin: PixelPoint, size: PixelSize, gridPos: GridPosition, runsCount: UInt32) {
