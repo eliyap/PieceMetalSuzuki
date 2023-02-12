@@ -249,7 +249,7 @@ struct Grid {
         var combiner = Combiner(a: a, b: b, dxn: dxn, newGridSize: newGridSize, srcPts: srcPts, srcRuns: srcRuns, dstRuns: dstRuns, grid: self)
         combiner.work()
 
-        let blitRequests = a.runIndices(imageSize: imageSize, gridSize: gridSize) + b.runIndices(imageSize: imageSize, gridSize: gridSize)
+        let blitRequests = Array(a.runIndices(imageSize: imageSize, gridSize: gridSize)) + Array(b.runIndices(imageSize: imageSize, gridSize: gridSize))
         
         /// Update remaining region
         a.runsCount = combiner.nextRunOffset
