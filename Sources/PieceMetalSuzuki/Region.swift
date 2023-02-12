@@ -211,14 +211,14 @@ struct Grid {
                 gridSize = newGridSize
             }
             
-            Signpost.poster.withIntervalSignpost("blit") {
-                guard blit(device: device, commandQueue: commandQueue, blitRunIndices: blitRunIndices, srcRuns: srcRuns, srcBuffer: srcBuffer, dstBuffer: dstBuffer) else {
-                    assert(false, "blit failed")
-                    return
-                }
+            let start = CFAbsoluteTimeGetCurrent()
+            guard blit(device: device, commandQueue: commandQueue, blitRunIndices: blitRunIndices, srcRuns: srcRuns, srcPts: srcBuffer, dstPts: dstBuffer) else {
+                assert(false, "blit failed")
+                return
             }
-            
-            
+            let end = CFAbsoluteTimeGetCurrent()
+            Profiler.add(end - start, to: .blit)
+                
             #if SHOW_GRID_WORK
             for reg in regions.joined() {
                 dump(region: reg, points: dstPts, runs: dstRuns)
@@ -256,31 +256,34 @@ struct Grid {
     func blit(
         device: MTLDevice, commandQueue: MTLCommandQueue,
         blitRunIndices: [Int], srcRuns: UnsafeMutablePointer<Run>,
-        srcBuffer: Buffer<PixelPoint>, dstBuffer: Buffer<PixelPoint>
+        srcPts: Buffer<PixelPoint>, dstPts: Buffer<PixelPoint>,
+        cpu: Bool = false
     ) -> Bool {
-        /// CPU version
-        // cpuBlit(runIndices: blitRunIndices, srcPts: srcPts, srcRuns: srcRuns, dstPts: dstPts)
-        
-        guard let cmdBuffer = commandQueue.makeCommandBuffer() else {
-            assert(false, "Failed to create command buffer.")
-            return false
-        }
-        for request in blitRunIndices {
-            guard let cmdEncoder = cmdBuffer.makeBlitCommandEncoder() else {
-                assert(false, "Failed to create command encoder.")
+        if cpu {
+            cpuBlit(runIndices: blitRunIndices, srcPts: srcPts.array, srcRuns: srcRuns, dstPts: dstPts.array)
+            return true
+        } else {
+            guard let cmdBuffer = commandQueue.makeCommandBuffer() else {
+                assert(false, "Failed to create command buffer.")
                 return false
             }
-            let run = srcRuns[request]
-            cmdEncoder.copy(
-                from: srcBuffer.mtlBuffer, sourceOffset: MemoryLayout<PixelPoint>.stride * Int(run.oldTail),
-                to: dstBuffer.mtlBuffer, destinationOffset: MemoryLayout<PixelPoint>.stride * Int(run.newTail),
-                size: MemoryLayout<PixelPoint>.stride * Int(run.oldHead - run.oldTail)
-            )
-            cmdEncoder.endEncoding()
+            for request in blitRunIndices {
+                guard let cmdEncoder = cmdBuffer.makeBlitCommandEncoder() else {
+                    assert(false, "Failed to create command encoder.")
+                    return false
+                }
+                let run = srcRuns[request]
+                cmdEncoder.copy(
+                    from: srcPts.mtlBuffer, sourceOffset: MemoryLayout<PixelPoint>.stride * Int(run.oldTail),
+                    to: dstPts.mtlBuffer, destinationOffset: MemoryLayout<PixelPoint>.stride * Int(run.newTail),
+                    size: MemoryLayout<PixelPoint>.stride * Int(run.oldHead - run.oldTail)
+                )
+                cmdEncoder.endEncoding()
+            }
+            cmdBuffer.commit()
+            cmdBuffer.waitUntilCompleted()
+            return true
         }
-        cmdBuffer.commit()
-        cmdBuffer.waitUntilCompleted()
-        return true
     }
     
     #if SHOW_GRID_WORK
