@@ -290,7 +290,7 @@ struct Grid {
         device: MTLDevice, commandQueue: MTLCommandQueue,
         blitRunIndices: [Int], srcRuns: UnsafeMutablePointer<Run>,
         srcPts: Buffer<PixelPoint>, dstPts: Buffer<PixelPoint>,
-        cpu: Bool = false
+        cpu: Bool = true
     ) -> Bool {
         if cpu {
             cpuBlit(runIndices: blitRunIndices, srcPts: srcPts.array, srcRuns: srcRuns, dstPts: dstPts.array)
@@ -494,7 +494,6 @@ struct Grid {
                 }
             }()
             
-            
             /// Finally, add the new run.
             let newRun = Run(
                 oldTail: newRunTail, oldHead: newRunHead,
@@ -571,7 +570,9 @@ func cpuBlit(
     debugPrint("[BLIT] \(run)")
     #endif
     let length = run.oldHead - run.oldTail
-    for i in 0..<length {
-        dstPts[Int(run.newTail + i)] = srcPts[Int(run.oldTail + i)]
-    }
+    memmove(
+        dstPts.advanced(by: Int(run.newTail)),
+        srcPts.advanced(by: Int(run.oldTail)),
+        MemoryLayout<PixelPoint>.stride * Int(length)
+    )
 }
