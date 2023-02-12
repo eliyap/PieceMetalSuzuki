@@ -62,15 +62,16 @@ public struct PieceMetalSuzuki {
         /// Copy image to pixel buffer.
         let context = CIContext()
         context.render(ciImage, to: bufferA)
+        
+        guard let filteredBuffer = applyMetalFilter(bufferA: bufferA) else {
+            assert(false, "Failed to create pixel buffer.")
+            return
+        }
 
         /// Apply Metal filter to pixel buffer.
-        applyMetalSuzuki(pixelBuffer: bufferA)
-        
-//        guard let filteredBuffer = applyMetalFilter(bufferA: bufferA) else {
-//            assert(false, "Failed to create pixel buffer.")
-//            return
-//        }
-//        bufferA = filteredBuffer
+        applyMetalSuzuki(pixelBuffer: filteredBuffer)
+
+        //        bufferA = filteredBuffer
 //
 //        /// Read values from pixel buffer.
 //        CVPixelBufferLockBaseAddress(bufferA, [])
@@ -119,22 +120,22 @@ func applyMetalFilter(bufferA: CVPixelBuffer) -> CVPixelBuffer? {
         let binaryBuffer = commandQueue.makeCommandBuffer()
     else {
         assert(false, "Failed to get metal device.")
-        return outBuffer
+        return nil
     }
     
     var metalTextureCache: CVMetalTextureCache!
     guard CVMetalTextureCacheCreate(kCFAllocatorDefault, nil, device, nil, &metalTextureCache) == kCVReturnSuccess else {
         assert(false, "Unable to allocate texture cache")
-        return outBuffer
+        return nil
     }
     
     guard let textureA = makeTextureFromCVPixelBuffer(pixelBuffer: bufferA, textureFormat: .bgra8Unorm, textureCache: metalTextureCache) else {
         assert(false, "Failed to create texture.")
-        return outBuffer
+        return nil
     }
     guard let textureB = makeTextureFromCVPixelBuffer(pixelBuffer: bufferB, textureFormat: .bgra8Unorm, textureCache: metalTextureCache) else {
         assert(false, "Failed to create texture.")
-        return outBuffer
+        return nil
     }
     
     /// Apply a binary threshold.
