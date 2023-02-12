@@ -370,7 +370,9 @@ struct Grid {
             var headDxn = srcRuns[runIdx].headTriadTo
             while
                 headDxn != ChainDirection.closed.rawValue, /// Skip search if run is closed.
-                let nextRunIdx = findTailForHead(point: headPt, direction: ChainDirection(rawValue: headDxn)!)
+                let nextRunIdx = Profiler.time(.combineFindPartner, {
+                    findTailForHead(point: headPt, direction: ChainDirection(rawValue: headDxn)!)
+                })
             {
                 joinedRunsIndices.append(nextRunIdx)
                 headPt = headPoint(for: nextRunIdx)
@@ -381,7 +383,9 @@ struct Grid {
             var tailDxn = srcRuns[runIdx].tailTriadFrom
             while
                 tailDxn != ChainDirection.closed.rawValue, /// Skip search if run is closed.
-                let prevRunIdx = findHeadForTail(point: tailPt, direction: ChainDirection(rawValue: tailDxn)!)
+                let prevRunIdx = Profiler.time(.combineFindPartner, {
+                    findHeadForTail(point: tailPt, direction: ChainDirection(rawValue: tailDxn)!)
+                })
             {
                 joinedRunsIndices.insert(prevRunIdx, at: 0)
                 tailPt = tailPoint(for: prevRunIdx)
@@ -449,7 +453,9 @@ struct Grid {
                 #if SHOW_GRID_WORK
                 debugPrint("joining run \(srcRuns[aRunIdx]) with head \(headPoint(for: aRunIdx)) and tail \(tailPoint(for: aRunIdx))")
                 #endif
-                join(runIdx: runIdx)
+                Profiler.time(.combineJoin, {
+                    join(runIdx: runIdx)
+                })
             }
         }
     }

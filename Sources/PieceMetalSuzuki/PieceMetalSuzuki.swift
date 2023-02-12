@@ -5,7 +5,8 @@ import MetalPerformanceShaders
 
 public actor Profiler {
     enum CodeRegion: CaseIterable {
-        case blit, combine, trailingCopy, binarize, startChains, overall, makeTexture, initRegions, combineAll, bufferInit, blitWait
+        case blit, trailingCopy, binarize, startChains, overall, makeTexture, initRegions, bufferInit, blitWait
+        case combineAll, combine, combineFindPartner, combineJoin
     }
 
     private var timing: [CodeRegion: (Int, TimeInterval)] = {
