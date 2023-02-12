@@ -55,6 +55,14 @@ extension Region: CustomStringConvertible {
     }
 }
 
+/**
+ After using a metal kernel to deposit triad information in each pixel of `texture`,
+ we start the algorithm with the smallest possible region: a 1x1 covering just one pixel.
+ 
+ This uses 2 optimizations when creating rows.
+ - reserves uninitialized capacity
+ - initializes capacity in parallel
+ */
 func initializeRegions(
     runBuffer: Buffer<Run>,
     texture: MTLTexture
@@ -74,6 +82,8 @@ func initializeRegions(
                     }
                 }
                 
+                /// Cannot use subscript notation to set uninitialized memory.
+                /// https://forums.swift.org/t/how-to-initialize-array-of-class-instances-using-a-buffer-of-uninitialised-memory/39174/5
                 buffer.baseAddress!.advanced(by: col).initialize(to: Region(
                     origin: PixelPoint(x: UInt32(col), y: UInt32(row)),
                     size: PixelSize(width: 1, height: 1),
