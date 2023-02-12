@@ -381,8 +381,6 @@ struct Grid {
     
     struct Combiner {
         
-        let aBaseOffset: UInt32
-        let bBaseOffset: UInt32
         let newBaseOffset: UInt32
         let newRegionSize: PixelSize
         
@@ -412,8 +410,6 @@ struct Grid {
             #endif
             let aBaseOffset = baseOffset(grid: grid, region: a)
             let bBaseOffset = baseOffset(grid: grid, region: b)
-            self.aBaseOffset = aBaseOffset
-            self.bBaseOffset = bBaseOffset
             self.runIndices = (0..<Int(a.runsCount)).map { $0 + Int(aBaseOffset) }
                             + (0..<Int(b.runsCount)).map { $0 + Int(bBaseOffset) }
             
