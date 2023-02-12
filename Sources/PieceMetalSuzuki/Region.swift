@@ -314,7 +314,11 @@ struct Grid {
                 cmdEncoder.endEncoding()
             }
             cmdBuffer.commit()
-            cmdBuffer.waitUntilCompleted()
+            
+            Profiler.time(.blitWait) {
+                cmdBuffer.waitUntilCompleted()
+            }
+            
             return true
         }
     }

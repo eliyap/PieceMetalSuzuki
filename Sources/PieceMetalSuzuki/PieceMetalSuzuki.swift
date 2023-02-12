@@ -5,7 +5,7 @@ import MetalPerformanceShaders
 
 public class Profiler {
     enum CodeRegion: CaseIterable { 
-        case blit, combine, trailingCopy, binarize, startChains, overall, makeTexture, initRegions, combineAll, bufferInit
+        case blit, combine, trailingCopy, binarize, startChains, overall, makeTexture, initRegions, combineAll, bufferInit, blitWait
     }
 
     static var timing: [CodeRegion: (Int, TimeInterval)] = {
