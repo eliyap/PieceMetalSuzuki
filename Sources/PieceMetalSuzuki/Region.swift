@@ -221,6 +221,8 @@ struct Grid {
                             blitRunIndices += newRequests
                             
                         }
+                    }
+                    for rowIdx in stride(from: 0, to: numRows - 1, by: 2).reversed() {
                         /// Remove entire row at once.
                         regions.remove(at: rowIdx + 1)
                     }
