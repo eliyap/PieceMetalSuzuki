@@ -17,6 +17,7 @@ final class PieceMetalSuzukiTests: XCTestCase {
         measure {
             _ = PieceMetalSuzuki(imageUrl: url("input"))
         }
+        try! await Task.sleep(nanoseconds: UInt64(1_000_000_000 * 2))
         await Profiler.report()
     }
     
