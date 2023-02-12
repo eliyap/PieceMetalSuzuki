@@ -156,7 +156,9 @@ struct Grid {
                 
                 let newGridSize = PixelSize(width: gridSize.width * 2, height: gridSize.height)
                 Profiler.time(.combine) {
-                    for rowIdx in 0..<numRows {
+                    let group = DispatchGroup()
+                    let queue = DispatchQueue(label: "swiftlee.concurrent.queue")
+                    DispatchQueue.concurrentPerform(iterations: numRows) { rowIdx in
                         for colIdx in stride(from: 0, to: numCols - 1, by: 2).reversed() {
                             let a = regions[rowIdx][colIdx]
                             let b = regions[rowIdx][colIdx + 1]
@@ -164,13 +166,18 @@ struct Grid {
                                     dxn: dxn, newGridSize: newGridSize,
                                     srcPts: srcPts, srcRuns: srcRuns,
                                     dstPts: dstPts, dstRuns: dstRuns)
-                            blitRunIndices += newRequests
+                            group.enter()
+                            queue.async {
+                                blitRunIndices += newRequests
+                                group.leave()
+                            }
                         }
                         /// Update grid position for remaining regions.
                         for region in regions[rowIdx] {
                             region.gridPos.col /= 2
                         }
                     }
+                    group.wait()
                     
                     for rowIdx in 0..<numRows {
                         for colIdx in stride(from: 0, to: numCols - 1, by: 2).reversed() {
