@@ -140,32 +140,36 @@ struct Grid {
                 (srcPts, dstPts) = (pointsVertical.array, pointsHorizontal.array)
 
                 if numCols.isMultiple(of: 2) == false {
-                    /// Request last column blit.
-                    for row in regions {
-                        let region = row.last!
-                        for runIdx in region.runIndices(imageSize: imageSize, gridSize: gridSize) {
-                            dstRuns[runIdx] = srcRuns[runIdx]
-                            srcRuns[runIdx].newTail = srcRuns[runIdx].oldTail
-                            srcRuns[runIdx].newHead = srcRuns[runIdx].oldHead
+                    Profiler.time(.trailingCopy) {
+                        /// Request last column blit.
+                        for row in regions {
+                            let region = row.last!
+                            for runIdx in region.runIndices(imageSize: imageSize, gridSize: gridSize) {
+                                dstRuns[runIdx] = srcRuns[runIdx]
+                                srcRuns[runIdx].newTail = srcRuns[runIdx].oldTail
+                                srcRuns[runIdx].newHead = srcRuns[runIdx].oldHead
+                            }
+                            blitRunIndices += region.runIndices(imageSize: imageSize, gridSize: gridSize)
                         }
-                        blitRunIndices += region.runIndices(imageSize: imageSize, gridSize: gridSize)
                     }
                 }
                 
                 let newGridSize = PixelSize(width: gridSize.width * 2, height: gridSize.height)
-                for rowIdx in 0..<numRows {
-                    for colIdx in stride(from: 0, to: numCols - 1, by: 2).reversed() {
-                        let a = regions[rowIdx][colIdx]
-                        let b = regions[rowIdx].remove(at: colIdx + 1)
-                        let newRequests = combine(a: a, b: b,
-                                dxn: dxn, newGridSize: newGridSize,
-                                srcPts: srcPts, srcRuns: srcRuns,
-                                dstPts: dstPts, dstRuns: dstRuns)
-                        blitRunIndices += newRequests
-                    }
-                    /// Update grid position for remaining regions.
-                    for region in regions[rowIdx] {
-                        region.gridPos.col /= 2
+                Profiler.time(.combine) {
+                    for rowIdx in 0..<numRows {
+                        for colIdx in stride(from: 0, to: numCols - 1, by: 2).reversed() {
+                            let a = regions[rowIdx][colIdx]
+                            let b = regions[rowIdx].remove(at: colIdx + 1)
+                            let newRequests = combine(a: a, b: b,
+                                    dxn: dxn, newGridSize: newGridSize,
+                                    srcPts: srcPts, srcRuns: srcRuns,
+                                    dstPts: dstPts, dstRuns: dstRuns)
+                            blitRunIndices += newRequests
+                        }
+                        /// Update grid position for remaining regions.
+                        for region in regions[rowIdx] {
+                            region.gridPos.col /= 2
+                        }
                     }
                 }
                 gridSize = newGridSize
@@ -176,31 +180,35 @@ struct Grid {
                 (srcPts, dstPts) = (pointsHorizontal.array, pointsVertical.array)
 
                 if numRows.isMultiple(of: 2) == false {
-                    /// Request last column blit.
-                    for region in regions.last! {
-                        for runIdx in region.runIndices(imageSize: imageSize, gridSize: gridSize) {
-                            dstRuns[runIdx] = srcRuns[runIdx]
-                            srcRuns[runIdx].newTail = srcRuns[runIdx].oldTail
-                            srcRuns[runIdx].newHead = srcRuns[runIdx].oldHead
+                    Profiler.time(.trailingCopy) {
+                        /// Request last column blit.
+                        for region in regions.last! {
+                            for runIdx in region.runIndices(imageSize: imageSize, gridSize: gridSize) {
+                                dstRuns[runIdx] = srcRuns[runIdx]
+                                srcRuns[runIdx].newTail = srcRuns[runIdx].oldTail
+                                srcRuns[runIdx].newHead = srcRuns[runIdx].oldHead
+                            }
+                            blitRunIndices += region.runIndices(imageSize: imageSize, gridSize: gridSize)
                         }
-                        blitRunIndices += region.runIndices(imageSize: imageSize, gridSize: gridSize)
                     }
                 }
                 
                 let newGridSize = PixelSize(width: gridSize.width, height: gridSize.height * 2)
-                for rowIdx in stride(from: 0, to: numRows - 1, by: 2).reversed() {
-                    for colIdx in 0..<numCols {
-                        let a = regions[rowIdx][colIdx]
-                        let b = regions[rowIdx+1][colIdx]
-                        let newRequests = combine(a: a, b: b,
-                                dxn: dxn, newGridSize: newGridSize,
-                                srcPts: srcPts, srcRuns: srcRuns,
-                                dstPts: dstPts, dstRuns: dstRuns)
-                        blitRunIndices += newRequests
-                        
+                Profiler.time(.combine) {
+                    for rowIdx in stride(from: 0, to: numRows - 1, by: 2).reversed() {
+                        for colIdx in 0..<numCols {
+                            let a = regions[rowIdx][colIdx]
+                            let b = regions[rowIdx+1][colIdx]
+                            let newRequests = combine(a: a, b: b,
+                                    dxn: dxn, newGridSize: newGridSize,
+                                    srcPts: srcPts, srcRuns: srcRuns,
+                                    dstPts: dstPts, dstRuns: dstRuns)
+                            blitRunIndices += newRequests
+                            
+                        }
+                        /// Remove entire row at once.
+                        regions.remove(at: rowIdx + 1)
                     }
-                    /// Remove entire row at once.
-                    regions.remove(at: rowIdx + 1)
                 }
                 /// Update grid position for remaining regions.
                 for rowIdx in 0..<regions.count {
