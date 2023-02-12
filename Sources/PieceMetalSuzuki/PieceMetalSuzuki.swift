@@ -5,7 +5,7 @@ import MetalPerformanceShaders
 
 public class Profiler {
     enum CodeRegion: CaseIterable { 
-        case blit, combine, trailingCopy
+        case blit, combine, trailingCopy, binarize
     }
 
     static var timing: [CodeRegion: (Int, TimeInterval)] = {
@@ -63,10 +63,14 @@ public struct PieceMetalSuzuki {
         let context = CIContext()
         context.render(ciImage, to: bufferA)
         
+        let start = CFAbsoluteTimeGetCurrent()
         guard let filteredBuffer = applyMetalFilter(to: bufferA) else {
             assert(false, "Failed to create pixel buffer.")
             return
         }
+        let end = CFAbsoluteTimeGetCurrent()
+        Profiler.add(end - start, to: .binarize)
+        
 
         /// Apply Metal filter to pixel buffer.
         applyMetalSuzuki(pixelBuffer: filteredBuffer)
