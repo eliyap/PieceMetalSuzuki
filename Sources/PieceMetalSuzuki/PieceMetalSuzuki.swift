@@ -3,12 +3,12 @@ import CoreImage
 import CoreVideo
 import MetalPerformanceShaders
 
-public class Profiler {
-    enum CodeRegion: CaseIterable { 
+public actor Profiler {
+    enum CodeRegion: CaseIterable {
         case blit, combine, trailingCopy, binarize, startChains, overall, makeTexture, initRegions, combineAll, bufferInit, blitWait
     }
 
-    static var timing: [CodeRegion: (Int, TimeInterval)] = {
+    private var timing: [CodeRegion: (Int, TimeInterval)] = {
         var dict = [CodeRegion: (Int, TimeInterval)]()
         for region in CodeRegion.allCases {
             dict[region] = (0, 0)
@@ -16,11 +16,17 @@ public class Profiler {
         return dict
     }()
 
-    init() { }
+    private init() { }
+    public static let shared = Profiler()
 
+    private func add(_ duration: TimeInterval, to region: CodeRegion) -> Void {
+        let (count, total) = timing[region]!
+        timing[region] = (count + 1, total + duration)
+    }
     static func add(_ duration: TimeInterval, to region: CodeRegion) {
-        let (count, total) = Profiler.timing[region]!
-        Profiler.timing[region] = (count + 1, total + duration)
+        Task(priority: .background) {
+            await Profiler.shared.add(duration, to: region)
+        }
     }
 
     static func time(_ region: CodeRegion, _ block: () -> Void) {
@@ -38,8 +44,9 @@ public class Profiler {
         return result
     }
 
-    static func report() {
-        for (region, results) in Profiler.timing where results.0 > 0 {
+    static func report() async {
+        let dict = await Profiler.shared.timing
+        for (region, results) in dict where results.0 > 0 {
             let (count, time) = results
             print("\(region): \(time)s, \(count) (avg \(time / Double(count))s)")
         }
