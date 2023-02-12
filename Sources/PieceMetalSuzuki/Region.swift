@@ -167,7 +167,7 @@ struct Grid {
                             let newRequests = combine(a: a, b: b,
                                     dxn: dxn, newGridSize: newGridSize,
                                     srcPts: srcPts, srcRuns: srcRuns,
-                                    dstPts: dstPts, dstRuns: dstRuns)
+                                    dstRuns: dstRuns)
                             group.enter()
                             queue.async {
                                 blitRunIndices += newRequests
@@ -221,7 +221,7 @@ struct Grid {
                             let newRequests = combine(a: a, b: b,
                                     dxn: dxn, newGridSize: newGridSize,
                                     srcPts: srcPts, srcRuns: srcRuns,
-                                    dstPts: dstPts, dstRuns: dstRuns)
+                                    dstRuns: dstRuns)
                             group.enter()
                             queue.async {
                                 blitRunIndices += newRequests
@@ -338,11 +338,34 @@ struct Grid {
     }
     #endif
     
+    /**
+     Recall that
+     - `a` and `b` represent regions on a grid, whose positions can be translated into memory offsets.
+     - a series of `Run`s live at those offsets. In turn, each `Run` points to a range of `Points`.
+     
+     The algorithm's objective is to join `Run`s into longer `Run`s by finding pairs with one's head matching the other's tail.
+     Both the location and direction must match.
+     Matching means having a pixel in the correct direction relative to the other pixel.
+     e.g. if fragment Alice has head position (3,4) pointed right, then fragment Bob with tail at (3,5) pointed left is a match.
+     
+     The algorithm proceeds as follows:
+     - we have a pool of runs from regions `a` and `b`.
+     - examine each run in turn, until there are none.
+        - search the pool for a run with tail matching this run's head.
+        - if found, keep going until no matching run is found.
+        - likewise for the original run's tail, join matching heads until there are none.
+        - runs found in this way are removed from the pool.
+        - take this "line" of runs and assign it a contiguous location in the desination buffer.
+        - tell each run in the line where it should copy to in the destination.
+        - create a joined run representing the entire line.
+     
+     That's it!
+     */
     func combine(
         a: Region, b: Region,
         dxn: ReduceDirection, newGridSize: PixelSize,
         srcPts: UnsafeMutablePointer<PixelPoint>, srcRuns: UnsafeMutablePointer<Run>,
-        dstPts: UnsafeMutablePointer<PixelPoint>, dstRuns: UnsafeMutablePointer<Run>
+        dstRuns: UnsafeMutablePointer<Run>
     ) -> [Int] {
         #if SHOW_GRID_WORK
         debugPrint("Combining \(a) and \(b)")
