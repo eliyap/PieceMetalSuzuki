@@ -66,28 +66,50 @@ public struct PieceMetalSuzuki {
         /// Apply Metal filter to pixel buffer.
         applyMetalSuzuki(pixelBuffer: bufferA)
         
-//        /// Read values from pixel buffer.
-//        CVPixelBufferLockBaseAddress(outBuffer, [])
-//        defer {
-//            CVPixelBufferUnlockBaseAddress(outBuffer, [])
-//        }
-//        guard let ptr = CVPixelBufferGetBaseAddress(outBuffer) else {
-//            assert(false, "Failed to get base address.")
-//            return
-//        }
-//
-//        /// Run Suzuki algorithm.
-////        var img = ImageBuffer(ptr: ptr, width: width, height: height)
-////        border(img: &img)
-//
-//        /// Write image back out.
-//        saveBufferToPng(buffer: outBuffer, format: .RGBA8)
+        guard let filteredBuffer = applyMetalFilter(bufferA: bufferA) else {
+            assert(false, "Failed to create pixel buffer.")
+            return
+        }
+        bufferA = filteredBuffer
+        
+        /// Read values from pixel buffer.
+        CVPixelBufferLockBaseAddress(bufferA, [])
+        defer {
+            CVPixelBufferUnlockBaseAddress(bufferA, [])
+        }
+        guard let ptr = CVPixelBufferGetBaseAddress(bufferA) else {
+            assert(false, "Failed to get base address.")
+            return
+        }
+
+        /// Run Suzuki algorithm.
+        var img = ImageBuffer(ptr: ptr, width: width, height: height)
+        border(img: &img)
+
+        /// Write image back out.
+        saveBufferToPng(buffer: bufferA, format: .RGBA8)
 
         print("so far so good")
     }
 }
 
-func applyMetalFilter(bufferA: CVPixelBuffer, bufferB: CVPixelBuffer) -> CVPixelBuffer {
+func applyMetalFilter(bufferA: CVPixelBuffer) -> CVPixelBuffer? {
+    var bufferB: CVPixelBuffer!
+    
+    guard CVPixelBufferCreate(
+        kCFAllocatorDefault,
+        CVPixelBufferGetWidth(bufferA),
+        CVPixelBufferGetHeight(bufferA),
+        CVPixelBufferGetPixelFormatType(bufferA),
+        NSDictionary(dictionary: [
+            kCVPixelBufferCGImageCompatibilityKey: true,
+            kCVPixelBufferMetalCompatibilityKey: true,
+        ]),
+        &bufferB
+    ) == kCVReturnSuccess else {
+        assert(false, "Failed to create pixel buffer.")
+        return nil
+    }
     let outBuffer = bufferB
 
     /// Apply Metal filter to pixel buffer.
@@ -110,19 +132,18 @@ func applyMetalFilter(bufferA: CVPixelBuffer, bufferB: CVPixelBuffer) -> CVPixel
         assert(false, "Failed to create texture.")
         return outBuffer
     }
-    guard let result = createChainStarters(device: device, commandQueue: commandQueue, texture: textureA) else {
-        assert(false, "Failed to run chain start kernel.")
+    guard let textureB = makeTextureFromCVPixelBuffer(pixelBuffer: bufferB, textureFormat: .bgra8Unorm, textureCache: metalTextureCache) else {
+        assert(false, "Failed to create texture.")
         return outBuffer
     }
-    let (points, runs) = result
     
     /// Apply a binary threshold.
     /// This is 1 in both signed and unsigned numbers.
-//    let setVal: Float = 1.0/256.0
-//    let binary = MPSImageThresholdBinary(device: device, thresholdValue: 0.5, maximumValue: setVal, linearGrayColorTransform: nil)
-//    binary.encode(commandBuffer: binaryBuffer, sourceTexture: textureA, destinationTexture: textureB)
-//    binaryBuffer.commit()
-//    binaryBuffer.waitUntilCompleted()
+    let setVal: Float = 1.0/256.0
+    let binary = MPSImageThresholdBinary(device: device, thresholdValue: 0.5, maximumValue: setVal, linearGrayColorTransform: nil)
+    binary.encode(commandBuffer: binaryBuffer, sourceTexture: textureA, destinationTexture: textureB)
+    binaryBuffer.commit()
+    binaryBuffer.waitUntilCompleted()
     
     return outBuffer
 }
