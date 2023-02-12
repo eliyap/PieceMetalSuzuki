@@ -8,8 +8,16 @@
 import Foundation
 import Metal
 
-/// A CPU only struct used to organize Runs.
-/// Class allows easy in-place manipulation.
+/**
+ A CPU only struct used to organize Runs.
+ Class allows easy in-place manipulation.
+ 
+ Concentually represents one rectangle in the `Grid`.
+ Purpose is to be merged with a vertically or horizontally joining `Region`,
+ until the entire `Grid` is one `Region`.
+ 
+ The memory location of the runs in this region is derived from information in this class and the grid structure.
+ */
 class Region {
     let origin: PixelPoint
     
