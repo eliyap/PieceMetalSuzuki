@@ -1,24 +1,6 @@
 import Foundation
 import Metal
 
-struct PixelSize: Equatable, CustomStringConvertible {
-    let width: UInt32
-    let height: UInt32
-
-    var description: String {
-        return "w\(width)h\(height)"
-    }
-}
-
-/// Indicates where a `Region` is within the `Grid`.
-struct GridPosition: CustomStringConvertible {
-    var row: UInt32
-    var col: UInt32
-    var description: String {
-        return "gr\(row)gc\(col)"
-    }
-}
-
 /// A CPU only struct used to organize Runs.
 /// Class allows easy in-place manipulation.
 class Region { 
@@ -546,4 +528,3 @@ func baseOffset(imageSize: PixelSize, gridSize: PixelSize, regionSize: PixelSize
 func baseOffset(grid: Grid, region: Region) -> UInt32 {
     baseOffset(imageSize: grid.imageSize, gridSize: grid.gridSize, regionSize: region.size, gridPos: region.gridPos)
 }
-
