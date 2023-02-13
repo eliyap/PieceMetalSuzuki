@@ -3,6 +3,16 @@ import CoreImage
 import CoreVideo
 import MetalPerformanceShaders
 
+extension Dictionary where Key: Comparable {
+    func sortedByKey() -> [(Key, Value)] {
+        self.sorted { (arg1, arg2) in
+            let (k2, _) = arg2
+            let (k1, _) = arg1
+            return k1 < k2
+        }
+    }
+}
+
 public actor Profiler {
     enum CodeRegion: CaseIterable {
         case blit, trailingCopy, binarize, startChains, overall, makeTexture, initRegions, bufferInit, blitWait
