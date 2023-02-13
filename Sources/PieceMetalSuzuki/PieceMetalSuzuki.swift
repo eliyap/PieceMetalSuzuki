@@ -187,7 +187,7 @@ func saveBufferToPng(buffer: CVPixelBuffer, format: CIFormat) -> Void {
     }
 }
 
-func makeTextureFromCVPixelBuffer(
+public func makeTextureFromCVPixelBuffer(
     pixelBuffer: CVPixelBuffer, 
     textureFormat: MTLPixelFormat,
     textureCache: CVMetalTextureCache
