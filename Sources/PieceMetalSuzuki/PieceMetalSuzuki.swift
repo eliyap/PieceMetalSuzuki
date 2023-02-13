@@ -1,6 +1,7 @@
 import Foundation
 import CoreImage
 import CoreVideo
+import Metal
 import MetalPerformanceShaders
 
 public struct PieceMetalSuzuki {
@@ -28,18 +29,37 @@ public struct PieceMetalSuzuki {
         let context = CIContext()
         context.render(ciImage, to: bufferA)
         
+        guard
+            let device = MTLCreateSystemDefaultDevice(),
+            let commandQueue = device.makeCommandQueue()
+        else {
+            assert(false, "Failed to get metal device.")
+            return
+        }
+        
+        var metalTextureCache: CVMetalTextureCache!
+        guard CVMetalTextureCacheCreate(kCFAllocatorDefault, nil, device, nil, &metalTextureCache) == kCVReturnSuccess else {
+            assert(false, "Unable to allocate texture cache")
+            return
+        }
+        
         Profiler.time(.overall) {
-            let start = CFAbsoluteTimeGetCurrent()
-            guard let filteredBuffer = applyMetalFilter(to: bufferA) else {
+            guard let filteredBuffer = Profiler.time(.binarize, {
+                applyMetalFilter(to: bufferA)
+            }) else {
                 assert(false, "Failed to create pixel buffer.")
                 return
             }
-            let end = CFAbsoluteTimeGetCurrent()
-            Profiler.add(end - start, to: .binarize)
             
+            guard let texture = Profiler.time(.makeTexture, {
+                makeTextureFromCVPixelBuffer(pixelBuffer: filteredBuffer, textureFormat: .bgra8Unorm, textureCache: metalTextureCache)
+            }) else {
+                assert(false, "Failed to create texture.")
+                return
+            }
 
             /// Apply Metal filter to pixel buffer.
-            applyMetalSuzuki(pixelBuffer: filteredBuffer)
+            applyMetalSuzuki(device: device, commandQueue: commandQueue, texture: texture)
         }
         
         //        bufferA = filteredBuffer
@@ -119,29 +139,13 @@ func applyMetalFilter(to buffer: CVPixelBuffer) -> CVPixelBuffer? {
     return result
 }
 
-func applyMetalSuzuki(pixelBuffer: CVPixelBuffer) -> Void {
-    let start = CFAbsoluteTimeGetCurrent()
+func applyMetalSuzuki(
+    device: MTLDevice,
+    commandQueue: MTLCommandQueue,
+    texture: MTLTexture
+) -> Void {
     /// Apply Metal filter to pixel buffer.
-    guard
-        let device = MTLCreateSystemDefaultDevice(),
-        let commandQueue = device.makeCommandQueue()
-    else {
-        assert(false, "Failed to get metal device.")
-        return
-    }
     
-    var metalTextureCache: CVMetalTextureCache!
-    guard CVMetalTextureCacheCreate(kCFAllocatorDefault, nil, device, nil, &metalTextureCache) == kCVReturnSuccess else {
-        assert(false, "Unable to allocate texture cache")
-        return
-    }
-    
-    guard let texture = makeTextureFromCVPixelBuffer(pixelBuffer: pixelBuffer, textureFormat: .bgra8Unorm, textureCache: metalTextureCache) else {
-        assert(false, "Failed to create texture.")
-        return
-    }
-    let end = CFAbsoluteTimeGetCurrent()
-    Profiler.add(end - start, to: .makeTexture)
     
     guard let result = createChainStarters(device: device, commandQueue: commandQueue, texture: texture) else {
         assert(false, "Failed to run chain start kernel.")
