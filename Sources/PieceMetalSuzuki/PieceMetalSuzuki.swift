@@ -85,7 +85,7 @@ public struct PieceMetalSuzuki {
     }
 }
 
-func applyMetalFilter(
+public func applyMetalFilter(
     to buffer: CVPixelBuffer,
     device: MTLDevice,
     commandQueue: MTLCommandQueue
@@ -141,7 +141,7 @@ func applyMetalFilter(
     return result
 }
 
-func applyMetalSuzuki(
+public func applyMetalSuzuki(
     device: MTLDevice,
     commandQueue: MTLCommandQueue,
     texture: MTLTexture
