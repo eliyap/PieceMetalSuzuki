@@ -36,7 +36,10 @@ struct Grid {
         }
         
         var dxn = ReduceDirection.vertical
+        var iteration = 0
         while (regions.count > 1) || (regions[0].count > 1) {
+            let start = CFAbsoluteTimeGetCurrent()
+            
             let srcBuffer: Buffer<PixelPoint>
             let dstBuffer: Buffer<PixelPoint>
             let srcPts: UnsafeMutablePointer<PixelPoint>
@@ -175,6 +178,10 @@ struct Grid {
             #endif
             
             dxn.flip()
+            
+            let end = CFAbsoluteTimeGetCurrent()
+            Profiler.add(end - start, iteration: iteration)
+            iteration += 1
         }
         
         /// Return final results.
