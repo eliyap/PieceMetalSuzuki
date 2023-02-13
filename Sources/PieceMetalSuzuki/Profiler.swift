@@ -44,9 +44,11 @@ public actor Profiler {
         timing[region] = (count + 1, total + duration)
     }
     static func add(_ duration: TimeInterval, to region: CodeRegion) {
+        #if PROFILER_ON
         Task(priority: .high) {
             await Profiler.shared.add(duration, to: region)
         }
+        #endif
     }
     
     private func add(_ duration: TimeInterval, iteration: Int) -> Void {
@@ -54,36 +56,61 @@ public actor Profiler {
         iterationTiming[iteration] = (count + 1, total + duration)
     }
     static func add(_ duration: TimeInterval, iteration: Int) -> Void {
+        #if PROFILER_ON
         Task(priority: .high) {
             await Profiler.shared.add(duration, iteration: iteration)
         }
+        #endif
     }
 
     static func time(_ region: CodeRegion, _ block: () -> Void) {
+        #if PROFILER_ON
         let start = CFAbsoluteTimeGetCurrent()
+        #endif
+        
         block()
+        
+        #if PROFILER_ON
         let end = CFAbsoluteTimeGetCurrent()
         Profiler.add(end - start, to: region)
+        #endif
     }
     
     static func time(_ iteration: Int, _ block: () -> Void) {
+        #if PROFILER_ON
         let start = CFAbsoluteTimeGetCurrent()
+        #endif
+        
         block()
+        
+        #if PROFILER_ON
         let end = CFAbsoluteTimeGetCurrent()
         Task(priority: .high) {
             await Profiler.shared.add(end - start, iteration: iteration)
         }
+        #endif
     }
     
     static func time<Result>(_ region: CodeRegion, _ block: () -> Result) -> Result {
+        #if PROFILER_ON
         let start = CFAbsoluteTimeGetCurrent()
+        #endif
+        
         let result = block()
+        
+        #if PROFILER_ON
         let end = CFAbsoluteTimeGetCurrent()
         Profiler.add(end - start, to: region)
+        #endif
+
         return result
     }
 
     static func report() async {
+        #if PROFILER_ON
+        /// Wait for everything to finish.
+        try! await Task.sleep(nanoseconds: UInt64(1_000_000_000 * 2))
+        
         let dict = await Profiler.shared.timing
         for (region, results) in dict where [.overall, .combineAll, .combine].contains(region) {
 //            for (region, results) in dict where results.0 > 0 {
@@ -96,5 +123,6 @@ public actor Profiler {
             let (count, time) = results
             print("\(iteration): \(time)s, \(count) (avg \(time / Double(count))s)")
         }
+        #endif
     }
 }
