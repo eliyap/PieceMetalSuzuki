@@ -46,14 +46,11 @@ func blit(
 }
 
 /// For each source run, copy its points to the destination.
-func cpuBlit<SomeCollection: Collection>(
-    runIndices: SomeCollection,
+func cpuBlit(
+    runIndices: [Int],
     srcPts: UnsafeMutablePointer<PixelPoint>, srcRuns: UnsafeMutablePointer<Run>,
     dstPts: UnsafeMutablePointer<PixelPoint>
-) -> Void where
-    SomeCollection.Element == Int,
-    SomeCollection.Index == Int
-{
+) -> Void {
     DispatchQueue.concurrentPerform(iterations: runIndices.count) { runIdxIdx in
         let runIdx = runIndices[runIdxIdx]
         #if SHOW_GRID_WORK
