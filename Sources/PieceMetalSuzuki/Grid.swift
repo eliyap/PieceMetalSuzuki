@@ -36,7 +36,10 @@ struct Grid {
         }
         
         var dxn = ReduceDirection.vertical
+        var iteration = 0
         while (regions.count > 1) || (regions[0].count > 1) {
+            let start = CFAbsoluteTimeGetCurrent()
+            
             let srcBuffer: Buffer<PixelPoint>
             let dstBuffer: Buffer<PixelPoint>
             let srcPts: UnsafeMutablePointer<PixelPoint>
@@ -175,6 +178,10 @@ struct Grid {
             #endif
             
             dxn.flip()
+            
+            let end = CFAbsoluteTimeGetCurrent()
+            Profiler.add(end - start, iteration: iteration)
+            iteration += 1
         }
         
         /// Return final results.
@@ -249,7 +256,7 @@ struct Grid {
         var combiner = Combiner(a: a, b: b, dxn: dxn, newGridSize: newGridSize, srcPts: srcPts, srcRuns: srcRuns, dstRuns: dstRuns, grid: self)
         combiner.work()
 
-        let blitRequests = a.runIndices(imageSize: imageSize, gridSize: gridSize) + b.runIndices(imageSize: imageSize, gridSize: gridSize)
+        let blitRequests = Array(a.runIndices(imageSize: imageSize, gridSize: gridSize)) + Array(b.runIndices(imageSize: imageSize, gridSize: gridSize))
         
         /// Update remaining region
         a.runsCount = combiner.nextRunOffset

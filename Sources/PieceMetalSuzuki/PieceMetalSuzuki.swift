@@ -3,49 +3,6 @@ import CoreImage
 import CoreVideo
 import MetalPerformanceShaders
 
-public class Profiler {
-    enum CodeRegion: CaseIterable { 
-        case blit, combine, trailingCopy, binarize, startChains, overall, makeTexture, initRegions, combineAll, bufferInit, blitWait
-    }
-
-    static var timing: [CodeRegion: (Int, TimeInterval)] = {
-        var dict = [CodeRegion: (Int, TimeInterval)]()
-        for region in CodeRegion.allCases {
-            dict[region] = (0, 0)
-        }
-        return dict
-    }()
-
-    init() { }
-
-    static func add(_ duration: TimeInterval, to region: CodeRegion) {
-        let (count, total) = Profiler.timing[region]!
-        Profiler.timing[region] = (count + 1, total + duration)
-    }
-
-    static func time(_ region: CodeRegion, _ block: () -> Void) {
-        let start = CFAbsoluteTimeGetCurrent()
-        block()
-        let end = CFAbsoluteTimeGetCurrent()
-        Profiler.add(end - start, to: region)
-    }
-    
-    static func time<Result>(_ region: CodeRegion, _ block: () -> Result) -> Result {
-        let start = CFAbsoluteTimeGetCurrent()
-        let result = block()
-        let end = CFAbsoluteTimeGetCurrent()
-        Profiler.add(end - start, to: region)
-        return result
-    }
-
-    static func report() {
-        for (region, results) in Profiler.timing where results.0 > 0 {
-            let (count, time) = results
-            print("\(region): \(time)s, \(count) (avg \(time / Double(count))s)")
-        }
-    }
-}
-
 public struct PieceMetalSuzuki {
     public init(imageUrl: URL) {
         guard let ciImage = CIImage(contentsOf: imageUrl) else {

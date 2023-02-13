@@ -13,11 +13,11 @@ final class PieceMetalSuzukiTests: XCTestCase {
         // results.
     }
     
-    func testDoubleDonut() throws {
+    func testDoubleDonut() async throws {
         measure {
             _ = PieceMetalSuzuki(imageUrl: url("input"))
         }
-        Profiler.report()
+        await Profiler.report()
     }
     
     func testWaffle() throws {

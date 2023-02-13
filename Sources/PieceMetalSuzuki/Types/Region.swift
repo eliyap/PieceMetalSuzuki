@@ -41,11 +41,9 @@ class Region {
     }
 
     /// Get run indices, given the present image size and grid size.
-    func runIndices(imageSize: PixelSize, gridSize: PixelSize) -> [Int] {
+    func runIndices(imageSize: PixelSize, gridSize: PixelSize) -> Range<Int> {
         let base = baseOffset(imageSize: imageSize, gridSize: gridSize, regionSize: self.size, gridPos: self.gridPos)
-        return (0..<runsCount).map { idx in
-            Int(base + idx)
-        }
+        return Int(base)..<Int(base + runsCount)
     }
 }
 
