@@ -45,7 +45,7 @@ public struct PieceMetalSuzuki {
         
         Profiler.time(.overall) {
             guard let filteredBuffer = Profiler.time(.binarize, {
-                applyMetalFilter(to: bufferA)
+                applyMetalFilter(to: bufferA, device: device, commandQueue: commandQueue)
             }) else {
                 assert(false, "Failed to create pixel buffer.")
                 return
@@ -85,7 +85,11 @@ public struct PieceMetalSuzuki {
     }
 }
 
-func applyMetalFilter(to buffer: CVPixelBuffer) -> CVPixelBuffer? {
+func applyMetalFilter(
+    to buffer: CVPixelBuffer,
+    device: MTLDevice,
+    commandQueue: MTLCommandQueue
+) -> CVPixelBuffer? {
     var result: CVPixelBuffer!
     
     guard CVPixelBufferCreate(
@@ -105,8 +109,6 @@ func applyMetalFilter(to buffer: CVPixelBuffer) -> CVPixelBuffer? {
     
     /// Apply Metal filter to pixel buffer.
     guard 
-        let device = MTLCreateSystemDefaultDevice(),
-        let commandQueue = device.makeCommandQueue(),
         let binaryBuffer = commandQueue.makeCommandBuffer()
     else {
         assert(false, "Failed to get metal device.")
@@ -145,8 +147,6 @@ func applyMetalSuzuki(
     texture: MTLTexture
 ) -> Void {
     /// Apply Metal filter to pixel buffer.
-    
-    
     guard let result = createChainStarters(device: device, commandQueue: commandQueue, texture: texture) else {
         assert(false, "Failed to run chain start kernel.")
         return
