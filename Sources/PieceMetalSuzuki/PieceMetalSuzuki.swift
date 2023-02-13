@@ -45,7 +45,7 @@ public struct PieceMetalSuzuki {
         
         Profiler.time(.overall) {
             guard let filteredBuffer = Profiler.time(.binarize, {
-                applyMetalFilter(to: bufferA, device: device, commandQueue: commandQueue)
+                applyMetalFilter(to: bufferA, device: device, commandQueue: commandQueue, metalTextureCache: metalTextureCache)
             }) else {
                 assert(false, "Failed to create pixel buffer.")
                 return
@@ -88,7 +88,8 @@ public struct PieceMetalSuzuki {
 public func applyMetalFilter(
     to buffer: CVPixelBuffer,
     device: MTLDevice,
-    commandQueue: MTLCommandQueue
+    commandQueue: MTLCommandQueue,
+    metalTextureCache: CVMetalTextureCache
 ) -> CVPixelBuffer? {
     var result: CVPixelBuffer!
     
@@ -108,16 +109,8 @@ public func applyMetalFilter(
     }
     
     /// Apply Metal filter to pixel buffer.
-    guard 
-        let binaryBuffer = commandQueue.makeCommandBuffer()
-    else {
+    guard  let binaryBuffer = commandQueue.makeCommandBuffer() else {
         assert(false, "Failed to get metal device.")
-        return nil
-    }
-    
-    var metalTextureCache: CVMetalTextureCache!
-    guard CVMetalTextureCacheCreate(kCFAllocatorDefault, nil, device, nil, &metalTextureCache) == kCVReturnSuccess else {
-        assert(false, "Unable to allocate texture cache")
         return nil
     }
     
@@ -208,13 +201,11 @@ func makeTextureFromCVPixelBuffer(
     guard status == kCVReturnSuccess else {
         debugPrint("Error at CVMetalTextureCacheCreateTextureFromImage \(status)")
         CVMetalTextureCacheFlush(textureCache, 0)
-        
         return nil
     }
     
     guard let cvTexture = cvTextureOut, let texture = CVMetalTextureGetTexture(cvTexture) else {
         CVMetalTextureCacheFlush(textureCache, 0)
-        
         return nil
     }
     
