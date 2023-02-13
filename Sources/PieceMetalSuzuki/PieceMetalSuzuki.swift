@@ -26,6 +26,11 @@ public actor Profiler {
         }
         return dict
     }()
+    
+    private var iterationTiming: [Int: (Int, TimeInterval)] = {
+        var dict = [Int: (Int, TimeInterval)]()
+        return dict
+    }()
 
     private init() { }
     public static let shared = Profiler()
@@ -35,8 +40,18 @@ public actor Profiler {
         timing[region] = (count + 1, total + duration)
     }
     static func add(_ duration: TimeInterval, to region: CodeRegion) {
-        Task(priority: .background) {
+        Task(priority: .high) {
             await Profiler.shared.add(duration, to: region)
+        }
+    }
+    
+    private func add(_ duration: TimeInterval, iteration: Int) -> Void {
+        let (count, total) = iterationTiming[iteration] ?? (0, 0)
+        iterationTiming[iteration] = (count + 1, total + duration)
+    }
+    static func add(_ duration: TimeInterval, iteration: Int) -> Void {
+        Task(priority: .high) {
+            await Profiler.shared.add(duration, iteration: iteration)
         }
     }
 
@@ -45,6 +60,15 @@ public actor Profiler {
         block()
         let end = CFAbsoluteTimeGetCurrent()
         Profiler.add(end - start, to: region)
+    }
+    
+    static func time(_ iteration: Int, _ block: () -> Void) {
+        let start = CFAbsoluteTimeGetCurrent()
+        block()
+        let end = CFAbsoluteTimeGetCurrent()
+        Task(priority: .high) {
+            await Profiler.shared.add(end - start, iteration: iteration)
+        }
     }
     
     static func time<Result>(_ region: CodeRegion, _ block: () -> Result) -> Result {
@@ -60,6 +84,12 @@ public actor Profiler {
         for (region, results) in dict where results.0 > 0 {
             let (count, time) = results
             print("\(region): \(time)s, \(count) (avg \(time / Double(count))s)")
+        }
+        
+        let timingDict = await Profiler.shared.iterationTiming
+        for (iteration, results) in timingDict.sortedByKey() {
+            let (count, time) = results
+            print("\(iteration): \(time)s, \(count) (avg \(time / Double(count))s)")
         }
     }
 }
