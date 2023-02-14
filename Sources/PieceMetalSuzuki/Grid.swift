@@ -77,19 +77,25 @@ struct Grid {
                 
                 let newGridSize = PixelSize(width: gridSize.width * 2, height: gridSize.height)
                 Profiler.time(.combine) {
-                    DispatchQueue.concurrentPerform(iterations: numRows) { rowIdx in
-                        let colIndices = stride(from: 0, to: numCols - 1, by: 2).reversed()
-                        DispatchQueue.concurrentPerform(iterations: colIndices.count) { colIdxIdx in
-                            let colIdx = colIndices[colIdxIdx]
-                            let a = regions[rowIdx][colIdx]
-                            let b = regions[rowIdx][colIdx + 1]
-                            let newRequests = combine(a: a, b: b,
-                                    dxn: dxn, newGridSize: newGridSize,
-                                    srcPts: srcPts, srcRuns: srcRuns,
-                                    dstRuns: dstRuns)
-                            cpuBlit(runIndices: newRequests, srcPts: srcPts, srcRuns: srcRuns, dstPts: dstPts)
+                    var indices: [(Int, Int)] = []
+                    for col in stride(from: 0, to: numCols - 1, by: 2).reversed() {
+                        for row in 0..<numRows {
+                            indices.append((row, col))
                         }
+                    }
+                    DispatchQueue.concurrentPerform(iterations: indices.count) { indicesIdx in
+                        let (row, col) = indices[indicesIdx]
+                        let a = regions[row][col]
+                        let b = regions[row][col + 1]
+                        let newRequests = combine(a: a, b: b,
+                                dxn: dxn, newGridSize: newGridSize,
+                                srcPts: srcPts, srcRuns: srcRuns,
+                                dstRuns: dstRuns)
+                        cpuBlit(runIndices: newRequests, srcPts: srcPts, srcRuns: srcRuns, dstPts: dstPts)
                         /// Update grid position for remaining regions.
+                    }
+
+                    DispatchQueue.concurrentPerform(iterations: numRows) { rowIdx in
                         for region in regions[rowIdx] {
                             region.gridPos.col /= 2
                         }
@@ -128,18 +134,21 @@ struct Grid {
                 
                 let newGridSize = PixelSize(width: gridSize.width, height: gridSize.height * 2)
                 Profiler.time(.combine) {
-                    let rowIndices = stride(from: 0, to: numRows - 1, by: 2).reversed()
-                    DispatchQueue.concurrentPerform(iterations: rowIndices.count) { rowIdxIdx in
-                        let rowIdx = rowIndices[rowIdxIdx]
-                        DispatchQueue.concurrentPerform(iterations: numCols) { colIdx in
-                            let a = regions[rowIdx][colIdx]
-                            let b = regions[rowIdx+1][colIdx]
-                            let newRequests = combine(a: a, b: b,
-                                    dxn: dxn, newGridSize: newGridSize,
-                                    srcPts: srcPts, srcRuns: srcRuns,
-                                    dstRuns: dstRuns)
-                            cpuBlit(runIndices: newRequests, srcPts: srcPts, srcRuns: srcRuns, dstPts: dstPts)
+                    var indices: [(Int, Int)] = []
+                    for col in 0..<numCols {
+                        for row in stride(from: 0, to: numRows - 1, by: 2).reversed() {
+                            indices.append((row, col))
                         }
+                    }
+                    DispatchQueue.concurrentPerform(iterations: indices.count) { indicesIdx in
+                        let (row, col) = indices[indicesIdx]
+                        let a = regions[row][col]
+                        let b = regions[row+1][col]
+                        let newRequests = combine(a: a, b: b,
+                                dxn: dxn, newGridSize: newGridSize,
+                                srcPts: srcPts, srcRuns: srcRuns,
+                                dstRuns: dstRuns)
+                        cpuBlit(runIndices: newRequests, srcPts: srcPts, srcRuns: srcRuns, dstPts: dstPts)
                     }
                     for rowIdx in stride(from: 0, to: numRows - 1, by: 2).reversed() {
                         /// Remove entire row at once.
