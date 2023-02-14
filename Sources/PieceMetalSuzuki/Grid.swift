@@ -173,6 +173,9 @@ struct Grid {
             dxn.flip()
             
             let end = CFAbsoluteTimeGetCurrent()
+            if iteration == 0 {
+                debugPrint("Iter 0: \(end - start)")
+            }
             Profiler.add(end - start, iteration: iteration)
             iteration += 1
         }
