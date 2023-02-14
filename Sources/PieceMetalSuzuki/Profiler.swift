@@ -112,8 +112,8 @@ public actor Profiler {
         try! await Task.sleep(nanoseconds: UInt64(1_000_000_000 * 2))
         
         let dict = await Profiler.shared.timing
-        for (region, results) in dict where [.overall, .combineAll, .combine].contains(region) {
-//            for (region, results) in dict where results.0 > 0 {
+//        for (region, results) in dict where [.overall, .combineAll, .combine].contains(region) {
+            for (region, results) in dict where results.0 > 0 {
             let (count, time) = results
             print("\(region): \(time)s, \(count) (avg \(time / Double(count))s)")
         }
