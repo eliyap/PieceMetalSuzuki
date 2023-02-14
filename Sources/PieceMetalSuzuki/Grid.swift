@@ -50,8 +50,6 @@ struct Grid {
             let numRows = regions.count
             let numCols = regions[0].count
             
-            var blitRunIndices: [Int] = []
-            
             switch dxn {
             case .horizontal:
                 (srcBuffer, dstBuffer) = (pointsVertical, pointsHorizontal)
@@ -68,37 +66,40 @@ struct Grid {
                                 srcRuns[runIdx].newTail = srcRuns[runIdx].oldTail
                                 srcRuns[runIdx].newHead = srcRuns[runIdx].oldHead
                             }
-                            blitRunIndices += region.runIndices(imageSize: imageSize, gridSize: gridSize)
+                            
+                            let runIndices = Array(region.runIndices(imageSize: imageSize, gridSize: gridSize))
+                            Profiler.time(.blit) {
+                                cpuBlit(runIndices: runIndices, srcPts: srcPts, srcRuns: srcRuns, dstPts: dstPts)
+                            }
                         }
                     }
                 }
                 
                 let newGridSize = PixelSize(width: gridSize.width * 2, height: gridSize.height)
                 Profiler.time(.combine) {
-                    let group = DispatchGroup()
-                    let queue = DispatchQueue(label: "serial.queue")
-                    DispatchQueue.concurrentPerform(iterations: numRows) { rowIdx in
-                        let colIndices = stride(from: 0, to: numCols - 1, by: 2).reversed()
-                        DispatchQueue.concurrentPerform(iterations: colIndices.count) { colIdxIdx in
-                            let colIdx = colIndices[colIdxIdx]
-                            let a = regions[rowIdx][colIdx]
-                            let b = regions[rowIdx][colIdx + 1]
-                            let newRequests = combine(a: a, b: b,
-                                    dxn: dxn, newGridSize: newGridSize,
-                                    srcPts: srcPts, srcRuns: srcRuns,
-                                    dstRuns: dstRuns)
-                            group.enter()
-                            queue.async {
-                                blitRunIndices += newRequests
-                                group.leave()
-                            }
+                    var indices: [(Int, Int)] = []
+                    for col in stride(from: 0, to: numCols - 1, by: 2).reversed() {
+                        for row in 0..<numRows {
+                            indices.append((row, col))
                         }
+                    }
+                    DispatchQueue.concurrentPerform(iterations: indices.count) { indicesIdx in
+                        let (row, col) = indices[indicesIdx]
+                        let a = regions[row][col]
+                        let b = regions[row][col + 1]
+                        let newRequests = combine(a: a, b: b,
+                                dxn: dxn, newGridSize: newGridSize,
+                                srcPts: srcPts, srcRuns: srcRuns,
+                                dstRuns: dstRuns)
+                        cpuBlit(runIndices: newRequests, srcPts: srcPts, srcRuns: srcRuns, dstPts: dstPts)
                         /// Update grid position for remaining regions.
+                    }
+
+                    DispatchQueue.concurrentPerform(iterations: numRows) { rowIdx in
                         for region in regions[rowIdx] {
                             region.gridPos.col /= 2
                         }
                     }
-                    group.wait()
                     
                     for rowIdx in 0..<numRows {
                         for colIdx in stride(from: 0, to: numCols - 1, by: 2).reversed() {
@@ -122,33 +123,33 @@ struct Grid {
                                 srcRuns[runIdx].newTail = srcRuns[runIdx].oldTail
                                 srcRuns[runIdx].newHead = srcRuns[runIdx].oldHead
                             }
-                            blitRunIndices += region.runIndices(imageSize: imageSize, gridSize: gridSize)
+                            
+                            let runIndices = Array(region.runIndices(imageSize: imageSize, gridSize: gridSize))
+                            Profiler.time(.blit) {
+                                cpuBlit(runIndices: runIndices, srcPts: srcPts, srcRuns: srcRuns, dstPts: dstPts)
+                            }
                         }
                     }
                 }
                 
                 let newGridSize = PixelSize(width: gridSize.width, height: gridSize.height * 2)
                 Profiler.time(.combine) {
-                    let group = DispatchGroup()
-                    let queue = DispatchQueue(label: "serial.queue")
-                    let rowIndices = stride(from: 0, to: numRows - 1, by: 2).reversed()
-                    DispatchQueue.concurrentPerform(iterations: rowIndices.count) { rowIdxIdx in
-                        let rowIdx = rowIndices[rowIdxIdx]
-                        DispatchQueue.concurrentPerform(iterations: numCols) { colIdx in
-                            let a = regions[rowIdx][colIdx]
-                            let b = regions[rowIdx+1][colIdx]
-                            let newRequests = combine(a: a, b: b,
-                                    dxn: dxn, newGridSize: newGridSize,
-                                    srcPts: srcPts, srcRuns: srcRuns,
-                                    dstRuns: dstRuns)
-                            group.enter()
-                            queue.async {
-                                blitRunIndices += newRequests
-                                group.leave()
-                            }
+                    var indices: [(Int, Int)] = []
+                    for col in 0..<numCols {
+                        for row in stride(from: 0, to: numRows - 1, by: 2).reversed() {
+                            indices.append((row, col))
                         }
                     }
-                    group.wait()
+                    DispatchQueue.concurrentPerform(iterations: indices.count) { indicesIdx in
+                        let (row, col) = indices[indicesIdx]
+                        let a = regions[row][col]
+                        let b = regions[row+1][col]
+                        let newRequests = combine(a: a, b: b,
+                                dxn: dxn, newGridSize: newGridSize,
+                                srcPts: srcPts, srcRuns: srcRuns,
+                                dstRuns: dstRuns)
+                        cpuBlit(runIndices: newRequests, srcPts: srcPts, srcRuns: srcRuns, dstPts: dstPts)
+                    }
                     for rowIdx in stride(from: 0, to: numRows - 1, by: 2).reversed() {
                         /// Remove entire row at once.
                         regions.remove(at: rowIdx + 1)
@@ -161,14 +162,6 @@ struct Grid {
                     }
                 }
                 gridSize = newGridSize
-            }
-            
-            let blitSuccess = Profiler.time(.blit) {
-                blit(device: device, commandQueue: commandQueue, blitRunIndices: blitRunIndices, srcRuns: srcRuns, srcPts: srcBuffer, dstPts: dstBuffer)
-            }
-            guard blitSuccess else {
-                assert(false, "blit failed")
-                return
             }
                 
             #if SHOW_GRID_WORK
