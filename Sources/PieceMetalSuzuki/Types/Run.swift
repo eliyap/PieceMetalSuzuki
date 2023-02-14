@@ -43,6 +43,5 @@ extension Run: CustomStringConvertible {
         + "([\(oldTail), \(oldHead))->"
         +  "[\(newTail), \(newHead)), "
         + "\(ChainDirection(rawValue: tailTriadFrom)!)->\(ChainDirection(rawValue: headTriadTo)!))"
-        
     }
 }
