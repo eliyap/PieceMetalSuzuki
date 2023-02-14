@@ -31,8 +31,10 @@ let package = Package(
             ],
             swiftSettings: [
                 .unsafeFlags([
-//                    "-DSHOW_GRID_WORK"
-                    "-DPROFILER_ON"
+//                    "-DSHOW_GRID_WORK",
+//                    "-DPROFILER_ON",
+                    "-Ounchecked",
+                    "-O",
                 ], nil)
             ]),
         .testTarget(
