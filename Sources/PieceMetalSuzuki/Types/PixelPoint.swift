@@ -30,6 +30,25 @@ struct PixelPoint: Equatable {
         case .topLeft:     return PixelPoint(x: x - 1, y: y - 1)
         }
     }
+    
+    subscript(_ direction: ChainDirection.RawValue) -> PixelPoint {
+        switch direction {
+        case ChainDirection.closed.rawValue:
+            assert(false, "Cannot index a closed border.")
+            return self
+        case ChainDirection.up.rawValue:          return PixelPoint(x: x,     y: y - 1)
+        case ChainDirection.topRight.rawValue:    return PixelPoint(x: x + 1, y: y - 1)
+        case ChainDirection.right.rawValue:       return PixelPoint(x: x + 1, y: y    )
+        case ChainDirection.bottomRight.rawValue: return PixelPoint(x: x + 1, y: y + 1)
+        case ChainDirection.down.rawValue:        return PixelPoint(x: x,     y: y + 1)
+        case ChainDirection.bottomLeft.rawValue:  return PixelPoint(x: x - 1, y: y + 1)
+        case ChainDirection.left.rawValue:        return PixelPoint(x: x - 1, y: y    )
+        case ChainDirection.topLeft.rawValue:     return PixelPoint(x: x - 1, y: y - 1)
+        default:
+            assertionFailure("Invalid direction")
+            return self
+        }
+    }
 
     /// An invalid point, since the frame should never be analyzed.
     static let zero = PixelPoint(x: .zero, y: .zero)
