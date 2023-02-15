@@ -29,9 +29,19 @@ struct Run {
     /// 1-8 indicate directions from upwards, proceeding clockwise.
     var tailTriadFrom: ChainDirection.RawValue
     var headTriadTo: ChainDirection.RawValue
+    
+    
+    init(oldTail: Int32, oldHead: Int32, tailTriadFrom: ChainDirection.RawValue, headTriadTo: ChainDirection.RawValue) {
+        self.oldTail = oldTail
+        self.oldHead = oldHead
+        self.newTail = -1
+        self.newHead = -1
+        self.tailTriadFrom = tailTriadFrom
+        self.headTriadTo = headTriadTo
+    }
 
     /// An invalid value used to initialize the process.
-    static let initial = Run(oldTail: -1, oldHead: -1, newTail: -1, newHead: -1, tailTriadFrom: ChainDirection.closed.rawValue, headTriadTo: ChainDirection.closed.rawValue)
+    static let initial = Run(oldTail: -1, oldHead: -1, tailTriadFrom: ChainDirection.closed.rawValue, headTriadTo: ChainDirection.closed.rawValue)
     
     /// Negative values are used to indicate an invalid run that should be treated as `nil`.
     var isValid: Bool { oldHead >= 0 }

@@ -427,7 +427,6 @@ struct Grid {
             /// Finally, add the new run.
             let newRun = Run(
                 oldTail: newRunTail, oldHead: newRunHead,
-                newTail: -1, newHead: -1,
                 tailTriadFrom: newTailFrom, headTriadTo: newHeadTo
             )
             
