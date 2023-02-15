@@ -38,6 +38,11 @@ public struct Run: CustomStringConvertible {
         self.tailTriadFrom = tailTriadFrom
         self.headTriadTo = headTriadTo
     }
+    
+    /// A short-hand for lookup tables to use.
+    init(t: Int32, h: Int32, from: ChainDirection.RawValue, to: ChainDirection.RawValue) {
+        self.init(oldTail: t, oldHead: h, tailTriadFrom: from, headTriadTo: to)
+    }
 
     /// An invalid value used to initialize the process.
     static let invalid = Run(oldTail: -1, oldHead: -1, tailTriadFrom: ChainDirection.closed.rawValue, headTriadTo: ChainDirection.closed.rawValue)
