@@ -57,9 +57,14 @@ public struct PieceMetalSuzuki {
                 assert(false, "Failed to create texture.")
                 return
             }
+            
+            guard let runLUTBuffer = Run.makeLUTBuffer(device: device) else {
+                assertionFailure("Failed to create LUT buffer")
+                return
+            }
 
             /// Apply Metal filter to pixel buffer.
-            applyMetalSuzuki(device: device, commandQueue: commandQueue, texture: texture)
+            applyMetalSuzuki(device: device, commandQueue: commandQueue, texture: texture, runLUTBuffer: runLUTBuffer)
         }
         
         //        bufferA = filteredBuffer
@@ -137,10 +142,11 @@ public func applyMetalFilter(
 public func applyMetalSuzuki(
     device: MTLDevice,
     commandQueue: MTLCommandQueue,
-    texture: MTLTexture
+    texture: MTLTexture,
+    runLUTBuffer: Buffer<Run>
 ) -> Void {
     /// Apply Metal filter to pixel buffer.
-    guard let result = createChainStarters(device: device, commandQueue: commandQueue, texture: texture) else {
+    guard let result = createChainStarters(device: device, commandQueue: commandQueue, texture: texture, runLUTBuffer: runLUTBuffer) else {
         assert(false, "Failed to run chain start kernel.")
         return
     }
@@ -258,7 +264,8 @@ func loadChainStarterFunction(device: MTLDevice) -> MTLFunction? {
 func createChainStarters(
     device: MTLDevice,
     commandQueue: MTLCommandQueue,
-    texture: MTLTexture
+    texture: MTLTexture,
+    runLUTBuffer: Buffer<Run>
 ) -> (Buffer<PixelPoint>, Buffer<Run>)? {
     let start = CFAbsoluteTimeGetCurrent()
     
@@ -287,6 +294,7 @@ func createChainStarters(
     cmdEncoder.setBuffer(pointBuffer.mtlBuffer, offset: 0, index: 0)
     cmdEncoder.setBuffer(runBuffer.mtlBuffer, offset: 0, index: 1)
     cmdEncoder.setBytes(StarterLUT, length: MemoryLayout<ChainDirection.RawValue>.stride * StarterLUT.count, index: 2)
+    cmdEncoder.setBuffer(runLUTBuffer.mtlBuffer, offset: 0, index: 3)
 
     let (tPerTG, tgPerGrid) = pipelineState.threadgroupParameters(texture: texture)
     cmdEncoder.dispatchThreadgroups(tgPerGrid, threadsPerThreadgroup: tPerTG)
