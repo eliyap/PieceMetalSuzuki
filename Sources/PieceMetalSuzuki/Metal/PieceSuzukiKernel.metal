@@ -8,7 +8,7 @@
 #include <metal_stdlib>
 using namespace metal;
 
-#define runsPerLUTRow 4
+#define lutRowWidth 4
 #define pointsPerPixel 4
 
 struct Run {
@@ -83,11 +83,13 @@ kernel void startChain(
         | (dnR << 7);
     
     // Loop over the lookup table's 4 columns.
-    for (int i = 0; i < 4; i++) {
-        struct Run lutRun = runLUT[lutRow * runsPerLUTRow + i];
+    for (uint32_t i = 0; i < 4; i++) {
+        uint32_t lutIdx = lutRow * lutRowWidth + i;
+        struct Run lutRun = runLUT[lutIdx];
+        struct PixelPoint lutPoint = pointLUT[lutIdx];
         if (lutRun.oldTail != -1) {
-            points[idx+i].x = gid.x;
-            points[idx+i].y = gid.y;
+            points[idx+i].x = lutPoint.x + gid.x;
+            points[idx+i].y = lutPoint.y + gid.y;
             runs[idx+i].oldTail = idx + lutRun.oldTail;
             runs[idx+i].oldHead = idx + lutRun.oldHead;
             runs[idx+i].tailTriadFrom = lutRun.tailTriadFrom;
