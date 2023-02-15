@@ -30,8 +30,7 @@ kernel void startChain(
     texture2d<half, access::read>  tex  [[ texture(0) ]],
     device PixelPoint*             points        [[ buffer (0) ]],
     device Run*                    runs          [[ buffer (1) ]],
-    device const uint8_t*          starterLUT    [[ buffer (2) ]],
-    device const Run*              runLUT        [[ buffer (3) ]],
+    device const Run*              runLUT        [[ buffer (2) ]],
     uint2                          gid           [[thread_position_in_grid]]
 ) {
     // 4 elements per pixel, since each pixel can hold 4 triads.

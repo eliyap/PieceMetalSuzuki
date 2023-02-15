@@ -58,7 +58,9 @@ public struct PieceMetalSuzuki {
                 return
             }
             
-            guard let runLUTBuffer = Run.makeLUTBuffer(device: device) else {
+            guard let runLUTBuffer = Profiler.time(.lutCopy, {
+                Run.makeLUTBuffer(device: device)
+            })  else {
                 assertionFailure("Failed to create LUT buffer")
                 return
             }
@@ -293,8 +295,7 @@ func createChainStarters(
     }
     cmdEncoder.setBuffer(pointBuffer.mtlBuffer, offset: 0, index: 0)
     cmdEncoder.setBuffer(runBuffer.mtlBuffer, offset: 0, index: 1)
-    cmdEncoder.setBytes(StarterLUT, length: MemoryLayout<ChainDirection.RawValue>.stride * StarterLUT.count, index: 2)
-    cmdEncoder.setBuffer(runLUTBuffer.mtlBuffer, offset: 0, index: 3)
+    cmdEncoder.setBuffer(runLUTBuffer.mtlBuffer, offset: 0, index: 2)
 
     let (tPerTG, tgPerGrid) = pipelineState.threadgroupParameters(texture: texture)
     cmdEncoder.dispatchThreadgroups(tgPerGrid, threadsPerThreadgroup: tPerTG)
