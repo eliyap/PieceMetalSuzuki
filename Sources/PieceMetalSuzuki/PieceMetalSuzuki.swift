@@ -212,7 +212,7 @@ public func makeTextureFromCVPixelBuffer(
     return texture
 }
 
-final class Buffer<Element> {
+public final class Buffer<Element> {
     
     public let count: Int
     public let array: UnsafeMutablePointer<Element>
