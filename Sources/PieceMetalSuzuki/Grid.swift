@@ -288,7 +288,6 @@ struct Grid {
             
             #if SHOW_GRID_WORK
             debugPrint("Combining \(a) and \(b)")
-            debugPrint("imgSize: \(imageSize), gridSize: \(gridSize)")
             #endif
             let aBaseOffset = baseOffset(grid: grid, region: a)
             let bBaseOffset = baseOffset(grid: grid, region: b)
@@ -427,7 +426,6 @@ struct Grid {
             /// Finally, add the new run.
             let newRun = Run(
                 oldTail: newRunTail, oldHead: newRunHead,
-                newTail: -1, newHead: -1,
                 tailTriadFrom: newTailFrom, headTriadTo: newHeadTo
             )
             
@@ -450,7 +448,7 @@ struct Grid {
             while runIndices.isEmpty == false {
                 let runIdx = runIndices.removeLast()
                 #if SHOW_GRID_WORK
-                debugPrint("joining run \(srcRuns[aRunIdx]) with head \(headPoint(for: aRunIdx)) and tail \(tailPoint(for: aRunIdx))")
+                debugPrint("joining run \(srcRuns[runIdx]) with head \(headPoint(for: runIdx)) and tail \(tailPoint(for: runIdx))")
                 #endif
                 join(runIdx: runIdx)
             }

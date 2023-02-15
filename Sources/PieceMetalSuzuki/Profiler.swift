@@ -21,6 +21,7 @@ public actor Profiler {
     enum CodeRegion: CaseIterable {
         case blit, trailingCopy, binarize, startChains, overall, makeTexture, initRegions, bufferInit, blitWait, runIndices
         case combineAll, combine, combineFindPartner, combineJoin
+        case lutCopy
     }
 
     private var timing: [CodeRegion: (Int, TimeInterval)] = {

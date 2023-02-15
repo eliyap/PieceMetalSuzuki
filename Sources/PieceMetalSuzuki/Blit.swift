@@ -53,10 +53,10 @@ func cpuBlit(
 ) -> Void {
     DispatchQueue.concurrentPerform(iterations: runIndices.count) { runIdxIdx in
         let runIdx = runIndices[runIdxIdx]
+        let run = srcRuns[runIdx]
         #if SHOW_GRID_WORK
         debugPrint("[BLIT] \(run)")
         #endif
-        let run = srcRuns[runIdx]
         memmove(
             dstPts.advanced(by: Int(run.newTail)),
             srcPts.advanced(by: Int(run.oldTail)),

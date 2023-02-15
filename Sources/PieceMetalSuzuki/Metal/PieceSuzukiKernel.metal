@@ -8,6 +8,9 @@
 #include <metal_stdlib>
 using namespace metal;
 
+#define runsPerLUTRow 4
+#define pointsPerPixel 4
+
 struct Run {
     int32_t oldTail;
     int32_t oldHead;
@@ -27,11 +30,11 @@ kernel void startChain(
     texture2d<half, access::read>  tex  [[ texture(0) ]],
     device PixelPoint*             points        [[ buffer (0) ]],
     device Run*                    runs          [[ buffer (1) ]],
-    device const uint8_t*          starterLUT    [[ buffer (2) ]],
+    device const Run*              runLUT        [[ buffer (2) ]],
     uint2                          gid           [[thread_position_in_grid]]
 ) {
     // 4 elements per pixel, since each pixel can hold 4 triads.
-    int32_t idx = ((tex.get_width() * gid.y) + gid.x) * 4;
+    int32_t idx = ((tex.get_width() * gid.y) + gid.x) * pointsPerPixel;
     
     // Don't exit the texture.
     if ((gid.x >= tex.get_width()) || (gid.y >= tex.get_height())) {
@@ -66,9 +69,9 @@ kernel void startChain(
     bool dn_ =                      (gid.y != maxRow) && (tex.read(uint2(gid.x    , gid.y + 1)).r != 0.0);
     bool dnR = (gid.x != maxCol) && (gid.y != maxRow) && (tex.read(uint2(gid.x + 1, gid.y + 1)).r != 0.0);
     
-    // Compose the lookup table address.
+    // Compose the lookup table row address.
     // Bit order inverted due I think to an endianess issue.
-    uint32_t lutAddr = 0
+    uint32_t lutRow = 0
         | (upL << 0)
         | (up_ << 1)
         | (upR << 2)
@@ -80,17 +83,14 @@ kernel void startChain(
     
     // Loop over the lookup table's 4 columns of 2 values each.
     for (int i = 0; i < 4; i++) {
-        uint8_t from = starterLUT[(lutAddr*8)+(i*2)+0];
-        if (from != 0) {
-            uint8_t to = starterLUT[(lutAddr*8)+(i*2)+1];
-            runs[idx+i].tailTriadFrom = from;
-            runs[idx+i].headTriadTo = to;
+        struct Run lutRun = runLUT[lutRow * runsPerLUTRow + i];
+        if (lutRun.oldTail != -1) {
             points[idx+i].x = gid.x;
             points[idx+i].y = gid.y;
-            
-            // Index to current buffer position.
-            runs[idx+i].oldTail = idx+i;
-            runs[idx+i].oldHead = idx+i+1;
+            runs[idx+i].oldTail = idx + lutRun.oldTail;
+            runs[idx+i].oldHead = idx + lutRun.oldHead;
+            runs[idx+i].tailTriadFrom = lutRun.tailTriadFrom;
+            runs[idx+i].headTriadTo   = lutRun.headTriadTo;
         }
     }    
     return;

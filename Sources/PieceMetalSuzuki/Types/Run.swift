@@ -15,7 +15,7 @@ import Foundation
 //  tail        head (past the end)
 ///
 // @metal-type
-struct Run {
+public struct Run: CustomStringConvertible {
     /// The indices in `[start, end)` format, relative to the global buffer base.
     var oldTail: Int32
     var oldHead: Int32
@@ -29,16 +29,28 @@ struct Run {
     /// 1-8 indicate directions from upwards, proceeding clockwise.
     var tailTriadFrom: ChainDirection.RawValue
     var headTriadTo: ChainDirection.RawValue
+    
+    init(oldTail: Int32, oldHead: Int32, tailTriadFrom: ChainDirection.RawValue, headTriadTo: ChainDirection.RawValue) {
+        self.oldTail = oldTail
+        self.oldHead = oldHead
+        self.newTail = -1
+        self.newHead = -1
+        self.tailTriadFrom = tailTriadFrom
+        self.headTriadTo = headTriadTo
+    }
+    
+    /// A short-hand for lookup tables to use.
+    init(t: Int32, h: Int32, from: ChainDirection.RawValue, to: ChainDirection.RawValue) {
+        self.init(oldTail: t, oldHead: h, tailTriadFrom: from, headTriadTo: to)
+    }
 
     /// An invalid value used to initialize the process.
-    static let initial = Run(oldTail: -1, oldHead: -1, newTail: -1, newHead: -1, tailTriadFrom: ChainDirection.closed.rawValue, headTriadTo: ChainDirection.closed.rawValue)
+    static let invalid = Run(oldTail: -1, oldHead: -1, tailTriadFrom: ChainDirection.closed.rawValue, headTriadTo: ChainDirection.closed.rawValue)
     
     /// Negative values are used to indicate an invalid run that should be treated as `nil`.
     var isValid: Bool { oldHead >= 0 }
-}
 
-extension Run: CustomStringConvertible {
-    var description: String {
+    public var description: String {
         ""
         + "([\(oldTail), \(oldHead))->"
         +  "[\(newTail), \(newHead)), "
