@@ -40,7 +40,7 @@ public struct Run: CustomStringConvertible {
     }
 
     /// An invalid value used to initialize the process.
-    static let initial = Run(oldTail: -1, oldHead: -1, tailTriadFrom: ChainDirection.closed.rawValue, headTriadTo: ChainDirection.closed.rawValue)
+    static let invalid = Run(oldTail: -1, oldHead: -1, tailTriadFrom: ChainDirection.closed.rawValue, headTriadTo: ChainDirection.closed.rawValue)
     
     /// Negative values are used to indicate an invalid run that should be treated as `nil`.
     var isValid: Bool { oldHead >= 0 }
