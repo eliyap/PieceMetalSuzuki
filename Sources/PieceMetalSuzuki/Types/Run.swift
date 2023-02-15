@@ -15,7 +15,7 @@ import Foundation
 //  tail        head (past the end)
 ///
 // @metal-type
-struct Run {
+public struct Run: CustomStringConvertible {
     /// The indices in `[start, end)` format, relative to the global buffer base.
     var oldTail: Int32
     var oldHead: Int32
@@ -29,7 +29,6 @@ struct Run {
     /// 1-8 indicate directions from upwards, proceeding clockwise.
     var tailTriadFrom: ChainDirection.RawValue
     var headTriadTo: ChainDirection.RawValue
-    
     
     init(oldTail: Int32, oldHead: Int32, tailTriadFrom: ChainDirection.RawValue, headTriadTo: ChainDirection.RawValue) {
         self.oldTail = oldTail
@@ -45,10 +44,8 @@ struct Run {
     
     /// Negative values are used to indicate an invalid run that should be treated as `nil`.
     var isValid: Bool { oldHead >= 0 }
-}
 
-extension Run: CustomStringConvertible {
-    var description: String {
+    public var description: String {
         ""
         + "([\(oldTail), \(oldHead))->"
         +  "[\(newTail), \(newHead)), "
