@@ -81,7 +81,7 @@ kernel void startChain(
         | (dn_ << 6)
         | (dnR << 7);
     
-    // Loop over the lookup table's 4 columns of 2 values each.
+    // Loop over the lookup table's 4 columns.
     for (int i = 0; i < 4; i++) {
         struct Run lutRun = runLUT[lutRow * runsPerLUTRow + i];
         if (lutRun.oldTail != -1) {
