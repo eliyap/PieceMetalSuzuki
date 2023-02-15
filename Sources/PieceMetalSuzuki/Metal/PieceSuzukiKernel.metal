@@ -25,6 +25,17 @@ struct PixelPoint {
     uint32_t y;
 };
 
+static bool readPixel(
+    texture2d<half, access::read>  tex,
+    uint2                          coords,
+    uint32_t                       minCol,
+    uint32_t                       maxCol,
+    uint32_t                       minRow,
+    uint32_t                       maxRow
+) {
+    return (coords.x >= minCol) && (coords.x <= maxCol) && (coords.y >= minRow) && (coords.y <= maxRow) && (tex.read(coords).r != 0.0);
+}
+
 // Compute kernel
 kernel void startChain(
     texture2d<half, access::read>  tex  [[ texture(0) ]],
@@ -61,14 +72,14 @@ kernel void startChain(
         return;
     }
     
-    bool upL = (gid.x != minCol) && (gid.y != minRow) && (tex.read(uint2(gid.x - 1, gid.y - 1)).r != 0.0);
-    bool up_ =                      (gid.y != minRow) && (tex.read(uint2(gid.x    , gid.y - 1)).r != 0.0);
-    bool upR = (gid.x != maxCol) && (gid.y != minRow) && (tex.read(uint2(gid.x + 1, gid.y - 1)).r != 0.0);
-    bool _L_ = (gid.x != minCol) &&                      (tex.read(uint2(gid.x - 1, gid.y    )).r != 0.0);
-    bool _R_ = (gid.x != maxCol) &&                      (tex.read(uint2(gid.x + 1, gid.y    )).r != 0.0);
-    bool dnL = (gid.x != minCol) && (gid.y != maxRow) && (tex.read(uint2(gid.x - 1, gid.y + 1)).r != 0.0);
-    bool dn_ =                      (gid.y != maxRow) && (tex.read(uint2(gid.x    , gid.y + 1)).r != 0.0);
-    bool dnR = (gid.x != maxCol) && (gid.y != maxRow) && (tex.read(uint2(gid.x + 1, gid.y + 1)).r != 0.0);
+    bool upL = readPixel(tex, uint2(gid.x - 1, gid.y - 1), minCol, maxCol, minRow, maxRow);
+    bool up_ = readPixel(tex, uint2(gid.x    , gid.y - 1), minCol, maxCol, minRow, maxRow);
+    bool upR = readPixel(tex, uint2(gid.x + 1, gid.y - 1), minCol, maxCol, minRow, maxRow);
+    bool _L_ = readPixel(tex, uint2(gid.x - 1, gid.y    ), minCol, maxCol, minRow, maxRow);
+    bool _R_ = readPixel(tex, uint2(gid.x + 1, gid.y    ), minCol, maxCol, minRow, maxRow);
+    bool dnL = readPixel(tex, uint2(gid.x - 1, gid.y + 1), minCol, maxCol, minRow, maxRow);
+    bool dn_ = readPixel(tex, uint2(gid.x    , gid.y + 1), minCol, maxCol, minRow, maxRow);
+    bool dnR = readPixel(tex, uint2(gid.x + 1, gid.y + 1), minCol, maxCol, minRow, maxRow);
     
     // Compose the lookup table row address.
     // Bit order inverted due I think to an endianess issue.
