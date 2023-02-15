@@ -82,8 +82,8 @@ kernel void startChain(
         | (dn_ << 6)
         | (dnR << 7);
     
-    // Loop over the lookup table's 4 columns.
-    for (uint32_t i = 0; i < 4; i++) {
+    // Loop over the lookup table's columns.
+    for (uint32_t i = 0; i < lutRowWidth; i++) {
         uint32_t lutIdx = lutRow * lutRowWidth + i;
         struct Run lutRun = runLUT[lutIdx];
         struct PixelPoint lutPoint = pointLUT[lutIdx];
