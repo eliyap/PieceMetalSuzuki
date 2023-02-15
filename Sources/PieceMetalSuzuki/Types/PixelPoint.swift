@@ -31,8 +31,8 @@ struct PixelPoint: Equatable {
         }
     }
 
-    /// An invalid point, since the frame should never be analyzed.
-    static let zero = PixelPoint(x: .zero, y: .zero)
+    /// An invalid point.
+    static let invalid = PixelPoint(x: UInt32.max, y: UInt32.max)
 }
 
 extension PixelPoint: CustomStringConvertible {
