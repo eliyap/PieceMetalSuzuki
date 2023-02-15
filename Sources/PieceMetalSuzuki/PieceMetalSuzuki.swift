@@ -58,15 +58,19 @@ public struct PieceMetalSuzuki {
                 return
             }
             
-            guard let runLUTBuffer = Profiler.time(.lutCopy, {
-                Run.makeLUTBuffer(device: device)
-            })  else {
+            var runLUTBuffer: Buffer<Run>?
+            var pointLUTBuffer: Buffer<PixelPoint>?
+            Profiler.time(.lutCopy, {
+                runLUTBuffer = Run.makeLUTBuffer(device: device)
+                pointLUTBuffer = PixelPoint.makeLUTBuffer(device: device)
+            })
+            guard let runLUTBuffer, let pointLUTBuffer else {
                 assertionFailure("Failed to create LUT buffer")
                 return
             }
 
             /// Apply Metal filter to pixel buffer.
-            applyMetalSuzuki(device: device, commandQueue: commandQueue, texture: texture, runLUTBuffer: runLUTBuffer)
+            applyMetalSuzuki(device: device, commandQueue: commandQueue, texture: texture, runLUTBuffer: runLUTBuffer, pointLUTBuffer: pointLUTBuffer)
         }
         
         //        bufferA = filteredBuffer
@@ -145,10 +149,11 @@ public func applyMetalSuzuki(
     device: MTLDevice,
     commandQueue: MTLCommandQueue,
     texture: MTLTexture,
-    runLUTBuffer: Buffer<Run>
+    runLUTBuffer: Buffer<Run>,
+    pointLUTBuffer: Buffer<PixelPoint>
 ) -> Void {
     /// Apply Metal filter to pixel buffer.
-    guard let result = createChainStarters(device: device, commandQueue: commandQueue, texture: texture, runLUTBuffer: runLUTBuffer) else {
+    guard let result = createChainStarters(device: device, commandQueue: commandQueue, texture: texture, runLUTBuffer: runLUTBuffer, pointLUTBuffer: pointLUTBuffer) else {
         assert(false, "Failed to run chain start kernel.")
         return
     }
@@ -267,7 +272,8 @@ func createChainStarters(
     device: MTLDevice,
     commandQueue: MTLCommandQueue,
     texture: MTLTexture,
-    runLUTBuffer: Buffer<Run>
+    runLUTBuffer: Buffer<Run>,
+    pointLUTBuffer: Buffer<PixelPoint>
 ) -> (Buffer<PixelPoint>, Buffer<Run>)? {
     let start = CFAbsoluteTimeGetCurrent()
     
@@ -296,6 +302,7 @@ func createChainStarters(
     cmdEncoder.setBuffer(pointBuffer.mtlBuffer, offset: 0, index: 0)
     cmdEncoder.setBuffer(runBuffer.mtlBuffer, offset: 0, index: 1)
     cmdEncoder.setBuffer(runLUTBuffer.mtlBuffer, offset: 0, index: 2)
+    cmdEncoder.setBuffer(pointLUTBuffer.mtlBuffer, offset: 0, index: 3)
 
     let (tPerTG, tgPerGrid) = pipelineState.threadgroupParameters(texture: texture)
     cmdEncoder.dispatchThreadgroups(tgPerGrid, threadsPerThreadgroup: tPerTG)
