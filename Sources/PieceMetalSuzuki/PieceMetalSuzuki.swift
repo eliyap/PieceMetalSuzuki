@@ -227,30 +227,6 @@ public func makeTextureFromCVPixelBuffer(
     return texture
 }
 
-public final class Buffer<Element> {
-    
-    public let count: Int
-    public let array: UnsafeMutablePointer<Element>
-    public let mtlBuffer: MTLBuffer
-    
-    init?(device: MTLDevice, count: Int) {
-        let start = CFAbsoluteTimeGetCurrent()
-        
-        let size = MemoryLayout<Element>.stride * count
-        guard let buffer = device.makeBuffer(length: size) else {
-            assert(false, "Failed to create buffer.")
-            return nil
-        }
-        
-        self.count = count
-        self.mtlBuffer = buffer
-        self.array = buffer.contents().bindMemory(to: Element.self, capacity: count)
-        
-        let end = CFAbsoluteTimeGetCurrent()
-        Profiler.add(end - start, to: .bufferInit)
-    }
-}
-
 func loadChainStarterFunction(device: MTLDevice) -> MTLFunction? {
     do {
         guard let libUrl = Bundle.module.url(forResource: "PieceSuzukiKernel", withExtension: "metal", subdirectory: "Metal") else {
