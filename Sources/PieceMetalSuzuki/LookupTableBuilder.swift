@@ -7,6 +7,7 @@
 
 import Foundation
 import CoreVideo
+import OrderedCollections
 
 /**
  The objective of a Lookup Table is to quick-start the creation of a `Region` from a pattern.
@@ -30,11 +31,11 @@ internal final class LookupTableBuilder {
     let coreSize: PixelSize
     
     /// Contains distinct series of points.
-    var pointTable: [[StartPoint]] = []
+    var pointTable: OrderedSet<[StartPoint]> = []
     var pointIndices: [Int] = []
     
     /// Contains distinct series of runs.
-    var runTable: [[StartRun]] = []
+    var runTable: OrderedSet<[StartRun]> = []
     var runIndices: [Int] = []
     
     public static var shared: LookupTableBuilder! = nil
@@ -51,7 +52,7 @@ internal final class LookupTableBuilder {
 
 /// Represents a point within the pattern's core.
 /// Because patterns are small, we can use narrow integers.
-struct StartPoint {
+struct StartPoint: Hashable {
     let x: UInt8
     let y: UInt8
     
@@ -60,7 +61,7 @@ struct StartPoint {
 
 /// Represents a series of points in the pattern's core.
 /// Because runs are short, we can use narrow integers.
-struct StartRun {
+struct StartRun: Hashable {
     /// Invalid negative values signal absence of a run.
     let tail: Int8
     let head: Int8
