@@ -51,8 +51,8 @@ internal final class LookupTableBuilder {
         var metalTextureCache: CVMetalTextureCache!
         CVMetalTextureCacheCreate(kCFAllocatorDefault, nil, device, nil, &metalTextureCache)
         
-        let iterations = (2 << Int((coreSize.height + 2) * (coreSize.width + 2)))
-        for iteration in 0..<iterations {
+        let iterations = 0..<(2 << Int((coreSize.height + 2) * (coreSize.width + 2)))
+        for iteration in iterations {
             buffer.setPattern(coreSize: coreSize, iteration: iteration)
             let texture = makeTextureFromCVPixelBuffer(pixelBuffer: buffer.buffer, textureFormat: .bgra8Unorm, textureCache: metalTextureCache)!
             let (pointBuffer, runBuffer) = createChainStarters(device: device, commandQueue: commandQueue, texture: texture, runLUTBuffer: runLUTBuffer, pointLUTBuffer: pointLUTBuffer)!
