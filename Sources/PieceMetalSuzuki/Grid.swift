@@ -467,14 +467,9 @@ extension Grid {
         pointsVertical: Buffer<PixelPoint>,
         runsVertical: Buffer<Run>,
         commandQueue: MTLCommandQueue
-    ) -> Void {
-        guard
-            let pointsHorizontal = Buffer<PixelPoint>(device: device, count: pointsVertical.count),
-            let runsHorizontal = Buffer<Run>(device: device, count: runsVertical.count)
-        else {
-            assert(false, "Failed to create buffer.")
-            return
-        }
+    ) -> (Region, [Run], [PixelPoint]) {
+        let pointsHorizontal = Buffer<PixelPoint>(device: device, count: pointsVertical.count)!
+        let runsHorizontal = Buffer<Run>(device: device, count: runsVertical.count)!
         
         var dxn = ReduceDirection.horizontal
         while (gridSize != coreSize) {
@@ -614,9 +609,17 @@ extension Grid {
 //            print((run.oldTail..<run.oldHead).map { pointBuffer[Int($0)] })
             assert(run.isValid)
         }
-        print("Found \(regions[0][0].runsCount) contours.")
         #endif
         
-        // return regions[0][0]
+        let center = regions[1][1]
+        var runs: [Run] = []
+        var points: [PixelPoint] = []
+        for runIdx in center.runIndices(imageSize: imageSize, gridSize: gridSize) {
+            let run = runBuffer[runIdx]
+            runs.append(run)
+            points.append(contentsOf: (run.oldTail..<run.oldHead).map { pointBuffer[Int($0)] })
+        }
+        
+        return (center, runs, points)
     }
 }
