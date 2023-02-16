@@ -63,7 +63,7 @@ internal final class LookupTableBuilder {
                     return initializeRegions(runBuffer: runBuffer, texture: texture)
                 }
             )
-            grid.combineAll(
+            grid.combineAllForLUT(
                 device: device,
                 pointsHorizontal: pointBuffer,
                 runsHorizontal: runBuffer,
