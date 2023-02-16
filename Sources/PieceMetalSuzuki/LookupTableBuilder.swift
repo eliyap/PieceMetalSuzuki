@@ -42,8 +42,18 @@ internal final class LookupTableBuilder {
     public init(_ coreSize: PixelSize) {
         self.coreSize = coreSize
         let buffer = BGRAPixelBuffer(coreSize: coreSize)
+        
+        /// Setup.
+        let device = MTLCreateSystemDefaultDevice()!
+        let commandQueue = device.makeCommandQueue()!
+        let runLUTBuffer = Run.makeLUTBuffer(device: device)!
+        let pointLUTBuffer = PixelPoint.makeLUTBuffer(device: device)!
+        var metalTextureCache: CVMetalTextureCache!
+        CVMetalTextureCacheCreate(kCFAllocatorDefault, nil, device, nil, &metalTextureCache)
+        
         let iterations = (2 << Int((coreSize.height + 2) * (coreSize.width + 2)))
         for iteration in 0..<iterations {
+            let texture = makeTextureFromCVPixelBuffer(pixelBuffer: buffer.buffer, textureFormat: .bgra8Unorm, textureCache: metalTextureCache)
             buffer.setPattern(coreSize: coreSize, iteration: iteration)
         }
         saveBufferToPng(buffer: buffer.buffer, format: .BGRA8)
