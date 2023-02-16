@@ -181,12 +181,12 @@ struct Grid {
         let runBuffer: UnsafeMutablePointer<Run>
         
         switch dxn {
-        case .horizontal:
-            pointBuffer = pointsHorizontal.array
-            runBuffer = runsHorizontal.array
-        case .vertical:
+        case .horizontal: /// Last iteration was vertical.
             pointBuffer = pointsVertical.array
             runBuffer = runsVertical.array
+        case .vertical: /// Last iteration was horizontal.
+            pointBuffer = pointsHorizontal.array
+            runBuffer = runsHorizontal.array
         }
         
         #if DEBUG
@@ -599,12 +599,12 @@ extension Grid {
         let runBuffer: UnsafeMutablePointer<Run>
         
         switch dxn {
-        case .horizontal:
-            pointBuffer = pointsHorizontal.array
-            runBuffer = runsHorizontal.array
-        case .vertical:
+        case .horizontal: /// Last iteration was vertical.
             pointBuffer = pointsVertical.array
             runBuffer = runsVertical.array
+        case .vertical: /// Last iteration was horizontal.
+            pointBuffer = pointsHorizontal.array
+            runBuffer = runsHorizontal.array
         }
         
         #if DEBUG
