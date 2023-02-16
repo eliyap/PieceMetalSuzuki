@@ -22,6 +22,16 @@ public final class Buffer<Element> {
         
         self.count = count
         self.mtlBuffer = buffer
+        
+        /** - Warning: 23.02.16
+         `.contents()` causes a memory leak, even if
+         - no `.bindMemory` is called
+         - the return pointer is never assigned to a variable
+         - the `MTLBuffer` has no remaining references.
+         - `.setPurgeableState(.empty)` is called.
+         
+         I am treating this as a bug to be worked around.
+         */
         self.array = buffer.contents().bindMemory(to: Element.self, capacity: count)
     }
     
