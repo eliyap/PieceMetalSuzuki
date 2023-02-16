@@ -60,19 +60,19 @@ public struct PieceMetalSuzuki {
                 return
             }
             
-            var runLUTBuffer: Buffer<Run>?
-            var pointLUTBuffer: Buffer<PixelPoint>?
-            Profiler.time(.lutCopy, {
-                runLUTBuffer = Run.LUTBuffer
-                pointLUTBuffer = PixelPoint.LUTBuffer
-            })
-            guard let runLUTBuffer, let pointLUTBuffer else {
-                assertionFailure("Failed to create LUT buffer")
+            let count = texture.width * texture.height * 4
+            guard
+                let pointBuffer = Buffer<PixelPoint>(device: device, count: count),
+                let runBuffer = Buffer<Run>(device: device, count: count),
+                let pointsUnfilled = Buffer<PixelPoint>(device: device, count: count),
+                let runsUnfilled = Buffer<Run>(device: device, count: count)
+            else {
+                assert(false, "Failed to create buffer.")
                 return
             }
 
             /// Apply Metal filter to pixel buffer.
-            applyMetalSuzuki(device: device, commandQueue: commandQueue, texture: texture, runLUTBuffer: runLUTBuffer, pointLUTBuffer: pointLUTBuffer)
+            applyMetalSuzuki(device: device, commandQueue: commandQueue, texture: texture, pointsFilled: pointBuffer, runsFilled: runBuffer, pointsUnfilled: pointsUnfilled, runsUnfilled: runsUnfilled)
         }
         
         //        bufferA = filteredBuffer
@@ -151,22 +151,13 @@ public func applyMetalSuzuki(
     device: MTLDevice,
     commandQueue: MTLCommandQueue,
     texture: MTLTexture,
-    runLUTBuffer: Buffer<Run>,
-    pointLUTBuffer: Buffer<PixelPoint>
+    pointsFilled: Buffer<PixelPoint>,
+    runsFilled: Buffer<Run>,
+    pointsUnfilled: Buffer<PixelPoint>,
+    runsUnfilled: Buffer<Run>
 ) -> Void {
-    let count = texture.width * texture.height * 4
-    guard
-        let pointBuffer = Buffer<PixelPoint>(device: device, count: count),
-        let runBuffer = Buffer<Run>(device: device, count: count),
-        let pointsUnfilled = Buffer<PixelPoint>(device: device, count: count),
-        let runsUnfilled = Buffer<Run>(device: device, count: count)
-    else {
-        assert(false, "Failed to create buffer.")
-        return
-    }
-    
     /// Apply Metal filter to pixel buffer.
-    guard createChainStarters(device: device, commandQueue: commandQueue, texture: texture, runBuffer: runBuffer, pointBuffer: pointBuffer) else {
+    guard createChainStarters(device: device, commandQueue: commandQueue, texture: texture, runBuffer: runsFilled, pointBuffer: pointsFilled) else {
         assert(false, "Failed to run chain start kernel.")
         return
     }
@@ -175,15 +166,15 @@ public func applyMetalSuzuki(
         imageSize: PixelSize(width: UInt32(texture.width), height: UInt32(texture.height)),
         gridSize: PixelSize(width: 1, height: 1),
         regions: Profiler.time(.initRegions) {
-            return initializeRegions(runBuffer: runBuffer, texture: texture)
+            return initializeRegions(runBuffer: runsFilled, texture: texture)
         }
     )
     
     Profiler.time(.combineAll) {
         grid.combineAll(
             device: device,
-            pointsFilled: pointBuffer,
-            runsFilled: runBuffer,
+            pointsFilled: pointsFilled,
+            runsFilled: runsFilled,
             pointsUnfilled: pointsUnfilled,
             runsUnfilled: runsUnfilled,
             commandQueue: commandQueue
