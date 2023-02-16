@@ -168,11 +168,18 @@ public func applyMetalSuzuki(
             return initializeRegions(runBuffer: runBuffer, texture: texture)
         }
     )
+    
+    let count = texture.width * texture.height * 4
+    let pointsUnfilled = Buffer<PixelPoint>(device: device, count: count)!
+    let runsUnfilled = Buffer<Run>(device: device, count: count)!
+    
     Profiler.time(.combineAll) {
         grid.combineAll(
             device: device,
-            pointsHorizontal: pointBuffer,
-            runsHorizontal: runBuffer,
+            pointsFilled: pointBuffer,
+            runsFilled: runBuffer,
+            pointsUnfilled: pointsUnfilled,
+            runsUnfilled: runsUnfilled,
             commandQueue: commandQueue
         )
     }

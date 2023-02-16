@@ -23,19 +23,17 @@ struct Grid {
     
     mutating func combineAll(
         device: MTLDevice,
-        pointsHorizontal: Buffer<PixelPoint>,
-        runsHorizontal: Buffer<Run>,
+        pointsFilled: Buffer<PixelPoint>,
+        runsFilled: Buffer<Run>,
+        pointsUnfilled: Buffer<PixelPoint>,
+        runsUnfilled: Buffer<Run>,
         commandQueue: MTLCommandQueue
     ) -> Void {
-        guard 
-            let pointsVertical = Buffer<PixelPoint>(device: device, count: pointsHorizontal.count),
-            let runsVertical = Buffer<Run>(device: device, count: runsHorizontal.count)
-        else {
-            assert(false, "Failed to create buffer.")
-            return
-        }
-        
         var dxn = ReduceDirection.vertical
+        let pointsHorizontal = pointsFilled
+        let runsHorizontal = runsFilled
+        let pointsVertical = pointsUnfilled
+        let runsVertical = runsUnfilled
         
         var srcPts: UnsafeMutablePointer<PixelPoint>
         var dstPts: UnsafeMutablePointer<PixelPoint>
@@ -471,12 +469,11 @@ extension Grid {
         runsUnfilled: Buffer<Run>,
         commandQueue: MTLCommandQueue
     ) -> (Region, [Run], [PixelPoint]) {
+        var dxn = ReduceDirection.horizontal
         let pointsVertical = pointsFilled
         let runsVertical = runsFilled
         let pointsHorizontal = pointsUnfilled
         let runsHorizontal = runsUnfilled
-        
-        var dxn = ReduceDirection.horizontal
         
         var srcPts: UnsafeMutablePointer<PixelPoint>
         var dstPts: UnsafeMutablePointer<PixelPoint>
