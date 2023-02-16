@@ -63,8 +63,8 @@ public struct PieceMetalSuzuki {
             var runLUTBuffer: Buffer<Run>?
             var pointLUTBuffer: Buffer<PixelPoint>?
             Profiler.time(.lutCopy, {
-                runLUTBuffer = Run.makeLUTBuffer(device: device)
-                pointLUTBuffer = PixelPoint.makeLUTBuffer(device: device)
+                runLUTBuffer = Run.LUTBuffer
+                pointLUTBuffer = PixelPoint.LUTBuffer
             })
             guard let runLUTBuffer, let pointLUTBuffer else {
                 assertionFailure("Failed to create LUT buffer")

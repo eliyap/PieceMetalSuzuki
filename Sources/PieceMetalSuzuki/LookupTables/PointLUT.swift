@@ -10,14 +10,15 @@ import Metal
 
 extension PixelPoint {
     
-    static func makeLUTBuffer(device: MTLDevice) -> Buffer<PixelPoint>? {
-        guard let buffer = Buffer<PixelPoint>(device: device, count: LUT.count) else {
+    static var LUTBuffer: Buffer<PixelPoint>? = {
+        let device = MTLCreateSystemDefaultDevice()!
+        guard let buffer = Buffer<PixelPoint>.init(device: device, count: LUT.count) else {
             assertionFailure("Failed to create LUT buffer")
             return nil
         }
         memcpy(buffer.array, LUT, MemoryLayout<PixelPoint>.stride * LUT.count)
         return buffer
-    }
+    }()
     
     static let LUT: [PixelPoint] = [
         // 000

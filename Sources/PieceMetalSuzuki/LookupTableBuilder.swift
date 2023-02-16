@@ -46,8 +46,8 @@ internal final class LookupTableBuilder {
         /// Setup.
         let device = MTLCreateSystemDefaultDevice()!
         let commandQueue = device.makeCommandQueue()!
-        let runLUTBuffer = Run.makeLUTBuffer(device: device)!
-        let pointLUTBuffer = PixelPoint.makeLUTBuffer(device: device)!
+        let runLUTBuffer = Run.LUTBuffer!
+        let pointLUTBuffer = PixelPoint.LUTBuffer!
         var metalTextureCache: CVMetalTextureCache!
         CVMetalTextureCacheCreate(kCFAllocatorDefault, nil, device, nil, &metalTextureCache)
         
