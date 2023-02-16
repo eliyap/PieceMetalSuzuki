@@ -462,6 +462,7 @@ func baseOffset(grid: Grid, region: Region) -> UInt32 {
 
 extension Grid {
     mutating func combineAllForLUT(
+        coreSize: PixelSize,
         device: MTLDevice,
         pointsVertical: Buffer<PixelPoint>,
         runsVertical: Buffer<Run>,
@@ -476,7 +477,7 @@ extension Grid {
         }
         
         var dxn = ReduceDirection.horizontal
-        while (regions.count > 1) || (regions[0].count > 1) {
+        while (gridSize != coreSize) {
             let srcPts: UnsafeMutablePointer<PixelPoint>
             let dstPts: UnsafeMutablePointer<PixelPoint>
             let srcRuns: UnsafeMutablePointer<Run>
