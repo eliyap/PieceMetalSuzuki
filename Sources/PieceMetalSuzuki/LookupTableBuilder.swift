@@ -65,8 +65,8 @@ internal final class LookupTableBuilder {
             )
             grid.combineAllForLUT(
                 device: device,
-                pointsHorizontal: pointBuffer,
-                runsHorizontal: runBuffer,
+                pointsVertical: pointBuffer,
+                runsVertical: runBuffer,
                 commandQueue: commandQueue
             )
         }

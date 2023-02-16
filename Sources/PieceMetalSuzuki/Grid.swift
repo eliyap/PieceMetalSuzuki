@@ -463,19 +463,19 @@ func baseOffset(grid: Grid, region: Region) -> UInt32 {
 extension Grid {
     mutating func combineAllForLUT(
         device: MTLDevice,
-        pointsHorizontal: Buffer<PixelPoint>,
-        runsHorizontal: Buffer<Run>,
+        pointsVertical: Buffer<PixelPoint>,
+        runsVertical: Buffer<Run>,
         commandQueue: MTLCommandQueue
     ) -> Void {
         guard
-            let pointsVertical = Buffer<PixelPoint>(device: device, count: pointsHorizontal.count),
-            let runsVertical = Buffer<Run>(device: device, count: runsHorizontal.count)
+            let pointsHorizontal = Buffer<PixelPoint>(device: device, count: pointsVertical.count),
+            let runsHorizontal = Buffer<Run>(device: device, count: runsVertical.count)
         else {
             assert(false, "Failed to create buffer.")
             return
         }
         
-        var dxn = ReduceDirection.vertical
+        var dxn = ReduceDirection.horizontal
         while (regions.count > 1) || (regions[0].count > 1) {
             let srcPts: UnsafeMutablePointer<PixelPoint>
             let dstPts: UnsafeMutablePointer<PixelPoint>
