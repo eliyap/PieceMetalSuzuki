@@ -23,9 +23,11 @@ import CoreVideo
  101
  ```
  This pattern produces 4 distinct runs; the most any 3x3 pattern can have.
- Hence, the 3x3 lookup table has 4 columns.
+ Hence, the 3x3 lookup table has 4 columns.
  */
 internal final class LookupTableBuilder {
+    
+    let coreSize: PixelSize
     
     /// Contains distinct series of points.
     var pointTable: [[StartPoint]] = []
@@ -35,45 +37,15 @@ internal final class LookupTableBuilder {
     var runTable: [[StartRun]] = []
     var runIndices: [Int] = []
     
-    public static let shared = LookupTableBuilder()
-    private init() { }
-    
-    func create(_ size: PixelSize) -> Void {
-        let buffer = LookupTableBuilder.makeBuffer(size)
-        LookupTableBuilder.fill(buffer: buffer)
-    }
-    
-    private static func fill(buffer: CVPixelBuffer) -> Void {
-        let width = CVPixelBufferGetWidth(buffer)
-        let height = CVPixelBufferGetHeight(buffer)
-        CVPixelBufferLockBaseAddress(buffer, [])
-        defer {
-            CVPixelBufferUnlockBaseAddress(buffer, [])
+    public static var shared: LookupTableBuilder! = nil
+    public init(_ coreSize: PixelSize) {
+        self.coreSize = coreSize
+        let buffer = BGRAPixelBuffer(coreSize: coreSize)
+        let iterations = (2 << Int((coreSize.height + 2) * (coreSize.width + 2)))
+        for iteration in 0..<iterations {
+            buffer.setPattern(coreSize: coreSize, iteration: iteration)
         }
-        
-        let BGRAChannels = 4
-        let count = width * height * BGRAChannels
-        let ptr = CVPixelBufferGetBaseAddress(buffer)!
-            .bindMemory(to: UInt8.self, capacity: count)
-        for idx in 0..<count {
-            ptr[idx] = 0
-        }
-    }
-    
-    private static func makeBuffer(_ coreSize: PixelSize) -> CVPixelBuffer {
-        let bufferWidth = Int(3 * coreSize.width)
-        let bufferHeight = Int(3 * coreSize.height)
-        let format = kCVPixelFormatType_32BGRA
-        let options: NSDictionary = [
-            kCVPixelBufferCGImageCompatibilityKey: true,
-            kCVPixelBufferMetalCompatibilityKey: true,
-        ]
-        var buffer: CVPixelBuffer!
-        guard CVPixelBufferCreate(kCFAllocatorDefault, bufferWidth, bufferHeight, format, options, &buffer) == kCVReturnSuccess else {
-            assertionFailure("Failed to create pixel buffer.")
-            return buffer
-        }
-        return buffer
+        saveBufferToPng(buffer: buffer.buffer, format: .BGRA8)
     }
 }
 
@@ -97,4 +69,80 @@ struct StartRun {
     let to: ChainDirection.RawValue
     
     public static let invalid = StartRun(tail: -1, head: -1, from: .max, to: .max)
+}
+
+internal final class BGRAPixelBuffer {
+    
+    var buffer: CVPixelBuffer
+    var ptr: UnsafeMutablePointer<UInt8>
+
+    private let bufferWidth: Int
+    private let bufferHeight: Int
+    
+    init(coreSize: PixelSize) { 
+        let bufferWidth = Int(3 * coreSize.width)
+        let bufferHeight = Int(3 * coreSize.height)
+        let format = kCVPixelFormatType_32BGRA
+        let options: NSDictionary = [
+            kCVPixelBufferCGImageCompatibilityKey: true,
+            kCVPixelBufferMetalCompatibilityKey: true,
+        ]
+        var buffer: CVPixelBuffer!
+        let status = CVPixelBufferCreate(kCFAllocatorDefault, bufferWidth, bufferHeight, format, options, &buffer)
+        assert(status == kCVReturnSuccess)
+        self.buffer = buffer
+
+        CVPixelBufferLockBaseAddress(buffer, [])
+        self.ptr = CVPixelBufferGetBaseAddress(buffer)!
+            .bindMemory(to: UInt8.self, capacity: bufferWidth * bufferHeight * 4)
+
+        var leftPixels: Int = 0
+        var rightPixels: Int = 0
+        var topPixels: Int = 0
+        var bottomPixels: Int = 0
+        CVPixelBufferGetExtendedPixels(buffer, &leftPixels, &rightPixels, &topPixels, &bottomPixels)
+        assert(leftPixels == 0)
+        assert(topPixels == 0)
+//        self.bufferWidth = rightPixels + bufferWidth
+//        self.bufferHeight = bottomPixels + bufferHeight
+       self.bufferWidth = 16 // IDK
+       self.bufferHeight = bottomPixels + bufferHeight
+
+        fill()
+        print("bufferWidth, bufferHeight", bufferWidth, bufferHeight)
+    }
+
+    deinit {
+        CVPixelBufferUnlockBaseAddress(buffer, [])
+    }
+
+    private func fill() -> Void {
+        let count = bufferWidth * bufferHeight
+        for idx in 0..<count {
+            ptr[idx*4+0] = .zero
+            ptr[idx*4+1] = .zero
+            ptr[idx*4+2] = .zero
+            ptr[idx*4+3] = 255
+        }
+    }
+    
+    let BGRAChannels = 4
+    func setPattern(coreSize: PixelSize, iteration: Int) -> Void {
+        DispatchQueue.concurrentPerform(iterations: Int((coreSize.width + 2) * (coreSize.height + 2))) { bitNumber in
+            var (row, col) = bitNumber.quotientAndRemainder(dividingBy: Int(coreSize.width + 2))
+            row += Int(coreSize.height - 1)
+            col += Int(coreSize.width - 1)
+            
+            let offset = (row * bufferWidth + col) * BGRAChannels
+            if (iteration & (1 << bitNumber)) != 0 {
+                ptr[offset+0] = .max
+                ptr[offset+1] = .max
+                ptr[offset+2] = .max
+            } else {
+                ptr[offset+0] = .zero
+                ptr[offset+1] = .zero
+                ptr[offset+2] = .zero
+            }
+        }
+    }
 }
