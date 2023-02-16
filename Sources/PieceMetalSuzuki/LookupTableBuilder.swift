@@ -55,7 +55,19 @@ internal final class LookupTableBuilder {
         for iteration in iterations {
             buffer.setPattern(coreSize: coreSize, iteration: iteration)
             let texture = makeTextureFromCVPixelBuffer(pixelBuffer: buffer.buffer, textureFormat: .bgra8Unorm, textureCache: metalTextureCache)!
-            let (pointBuffer, runBuffer) = createChainStarters(device: device, commandQueue: commandQueue, texture: texture, runLUTBuffer: runLUTBuffer, pointLUTBuffer: pointLUTBuffer)!
+            
+            let count = texture.width * texture.height * 4
+            guard
+                let pointBuffer = Buffer<PixelPoint>(device: device, count: count),
+                let runBuffer = Buffer<Run>(device: device, count: count),
+                let pointsUnfilled = Buffer<PixelPoint>(device: device, count: count),
+                let runsUnfilled = Buffer<Run>(device: device, count: count)
+            else {
+                assert(false, "Failed to create buffer.")
+                return
+            }
+            
+            createChainStarters(device: device, commandQueue: commandQueue, texture: texture, runBuffer: runBuffer, pointBuffer: pointBuffer)
             var grid = Grid(
                 imageSize: PixelSize(width: UInt32(texture.width), height: UInt32(texture.height)),
                 gridSize: PixelSize(width: 1, height: 1),
@@ -63,10 +75,6 @@ internal final class LookupTableBuilder {
                     return initializeRegions(runBuffer: runBuffer, texture: texture)
                 }
             )
-            
-            let count = texture.width * texture.height * 4
-            let pointsUnfilled = Buffer<PixelPoint>(device: device, count: count)!
-            let runsUnfilled = Buffer<Run>(device: device, count: count)!
             
             let (region, runs, points) = grid.combineAllForLUT(
                 coreSize: coreSize,
