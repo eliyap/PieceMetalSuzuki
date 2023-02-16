@@ -40,8 +40,6 @@ struct Grid {
         while (regions.count > 1) || (regions[0].count > 1) {
             let start = CFAbsoluteTimeGetCurrent()
             
-            let srcBuffer: Buffer<PixelPoint>
-            let dstBuffer: Buffer<PixelPoint>
             let srcPts: UnsafeMutablePointer<PixelPoint>
             let dstPts: UnsafeMutablePointer<PixelPoint>
             let srcRuns: UnsafeMutablePointer<Run>
@@ -52,7 +50,6 @@ struct Grid {
             
             switch dxn {
             case .horizontal:
-                (srcBuffer, dstBuffer) = (pointsVertical, pointsHorizontal)
                 (srcRuns, dstRuns) = (runsVertical.array, runsHorizontal.array)
                 (srcPts, dstPts) = (pointsVertical.array, pointsHorizontal.array)
 
@@ -110,7 +107,6 @@ struct Grid {
                 gridSize = newGridSize
             
             case .vertical:
-                (srcBuffer, dstBuffer) = (pointsHorizontal, pointsVertical)
                 (srcRuns, dstRuns) = (runsHorizontal.array, runsVertical.array)
                 (srcPts, dstPts) = (pointsHorizontal.array, pointsVertical.array)
 
