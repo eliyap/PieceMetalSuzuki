@@ -476,10 +476,7 @@ extension Grid {
         }
         
         var dxn = ReduceDirection.vertical
-        var iteration = 0
         while (regions.count > 1) || (regions[0].count > 1) {
-            let start = CFAbsoluteTimeGetCurrent()
-            
             let srcPts: UnsafeMutablePointer<PixelPoint>
             let dstPts: UnsafeMutablePointer<PixelPoint>
             let srcRuns: UnsafeMutablePointer<Run>
@@ -595,13 +592,6 @@ extension Grid {
             #endif
             
             dxn.flip()
-            
-            let end = CFAbsoluteTimeGetCurrent()
-            if iteration == 0 {
-                debugPrint("Iter 0: \(end - start)")
-            }
-            Profiler.add(end - start, iteration: iteration)
-            iteration += 1
         }
         
         /// Return final results.
