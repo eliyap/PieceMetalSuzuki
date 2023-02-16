@@ -465,12 +465,16 @@ extension Grid {
     mutating func combineAllForLUT(
         coreSize: PixelSize,
         device: MTLDevice,
-        pointsVertical: Buffer<PixelPoint>,
-        runsVertical: Buffer<Run>,
+        pointsFilled: Buffer<PixelPoint>,
+        runsFilled: Buffer<Run>,
+        pointsUnfilled: Buffer<PixelPoint>,
+        runsUnfilled: Buffer<Run>,
         commandQueue: MTLCommandQueue
     ) -> (Region, [Run], [PixelPoint]) {
-        let pointsHorizontal = Buffer<PixelPoint>(device: device, count: pointsVertical.count)!
-        let runsHorizontal = Buffer<Run>(device: device, count: runsVertical.count)!
+        let pointsVertical = pointsFilled
+        let runsVertical = runsFilled
+        let pointsHorizontal = pointsUnfilled
+        let runsHorizontal = runsUnfilled
         
         var dxn = ReduceDirection.horizontal
         

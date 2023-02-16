@@ -63,11 +63,18 @@ internal final class LookupTableBuilder {
                     return initializeRegions(runBuffer: runBuffer, texture: texture)
                 }
             )
+            
+            let count = texture.width * texture.height * 4
+            let pointsUnfilled = Buffer<PixelPoint>(device: device, count: count)!
+            let runsUnfilled = Buffer<Run>(device: device, count: count)!
+            
             let (region, runs, points) = grid.combineAllForLUT(
                 coreSize: coreSize,
                 device: device,
-                pointsVertical: pointBuffer,
-                runsVertical: runBuffer,
+                pointsFilled: pointBuffer,
+                runsFilled: runBuffer,
+                pointsUnfilled: pointsUnfilled,
+                runsUnfilled: runsUnfilled,
                 commandQueue: commandQueue
             )
 
