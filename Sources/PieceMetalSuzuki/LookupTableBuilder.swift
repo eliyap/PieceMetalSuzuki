@@ -51,21 +51,21 @@ internal final class LookupTableBuilder {
         var metalTextureCache: CVMetalTextureCache!
         CVMetalTextureCacheCreate(kCFAllocatorDefault, nil, device, nil, &metalTextureCache)
         
+        let count = CVPixelBufferGetWidth(buffer.buffer) * CVPixelBufferGetHeight(buffer.buffer) * 4
+        guard
+            let pointBuffer = Buffer<PixelPoint>(device: device, count: count),
+            let runBuffer = Buffer<Run>(device: device, count: count),
+            let pointsUnfilled = Buffer<PixelPoint>(device: device, count: count),
+            let runsUnfilled = Buffer<Run>(device: device, count: count)
+        else {
+            assert(false, "Failed to create buffer.")
+            return
+        }
+        
         let iterations = 0..<(2 << Int((coreSize.height + 2) * (coreSize.width + 2)))
         for iteration in iterations {
             buffer.setPattern(coreSize: coreSize, iteration: iteration)
             let texture = makeTextureFromCVPixelBuffer(pixelBuffer: buffer.buffer, textureFormat: .bgra8Unorm, textureCache: metalTextureCache)!
-            
-            let count = texture.width * texture.height * 4
-            guard
-                let pointBuffer = Buffer<PixelPoint>(device: device, count: count),
-                let runBuffer = Buffer<Run>(device: device, count: count),
-                let pointsUnfilled = Buffer<PixelPoint>(device: device, count: count),
-                let runsUnfilled = Buffer<Run>(device: device, count: count)
-            else {
-                assert(false, "Failed to create buffer.")
-                return
-            }
             
             createChainStarters(device: device, commandQueue: commandQueue, texture: texture, runBuffer: runBuffer, pointBuffer: pointBuffer)
             var grid = Grid(
