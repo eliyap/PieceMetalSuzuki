@@ -286,8 +286,8 @@ func createChainStarters(
     }
     cmdEncoder.setBuffer(pointBuffer.mtlBuffer, offset: 0, index: 0)
     cmdEncoder.setBuffer(runBuffer.mtlBuffer, offset: 0, index: 1)
-    cmdEncoder.setBuffer(runLUTBuffer.mtlBuffer, offset: 0, index: 2)
-    cmdEncoder.setBuffer(pointLUTBuffer.mtlBuffer, offset: 0, index: 3)
+    cmdEncoder.setBuffer(Run.LUTBuffer!.mtlBuffer, offset: 0, index: 2)
+    cmdEncoder.setBuffer(PixelPoint.LUTBuffer!.mtlBuffer, offset: 0, index: 3)
 
     let (tPerTG, tgPerGrid) = pipelineState.threadgroupParameters(texture: texture)
     cmdEncoder.dispatchThreadgroups(tgPerGrid, threadsPerThreadgroup: tPerTG)
