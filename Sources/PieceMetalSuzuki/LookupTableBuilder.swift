@@ -63,14 +63,41 @@ internal final class LookupTableBuilder {
                     return initializeRegions(runBuffer: runBuffer, texture: texture)
                 }
             )
-            grid.combineAllForLUT(
+            let (region, runs, points) = grid.combineAllForLUT(
                 coreSize: coreSize,
                 device: device,
                 pointsVertical: pointBuffer,
                 runsVertical: runBuffer,
                 commandQueue: commandQueue
             )
+
+            let startRuns = runs.map { run in
+                let base = Int32(baseOffset(grid: grid, region: region))
+                return StartRun(
+                    tail: Int8(run.oldTail - base),
+                    head: Int8(run.oldHead - base),
+                    from: run.tailTriadFrom,
+                    to: run.headTriadTo
+                )
+            }
+            runTable.append(startRuns)
+
+            let startPoints = points.map { point in
+                StartPoint(
+                    x: UInt8(point.x - coreSize.width),
+                    y: UInt8(point.y - coreSize.height)
+                )
+            }
+            pointTable.append(startPoints)
+            if (iteration.isMultiple(of: 10000)) {
+                print(iteration)
+            }
         }
+
+        /// Report.
+        debugPrint("\(runTable.count) distinct runs")
+        debugPrint("\(pointTable.count) distinct points")
+
         saveBufferToPng(buffer: buffer.buffer, format: .BGRA8)
     }
 }
