@@ -36,14 +36,15 @@ struct Grid {
         }
         
         var dxn = ReduceDirection.vertical
+        
+        var srcPts: UnsafeMutablePointer<PixelPoint>
+        var dstPts: UnsafeMutablePointer<PixelPoint>
+        var srcRuns: UnsafeMutablePointer<Run>
+        var dstRuns: UnsafeMutablePointer<Run>
+        
         var iteration = 0
         while (regions.count > 1) || (regions[0].count > 1) {
             let start = CFAbsoluteTimeGetCurrent()
-            
-            let srcPts: UnsafeMutablePointer<PixelPoint>
-            let dstPts: UnsafeMutablePointer<PixelPoint>
-            let srcRuns: UnsafeMutablePointer<Run>
-            let dstRuns: UnsafeMutablePointer<Run>
             
             let numRows = regions.count
             let numCols = regions[0].count
@@ -472,11 +473,13 @@ extension Grid {
         let runsHorizontal = Buffer<Run>(device: device, count: runsVertical.count)!
         
         var dxn = ReduceDirection.horizontal
+        
+        var srcPts: UnsafeMutablePointer<PixelPoint>
+        var dstPts: UnsafeMutablePointer<PixelPoint>
+        var srcRuns: UnsafeMutablePointer<Run>
+        var dstRuns: UnsafeMutablePointer<Run>
+        
         while (gridSize != coreSize) {
-            let srcPts: UnsafeMutablePointer<PixelPoint>
-            let dstPts: UnsafeMutablePointer<PixelPoint>
-            let srcRuns: UnsafeMutablePointer<Run>
-            let dstRuns: UnsafeMutablePointer<Run>
             
             let numRows = regions.count
             let numCols = regions[0].count
