@@ -53,8 +53,22 @@ internal final class LookupTableBuilder {
         
         let iterations = (2 << Int((coreSize.height + 2) * (coreSize.width + 2)))
         for iteration in 0..<iterations {
-            let texture = makeTextureFromCVPixelBuffer(pixelBuffer: buffer.buffer, textureFormat: .bgra8Unorm, textureCache: metalTextureCache)
             buffer.setPattern(coreSize: coreSize, iteration: iteration)
+            let texture = makeTextureFromCVPixelBuffer(pixelBuffer: buffer.buffer, textureFormat: .bgra8Unorm, textureCache: metalTextureCache)!
+            let (pointBuffer, runBuffer) = createChainStarters(device: device, commandQueue: commandQueue, texture: texture, runLUTBuffer: runLUTBuffer, pointLUTBuffer: pointLUTBuffer)!
+            var grid = Grid(
+                imageSize: PixelSize(width: UInt32(texture.width), height: UInt32(texture.height)),
+                gridSize: PixelSize(width: 1, height: 1),
+                regions: Profiler.time(.initRegions) {
+                    return initializeRegions(runBuffer: runBuffer, texture: texture)
+                }
+            )
+            grid.combineAll(
+                device: device,
+                pointsHorizontal: pointBuffer,
+                runsHorizontal: runBuffer,
+                commandQueue: commandQueue
+            )
         }
         saveBufferToPng(buffer: buffer.buffer, format: .BGRA8)
     }
