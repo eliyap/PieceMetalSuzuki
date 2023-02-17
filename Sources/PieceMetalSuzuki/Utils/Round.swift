@@ -12,7 +12,7 @@ internal extension BinaryInteger {
         /// Round up to the closest multiple.
         /// If it wasn't a multiple, the "extra" is rounded off by integer division, then added back.
         /// If it was a multiple, it's taken down, then back up.
-        ((self-1/value)*value)+value
+        (((self-1)/value)*value)+value
     }
     
     func dividedByRoundingUp(divisor: Self) -> Self {
