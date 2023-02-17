@@ -9,6 +9,8 @@ struct Grid {
     
     var regions: [[Region]]
     
+    let pointsPerPixel: UInt32
+    
     enum ReduceDirection {
         case horizontal, vertical
         mutating func flip() {
@@ -270,6 +272,8 @@ struct Grid {
         let srcRuns: UnsafeMutablePointer<Run>
         let dstRuns: UnsafeMutablePointer<Run>
         
+        let pointsPerPixel: UInt32
+        
         init(
             a: Region, b: Region,
             dxn: ReduceDirection, newGridSize: PixelSize,
@@ -280,6 +284,7 @@ struct Grid {
             self.srcPts = srcPts
             self.srcRuns = srcRuns
             self.dstRuns = dstRuns
+            self.pointsPerPixel = grid.pointsPerPixel
             
             #if SHOW_GRID_WORK
             debugPrint("Combining \(a) and \(b)")
@@ -312,9 +317,9 @@ struct Grid {
 
             switch dxn {
             case .vertical:
-                self.newBaseOffset = baseOffset(imageSize: grid.imageSize, gridSize: newGridSize, regionSize: newRegionSize, gridPos: GridPosition(row: a.gridPos.row / 2, col: a.gridPos.col))
+                self.newBaseOffset = baseOffset(imageSize: grid.imageSize, gridSize: newGridSize, regionSize: newRegionSize, gridPos: GridPosition(row: a.gridPos.row / 2, col: a.gridPos.col), pointsPerPixel: self.pointsPerPixel)
             case .horizontal:
-                self.newBaseOffset = baseOffset(imageSize: grid.imageSize, gridSize: newGridSize, regionSize: newRegionSize, gridPos: GridPosition(row: a.gridPos.row, col: a.gridPos.col / 2))
+                self.newBaseOffset = baseOffset(imageSize: grid.imageSize, gridSize: newGridSize, regionSize: newRegionSize, gridPos: GridPosition(row: a.gridPos.row, col: a.gridPos.col / 2), pointsPerPixel: self.pointsPerPixel)
             }
         }
         
@@ -451,12 +456,12 @@ struct Grid {
     }
 }
 
-func baseOffset(imageSize: PixelSize, gridSize: PixelSize, regionSize: PixelSize, gridPos: GridPosition) -> UInt32 {
-    4 * ((imageSize.width * gridSize.height * gridPos.row) + (gridSize.width * regionSize.height * gridPos.col))
+func baseOffset(imageSize: PixelSize, gridSize: PixelSize, regionSize: PixelSize, gridPos: GridPosition, pointsPerPixel: UInt32) -> UInt32 {
+    pointsPerPixel * ((imageSize.width * gridSize.height * gridPos.row) + (gridSize.width * regionSize.height * gridPos.col))
 }
 
 func baseOffset(grid: Grid, region: Region) -> UInt32 {
-    baseOffset(imageSize: grid.imageSize, gridSize: grid.gridSize, regionSize: region.size, gridPos: region.gridPos)
+    baseOffset(imageSize: grid.imageSize, gridSize: grid.gridSize, regionSize: region.size, gridPos: region.gridPos, pointsPerPixel: grid.pointsPerPixel)
 }
 
 extension Grid {

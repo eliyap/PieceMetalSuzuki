@@ -41,7 +41,7 @@ internal final class LookupTableBuilder {
     var runTable: OrderedSet<[StartRun]> = []
     var runIndices: [UInt16] = []
     
-    public init(coreSize: PixelSize, tableWidth: Int) {
+    public init(coreSize: PixelSize, tableWidth: Int, pointsPerPixel: UInt32) {
         self.coreSize = coreSize
         let buffer = BGRAPixelBuffer(coreSize: coreSize)
         
@@ -73,7 +73,8 @@ internal final class LookupTableBuilder {
                 gridSize: PixelSize(width: 1, height: 1),
                 regions: Profiler.time(.initRegions) {
                     return initializeRegions(runBuffer: runBuffer, texture: texture)
-                }
+                },
+                pointsPerPixel: 4
             )
             
             let (region, runs, points) = grid.combineAllForLUT(

@@ -63,11 +63,12 @@ final class PieceMetalSuzukiTests: XCTestCase {
         let device = MTLCreateSystemDefaultDevice()!
         let coreSize = PixelSize(width: 1, height: 1)
         let tableWidth = 4
-        let ltb = LookupTableBuilder(coreSize: coreSize, tableWidth: tableWidth)
+        let pointsPerPixel: UInt32 = 4
+        let ltb = LookupTableBuilder(coreSize: coreSize, tableWidth: tableWidth, pointsPerPixel: pointsPerPixel)
         ltb.setBuffers(device: device)
         
         _ = PieceMetalSuzuki(imageUrl: url("square")) { device, queue, texture, pointsFilled, runsFilled, pointsUnfilled, runsUnfilled in
-            applyMetalSuzuki_LUT(device: device, commandQueue: queue, texture: texture, pointsFilled: pointsFilled, runsFilled: runsFilled, pointsUnfilled: pointsUnfilled, runsUnfilled: runsUnfilled, coreSize: coreSize, tableWidth: tableWidth)
+            applyMetalSuzuki_LUT(device: device, commandQueue: queue, texture: texture, pointsFilled: pointsFilled, runsFilled: runsFilled, pointsUnfilled: pointsUnfilled, runsUnfilled: runsUnfilled, coreSize: coreSize, tableWidth: tableWidth, pointsPerPixel: pointsPerPixel)
         }
     }
     
@@ -75,11 +76,12 @@ final class PieceMetalSuzukiTests: XCTestCase {
         let device = MTLCreateSystemDefaultDevice()!
         let coreSize = PixelSize(width: 2, height: 1)
         let tableWidth = 6
-        let ltb = LookupTableBuilder(coreSize: coreSize, tableWidth: tableWidth)
+        let pointsPerPixel: UInt32 = 3
+        let ltb = LookupTableBuilder(coreSize: coreSize, tableWidth: tableWidth, pointsPerPixel: pointsPerPixel)
         ltb.setBuffers(device: device)
         
         _ = PieceMetalSuzuki(imageUrl: url("square")) { device, queue, texture, pointsFilled, runsFilled, pointsUnfilled, runsUnfilled in
-            applyMetalSuzuki_LUT(device: device, commandQueue: queue, texture: texture, pointsFilled: pointsFilled, runsFilled: runsFilled, pointsUnfilled: pointsUnfilled, runsUnfilled: runsUnfilled, coreSize: coreSize, tableWidth: tableWidth)
+            applyMetalSuzuki_LUT(device: device, commandQueue: queue, texture: texture, pointsFilled: pointsFilled, runsFilled: runsFilled, pointsUnfilled: pointsUnfilled, runsUnfilled: runsUnfilled, coreSize: coreSize, tableWidth: tableWidth, pointsPerPixel: pointsPerPixel)
         }
     }
 }

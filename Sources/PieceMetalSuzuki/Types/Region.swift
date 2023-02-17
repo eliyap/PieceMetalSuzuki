@@ -32,17 +32,20 @@ class Region {
 
     /// Number of runs in this region.
     var runsCount: UInt32
+    
+    let pointsPerPixel: UInt32
 
-    init(origin: PixelPoint, size: PixelSize, gridPos: GridPosition, runsCount: UInt32) {
+    init(origin: PixelPoint, size: PixelSize, gridPos: GridPosition, runsCount: UInt32, pointsPerPixel: UInt32) {
         self.origin = origin
         self.size = size
         self.gridPos = gridPos
         self.runsCount = runsCount
+        self.pointsPerPixel = pointsPerPixel
     }
 
     /// Get run indices, given the present image size and grid size.
     func runIndices(imageSize: PixelSize, gridSize: PixelSize) -> Range<Int> {
-        let base = baseOffset(imageSize: imageSize, gridSize: gridSize, regionSize: self.size, gridPos: self.gridPos)
+        let base = baseOffset(imageSize: imageSize, gridSize: gridSize, regionSize: self.size, gridPos: self.gridPos, pointsPerPixel: pointsPerPixel)
         return Int(base)..<Int(base + runsCount)
     }
 }
@@ -63,7 +66,8 @@ extension Region: CustomStringConvertible {
  */
 func initializeRegions(
     runBuffer: Buffer<Run>,
-    texture: MTLTexture
+    texture: MTLTexture,
+    pointsPerPixel: UInt32 = 4
 ) -> [[Region]] {
     var regions: [[Region]] = []
     for row in 0..<texture.height {
@@ -86,7 +90,8 @@ func initializeRegions(
                     origin: PixelPoint(x: UInt32(col), y: UInt32(row)),
                     size: PixelSize(width: 1, height: 1),
                     gridPos: GridPosition(row: UInt32(row), col: UInt32(col)),
-                    runsCount: validCount
+                    runsCount: validCount,
+                    pointsPerPixel: pointsPerPixel
                 ))
             }
             initializedCount = texture.width
@@ -100,7 +105,8 @@ func initializeRegions_LUT(
     runBuffer: Buffer<Run>,
     texture: MTLTexture,
     coreSize: PixelSize,
-    tableWidth: Int
+    tableWidth: Int,
+    pointsPerPixel: UInt32 = 4
 ) -> [[Region]] {
     let coreWidth = Int(coreSize.width)
     let coreHeight = Int(coreSize.height)
@@ -128,7 +134,8 @@ func initializeRegions_LUT(
                     origin: PixelPoint(x: UInt32(col), y: UInt32(row)),
                     size: coreSize,
                     gridPos: GridPosition(row: UInt32(row), col: UInt32(col)),
-                    runsCount: validCount
+                    runsCount: validCount,
+                    pointsPerPixel: pointsPerPixel
                 ))
             }
             initializedCount = regionTableWidth
