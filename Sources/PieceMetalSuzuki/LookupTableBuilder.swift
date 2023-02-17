@@ -71,7 +71,8 @@ internal final class LookupTableBuilder {
                 regions: Profiler.time(.initRegions) {
                     return initializeRegions(runBuffer: runBuffer, texture: texture)
                 },
-                pointsPerPixel: 4
+                pointsPerPixel: 4,
+                coreSize: PixelSize(width: 1, height: 1)
             )
             
             let (region, runs, points) = grid.combineAllForLUT(

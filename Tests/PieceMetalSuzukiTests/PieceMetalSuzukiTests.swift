@@ -15,7 +15,7 @@ final class PieceMetalSuzukiTests: XCTestCase {
     
     func testDoubleDonut() async throws {
         measure {
-            _ = PieceMetalSuzuki(imageUrl: url("input"), pointsPerPixel: 4) { device, queue, texture, pointsFilled, runsFilled, pointsUnfilled, runsUnfilled in
+            _ = PieceMetalSuzuki(imageUrl: url("input"), coreSize: PixelSize(width: 1, height: 1), pointsPerPixel: 4) { device, queue, texture, pointsFilled, runsFilled, pointsUnfilled, runsUnfilled in
                 applyMetalSuzuki(device: device, commandQueue: queue, texture: texture, pointsFilled: pointsFilled, runsFilled: runsFilled, pointsUnfilled: pointsUnfilled, runsUnfilled: runsUnfilled)
             }
         }
@@ -24,37 +24,37 @@ final class PieceMetalSuzukiTests: XCTestCase {
     }
     
     func testWaffle() throws {
-        _ = PieceMetalSuzuki(imageUrl: url("waffle"), pointsPerPixel: 4) { device, queue, texture, pointsFilled, runsFilled, pointsUnfilled, runsUnfilled in
+        _ = PieceMetalSuzuki(imageUrl: url("waffle"), coreSize: PixelSize(width: 1, height: 1), pointsPerPixel: 4) { device, queue, texture, pointsFilled, runsFilled, pointsUnfilled, runsUnfilled in
             applyMetalSuzuki(device: device, commandQueue: queue, texture: texture, pointsFilled: pointsFilled, runsFilled: runsFilled, pointsUnfilled: pointsUnfilled, runsUnfilled: runsUnfilled)
         }
     }
     
     func testWhite() throws {
-        _ = PieceMetalSuzuki(imageUrl: url("white"), pointsPerPixel: 4) { device, queue, texture, pointsFilled, runsFilled, pointsUnfilled, runsUnfilled in
+        _ = PieceMetalSuzuki(imageUrl: url("white"), coreSize: PixelSize(width: 1, height: 1), pointsPerPixel: 4) { device, queue, texture, pointsFilled, runsFilled, pointsUnfilled, runsUnfilled in
             applyMetalSuzuki(device: device, commandQueue: queue, texture: texture, pointsFilled: pointsFilled, runsFilled: runsFilled, pointsUnfilled: pointsUnfilled, runsUnfilled: runsUnfilled)
         }
     }
     
     func testDots() throws {
-        _ = PieceMetalSuzuki(imageUrl: url("dots"), pointsPerPixel: 4) { device, queue, texture, pointsFilled, runsFilled, pointsUnfilled, runsUnfilled in
+        _ = PieceMetalSuzuki(imageUrl: url("dots"), coreSize: PixelSize(width: 1, height: 1), pointsPerPixel: 4) { device, queue, texture, pointsFilled, runsFilled, pointsUnfilled, runsUnfilled in
             applyMetalSuzuki(device: device, commandQueue: queue, texture: texture, pointsFilled: pointsFilled, runsFilled: runsFilled, pointsUnfilled: pointsUnfilled, runsUnfilled: runsUnfilled)
         }
     }
     
     func testDiamonds() throws {
-        _ = PieceMetalSuzuki(imageUrl: url("diamonds"), pointsPerPixel: 4) { device, queue, texture, pointsFilled, runsFilled, pointsUnfilled, runsUnfilled in
+        _ = PieceMetalSuzuki(imageUrl: url("diamonds"), coreSize: PixelSize(width: 1, height: 1), pointsPerPixel: 4) { device, queue, texture, pointsFilled, runsFilled, pointsUnfilled, runsUnfilled in
             applyMetalSuzuki(device: device, commandQueue: queue, texture: texture, pointsFilled: pointsFilled, runsFilled: runsFilled, pointsUnfilled: pointsUnfilled, runsUnfilled: runsUnfilled)
         }
     }
     
     func testSquare() throws {
-        _ = PieceMetalSuzuki(imageUrl: url("square"), pointsPerPixel: 4) { device, queue, texture, pointsFilled, runsFilled, pointsUnfilled, runsUnfilled in
+        _ = PieceMetalSuzuki(imageUrl: url("square"), coreSize: PixelSize(width: 1, height: 1), pointsPerPixel: 4) { device, queue, texture, pointsFilled, runsFilled, pointsUnfilled, runsUnfilled in
             applyMetalSuzuki(device: device, commandQueue: queue, texture: texture, pointsFilled: pointsFilled, runsFilled: runsFilled, pointsUnfilled: pointsUnfilled, runsUnfilled: runsUnfilled)
         }
     }
     
     func testDonut() throws {
-        _ = PieceMetalSuzuki(imageUrl: url("donut"), pointsPerPixel: 4) { device, queue, texture, pointsFilled, runsFilled, pointsUnfilled, runsUnfilled in
+        _ = PieceMetalSuzuki(imageUrl: url("donut"), coreSize: PixelSize(width: 1, height: 1), pointsPerPixel: 4) { device, queue, texture, pointsFilled, runsFilled, pointsUnfilled, runsUnfilled in
             applyMetalSuzuki(device: device, commandQueue: queue, texture: texture, pointsFilled: pointsFilled, runsFilled: runsFilled, pointsUnfilled: pointsUnfilled, runsUnfilled: runsUnfilled)
         }
     }
@@ -67,7 +67,7 @@ final class PieceMetalSuzukiTests: XCTestCase {
         let ltb = LookupTableBuilder(coreSize: coreSize, tableWidth: tableWidth, pointsPerPixel: pointsPerPixel)
         ltb.setBuffers(device: device)
         
-        _ = PieceMetalSuzuki(imageUrl: url("square"), pointsPerPixel: pointsPerPixel) { device, queue, texture, pointsFilled, runsFilled, pointsUnfilled, runsUnfilled in
+        _ = PieceMetalSuzuki(imageUrl: url("square"), coreSize: coreSize, pointsPerPixel: pointsPerPixel) { device, queue, texture, pointsFilled, runsFilled, pointsUnfilled, runsUnfilled in
             applyMetalSuzuki_LUT(device: device, commandQueue: queue, texture: texture, pointsFilled: pointsFilled, runsFilled: runsFilled, pointsUnfilled: pointsUnfilled, runsUnfilled: runsUnfilled, coreSize: coreSize, tableWidth: tableWidth, pointsPerPixel: pointsPerPixel)
         }
     }
@@ -80,7 +80,7 @@ final class PieceMetalSuzukiTests: XCTestCase {
         let ltb = LookupTableBuilder(coreSize: coreSize, tableWidth: tableWidth, pointsPerPixel: pointsPerPixel)
         ltb.setBuffers(device: device)
         
-        _ = PieceMetalSuzuki(imageUrl: url("square"), pointsPerPixel: pointsPerPixel) { device, queue, texture, pointsFilled, runsFilled, pointsUnfilled, runsUnfilled in
+        _ = PieceMetalSuzuki(imageUrl: url("waffle"), coreSize: coreSize, pointsPerPixel: pointsPerPixel) { device, queue, texture, pointsFilled, runsFilled, pointsUnfilled, runsUnfilled in
             applyMetalSuzuki_LUT(device: device, commandQueue: queue, texture: texture, pointsFilled: pointsFilled, runsFilled: runsFilled, pointsUnfilled: pointsUnfilled, runsUnfilled: runsUnfilled, coreSize: coreSize, tableWidth: tableWidth, pointsPerPixel: pointsPerPixel)
         }
     }

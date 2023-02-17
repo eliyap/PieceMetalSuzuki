@@ -34,18 +34,20 @@ internal final class Region {
     var runsCount: UInt32
     
     let pointsPerPixel: UInt32
+    let coreSize: PixelSize
 
-    init(origin: PixelPoint, size: PixelSize, gridPos: GridPosition, runsCount: UInt32, pointsPerPixel: UInt32) {
+    init(origin: PixelPoint, size: PixelSize, gridPos: GridPosition, runsCount: UInt32, pointsPerPixel: UInt32, coreSize: PixelSize) {
         self.origin = origin
         self.size = size
         self.gridPos = gridPos
         self.runsCount = runsCount
         self.pointsPerPixel = pointsPerPixel
+        self.coreSize = coreSize
     }
 
     /// Get run indices, given the present image size and grid size.
     func runIndices(imageSize: PixelSize, gridSize: PixelSize) -> Range<Int> {
-        let base = baseOffset(imageSize: imageSize, gridSize: gridSize, regionSize: self.size, gridPos: self.gridPos, pointsPerPixel: pointsPerPixel)
+        let base = baseOffset(imageSize: imageSize, gridSize: gridSize, regionSize: self.size, gridPos: self.gridPos, pointsPerPixel: pointsPerPixel, coreSize: coreSize)
         return Int(base)..<Int(base + runsCount)
     }
 }
@@ -67,7 +69,8 @@ extension Region: CustomStringConvertible {
 func initializeRegions(
     runBuffer: Buffer<Run>,
     texture: MTLTexture,
-    pointsPerPixel: UInt32 = 4
+    pointsPerPixel: UInt32 = 4,
+    coreSize: PixelSize = .init(width: 1, height: 1)
 ) -> [[Region]] {
     var regions: [[Region]] = []
     for row in 0..<texture.height {
@@ -91,7 +94,8 @@ func initializeRegions(
                     size: PixelSize(width: 1, height: 1),
                     gridPos: GridPosition(row: UInt32(row), col: UInt32(col)),
                     runsCount: validCount,
-                    pointsPerPixel: pointsPerPixel
+                    pointsPerPixel: pointsPerPixel,
+                    coreSize: coreSize
                 ))
             }
             initializedCount = texture.width
@@ -135,7 +139,8 @@ func initializeRegions_LUT(
                     size: coreSize,
                     gridPos: GridPosition(row: UInt32(row), col: UInt32(col)),
                     runsCount: validCount,
-                    pointsPerPixel: pointsPerPixel
+                    pointsPerPixel: pointsPerPixel,
+                    coreSize: coreSize
                 ))
             }
             initializedCount = regionTableWidth

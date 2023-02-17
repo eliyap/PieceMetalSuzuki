@@ -7,6 +7,7 @@ import MetalPerformanceShaders
 public struct PieceMetalSuzuki {
     public init(
         imageUrl: URL,
+        coreSize: PixelSize,
         pointsPerPixel: UInt32,
         _ block: (MTLDevice, MTLCommandQueue, MTLTexture, Buffer<PixelPoint>, Buffer<Run>, Buffer<PixelPoint>, Buffer<Run>) -> Void
     ) {
@@ -169,7 +170,8 @@ public func applyMetalSuzuki(
         regions: Profiler.time(.initRegions) {
             return initializeRegions(runBuffer: runsFilled, texture: texture)
         },
-        pointsPerPixel: 4
+        pointsPerPixel: 4,
+        coreSize: PixelSize(width: 1, height: 1)
     )
     
     Profiler.time(.combineAll) {
@@ -210,7 +212,8 @@ public func applyMetalSuzuki_LUT(
         regions: Profiler.time(.initRegions) {
             return initializeRegions_LUT(runBuffer: runsFilled, texture: texture, coreSize: coreSize, tableWidth: tableWidth, pointsPerPixel: pointsPerPixel)
         },
-        pointsPerPixel: pointsPerPixel
+        pointsPerPixel: pointsPerPixel,
+        coreSize: coreSize
     )
     
     Profiler.time(.combineAll) {
