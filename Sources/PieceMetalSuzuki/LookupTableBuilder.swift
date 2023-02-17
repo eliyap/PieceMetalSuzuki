@@ -90,6 +90,7 @@ internal final class LookupTableBuilder {
                 commandQueue: commandQueue
             )
 
+            assert(runs.count <= TableWidth)
             let startRuns = (0..<TableWidth).map { runIdx in
                 if runs.indices.contains(runIdx) {
                     let run = runs[runIdx]
@@ -107,6 +108,7 @@ internal final class LookupTableBuilder {
             runTable.append(startRuns)
             runIndices.append(UInt16(runTable.firstIndex(of: startRuns)!))
 
+            assert(points.count <= TableWidth)
             let startPoints = (0..<TableWidth).map { pointIdx in
                 if points.indices.contains(pointIdx) {
                     let point = points[pointIdx]
