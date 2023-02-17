@@ -208,9 +208,9 @@ kernel void matchPatterns2x1(
         uint32_t pointIdx = pointRow * TableWidth + i;
         struct StartRun startRun = startRuns[runIdx];
         struct StartPoint startPoint = startPoints[pointIdx];
+        points[idx+i].x = gid.x + startPoint.x;
+        points[idx+i].y = gid.y + startPoint.y;
         if (startRun.tail != -1) {
-            points[idx+i].x = gid.x + startPoint.x;
-            points[idx+i].y = gid.y + startPoint.y;
             runs[idx+i].oldTail = idx + startRun.tail;
             runs[idx+i].oldHead = idx + startRun.head;
             runs[idx+i].tailTriadFrom = startRun.from;
