@@ -114,8 +114,10 @@ func initializeRegions_LUT(
 ) -> [[Region]] {
     let coreWidth = Int(coreSize.width)
     let coreHeight = Int(coreSize.height)
-    let regionTableWidth = (texture.width + coreWidth - 1) / coreWidth
-    let regionTableHeight = (texture.height + coreHeight - 1) / coreHeight
+    
+    /// Divide pixel width by core width, rounding up.
+    let regionTableWidth = texture.width.dividedByRoundingUp(divisor: coreWidth)
+    let regionTableHeight = texture.height.dividedByRoundingUp(divisor: coreHeight)
     
     var regions: [[Region]] = []
     for row in 0..<regionTableHeight {

@@ -14,5 +14,12 @@ internal extension BinaryInteger {
         /// If it was a multiple, it's taken down, then back up.
         ((self-1/value)*value)+value
     }
+    
+    func dividedByRoundingUp(divisor: Self) -> Self {
+        /// Divide self by divisor, rounding up to the closest integer.
+        /// If not an even multiple, this "pushes us over" to the next multiple of divisor.
+        /// If already a multiple, this doesn't "push us over".
+        (self + divisor - 1) / divisor
+    }
 }
 
