@@ -133,6 +133,8 @@ kernel void matchPatterns2x1(
     device const uint16_t*         startPointIndices [[ buffer (5) ]],
     uint2                          gid               [[thread_position_in_grid]]
 ) {
+    uint32_t coreWidth = 2;
+    uint32_t coreHeight = 1;
     uint8_t TableWidth = 6;
     uint8_t pointsPerPixel = 3;
     int32_t idx = ((tex.get_width() * gid.y) + gid.x) * pointsPerPixel;
@@ -145,8 +147,6 @@ kernel void matchPatterns2x1(
     }
     
     // Skip pixels that aren't the root of the pattern.
-    uint32_t coreWidth = 2;
-    uint32_t coreHeight = 1;
     if ((gid.x % coreWidth) || (gid.y % coreHeight)) {
         return;
     }
