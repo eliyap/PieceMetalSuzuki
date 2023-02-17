@@ -53,8 +53,8 @@ final class PieceMetalSuzukiTests: XCTestCase {
             return
         }
         
-        LookupTableBuilder.shared = .init(LookupTableBuilder.CoreSize)
-        LookupTableBuilder.shared.setBuffers(device: device)
+        let ltb = LookupTableBuilder(coreSize: PixelSize(width: 1, height: 1))
+        ltb.setBuffers(device: device)
         
         _ = PieceMetalSuzuki(imageUrl: url("square"))
     }

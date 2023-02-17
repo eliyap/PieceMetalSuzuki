@@ -44,8 +44,7 @@ internal final class LookupTableBuilder {
     var runTable: OrderedSet<[StartRun]> = []
     var runIndices: [UInt16] = []
     
-    public static var shared: LookupTableBuilder! = nil
-    public init(_ coreSize: PixelSize) {
+    public init(coreSize: PixelSize) {
         self.coreSize = coreSize
         let buffer = BGRAPixelBuffer(coreSize: coreSize)
         
