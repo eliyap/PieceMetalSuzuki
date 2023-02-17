@@ -1,8 +1,6 @@
 import Foundation
 import Metal
 
-
-
 struct Grid {
     let imageSize: PixelSize
     

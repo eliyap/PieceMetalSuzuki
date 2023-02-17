@@ -51,7 +51,7 @@ internal final class LookupTableBuilder {
         var metalTextureCache: CVMetalTextureCache!
         CVMetalTextureCacheCreate(kCFAllocatorDefault, nil, device, nil, &metalTextureCache)
         
-        let count = CVPixelBufferGetWidth(buffer.buffer) * CVPixelBufferGetHeight(buffer.buffer) * 4
+        let count = CVPixelBufferGetWidth(buffer.buffer) * CVPixelBufferGetHeight(buffer.buffer) * BGRAChannels
         guard
             let pointBuffer = Buffer<PixelPoint>(device: device, count: count),
             let runBuffer = Buffer<Run>(device: device, count: count),
@@ -161,6 +161,7 @@ struct StartRun: Hashable {
     public static let invalid = StartRun(tail: -1, head: -1, from: .max, to: .max)
 }
 
+fileprivate let BGRAChannels = 4
 internal final class BGRAPixelBuffer {
     
     var buffer: CVPixelBuffer
@@ -216,7 +217,6 @@ internal final class BGRAPixelBuffer {
         }
     }
     
-    let BGRAChannels = 4
     func setPattern(coreSize: PixelSize, iteration: Int) -> Void {
         DispatchQueue.concurrentPerform(iterations: Int((coreSize.width + 2) * (coreSize.height + 2))) { bitNumber in
             var (row, col) = bitNumber.quotientAndRemainder(dividingBy: Int(coreSize.width + 2))
