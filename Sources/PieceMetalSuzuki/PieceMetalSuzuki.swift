@@ -184,6 +184,43 @@ public func applyMetalSuzuki(
     return
 }
 
+public func applyMetalSuzuki_LUT(
+    device: MTLDevice,
+    commandQueue: MTLCommandQueue,
+    texture: MTLTexture,
+    pointsFilled: Buffer<PixelPoint>,
+    runsFilled: Buffer<Run>,
+    pointsUnfilled: Buffer<PixelPoint>,
+    runsUnfilled: Buffer<Run>
+) -> Void {
+    /// Apply Metal filter to pixel buffer.
+    guard matchPatterns(device: device, commandQueue: commandQueue, texture: texture, runBuffer: runsFilled, pointBuffer: pointsFilled) else {
+        assert(false, "Failed to run chain start kernel.")
+        return
+    }
+    
+    var grid = Grid(
+        imageSize: PixelSize(width: UInt32(texture.width), height: UInt32(texture.height)),
+        gridSize: LookupTableBuilder.CoreSize,
+        regions: Profiler.time(.initRegions) {
+            return initializeRegions_LUT(runBuffer: runsFilled, texture: texture)
+        }
+    )
+    
+    Profiler.time(.combineAll) {
+        grid.combineAll(
+            device: device,
+            pointsFilled: pointsFilled,
+            runsFilled: runsFilled,
+            pointsUnfilled: pointsUnfilled,
+            runsUnfilled: runsUnfilled,
+            commandQueue: commandQueue
+        )
+    }
+    
+    return
+}
+
 func saveBufferToPng(buffer: CVPixelBuffer, format: CIFormat) -> Void {
     let docUrls = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)
     guard let documentsUrl = docUrls.first else {

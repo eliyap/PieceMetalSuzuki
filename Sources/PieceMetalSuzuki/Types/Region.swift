@@ -95,3 +95,43 @@ func initializeRegions(
     }
     return regions
 }
+
+func initializeRegions_LUT(
+    runBuffer: Buffer<Run>,
+    texture: MTLTexture
+) -> [[Region]] {
+    let coreWidth = Int(LookupTableBuilder.CoreSize.width)
+    let coreHeight = Int(LookupTableBuilder.CoreSize.height)
+    let regionTableWidth = (texture.width + coreWidth - 1) / coreWidth
+    let regionTableHeight = (texture.height + coreHeight - 1) / coreHeight
+    
+    var regions: [[Region]] = []
+    for row in 0..<regionTableHeight {
+        let regionRow = [Region](unsafeUninitializedCapacity: regionTableWidth) { buffer, initializedCount in
+            DispatchQueue.concurrentPerform(iterations: regionTableWidth) { col in
+                /// Count valid elements in each 1x1 region.
+                let bufferBase = ((row * regionTableWidth) + col) * TableWidth
+                var validCount = UInt32.zero
+                for offset in 0..<TableWidth {
+                    if runBuffer.array[bufferBase + offset].isValid {
+                        validCount += 1
+                    } else {
+                        break
+                    }
+                }
+                
+                /// Cannot use subscript notation to set uninitialized memory.
+                /// https://forums.swift.org/t/how-to-initialize-array-of-class-instances-using-a-buffer-of-uninitialised-memory/39174/5
+                buffer.baseAddress!.advanced(by: col).initialize(to: Region(
+                    origin: PixelPoint(x: UInt32(col), y: UInt32(row)),
+                    size: LookupTableBuilder.CoreSize,
+                    gridPos: GridPosition(row: UInt32(row), col: UInt32(col)),
+                    runsCount: validCount
+                ))
+            }
+            initializedCount = texture.width
+        }
+        regions.append(regionRow)
+    }
+    return regions
+}
