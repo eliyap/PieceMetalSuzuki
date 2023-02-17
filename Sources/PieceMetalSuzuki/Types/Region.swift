@@ -70,9 +70,9 @@ func initializeRegions(
         let regionRow = [Region](unsafeUninitializedCapacity: texture.width) { buffer, initializedCount in
             DispatchQueue.concurrentPerform(iterations: texture.width) { col in
                 /// Count valid elements in each 1x1 region.
-                let bufferBase = ((row * texture.width) + col) * 4
+                let bufferBase = ((row * texture.width) + col) * PointsPerPixel1x1
                 var validCount = UInt32.zero
-                for offset in 0..<4 {
+                for offset in 0..<PointsPerPixel1x1 {
                     if runBuffer.array[bufferBase + offset].isValid {
                         validCount += 1
                     } else {
