@@ -193,6 +193,8 @@ struct Grid {
             let run = runBuffer[runIdx]
 //            print((run.oldTail..<run.oldHead).map { pointBuffer[Int($0)] })
             assert(run.isValid)
+            assert(run.headTriadTo == ChainDirection.closed.rawValue)
+            assert(run.tailTriadFrom == ChainDirection.closed.rawValue)
         }
         print("Found \(regions[0][0].runsCount) contours.")
         #endif
