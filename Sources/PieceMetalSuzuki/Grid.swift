@@ -449,7 +449,7 @@ struct Grid {
             while runIndices.isEmpty == false {
                 let runIdx = runIndices.removeLast()
                 #if SHOW_GRID_WORK
-                debugPrint("joining run \(srcRuns[runIdx]) with head \(headPoint(for: runIdx)) and tail \(tailPoint(for: runIdx))")
+                debugPrint("joining run @\(runIdx) \(srcRuns[runIdx]) with head \(headPoint(for: runIdx)) and tail \(tailPoint(for: runIdx))")
                 #endif
                 join(runIdx: runIdx)
             }
