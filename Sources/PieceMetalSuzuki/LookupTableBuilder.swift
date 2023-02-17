@@ -11,7 +11,7 @@ import OrderedCollections
 
 public let PointsPerPixel1x1 = 4
 public let PointsPerPixel = 4
-public let TableWidth = 4
+public let TableWidth = 6
 
 /**
  The objective of a Lookup Table is to quick-start the creation of a `Region` from a pattern.
@@ -32,7 +32,7 @@ public let TableWidth = 4
  */
 internal final class LookupTableBuilder {
     
-    public static let CoreSize = PixelSize(width: 1, height: 1)
+    public static let CoreSize = PixelSize(width: 2, height: 1)
     
     let coreSize: PixelSize
     
