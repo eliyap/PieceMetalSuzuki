@@ -131,7 +131,7 @@ func initializeRegions_LUT(
                     runsCount: validCount
                 ))
             }
-            initializedCount = texture.width
+            initializedCount = regionTableWidth
         }
         regions.append(regionRow)
     }
