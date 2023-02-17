@@ -130,10 +130,11 @@ internal final class LookupTableBuilder {
     }
     
     func setBuffers(device: MTLDevice) -> Void {
+        let pointArray: [StartPoint] = pointTable.reduce([], +)
         let startPointBuffer = Buffer<StartPoint>.init(device: device, count: pointTable.count)!
         memcpy(
             startPointBuffer.array,
-            Array(pointTable),
+            pointArray,
             MemoryLayout<StartPoint>.stride * pointTable.count
         )
         StartPoint.lookupTable = startPointBuffer
@@ -146,10 +147,11 @@ internal final class LookupTableBuilder {
         )
         StartPoint.lookupTableIndices = startPointIndicesBuffer
 
+        let runArray: [StartRun] = runTable.reduce([], +)
         let startRunBuffer = Buffer<StartRun>.init(device: device, count: runTable.count)!
         memcpy(
             startRunBuffer.array,
-            Array(runTable),
+            runArray,
             MemoryLayout<StartRun>.stride * runTable.count
         )
         StartRun.lookupTable = startRunBuffer
