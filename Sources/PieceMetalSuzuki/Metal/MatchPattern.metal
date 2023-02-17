@@ -134,12 +134,20 @@ kernel void matchPatterns2x1(
     uint2                          gid               [[thread_position_in_grid]]
 ) {
     uint8_t TableWidth = 6;
-    int32_t idx = ((tex.get_width() * gid.y) + gid.x) * TableWidth;
+    uint8_t pointsPerPixel = 3;
+    int32_t idx = ((tex.get_width() * gid.y) + gid.x) * pointsPerPixel;
     uint32_t texWidth = tex.get_width();
     uint32_t texHeight = tex.get_height();
     
     // Don't exit the texture.
     if ((gid.x >= texWidth) || (gid.y >= texHeight)) {
+        return;
+    }
+    
+    // Skip pixels that aren't the root of the pattern.
+    uint32_t coreWidth = 2;
+    uint32_t coreHeight = 1;
+    if ((gid.x % coreWidth) || (gid.y % coreHeight)) {
         return;
     }
     
