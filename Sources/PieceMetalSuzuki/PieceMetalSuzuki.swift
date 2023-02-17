@@ -63,7 +63,13 @@ public struct PieceMetalSuzuki {
                 return
             }
             
-            let count = texture.width * texture.height * Int(pointsPerPixel)
+            /// Round up to the closest multiple.
+            /// If it wasn't a multiple, the "extra" is rounded off by integer division, then added back.
+            /// If it was a multiple, it's taken down, then back up.
+            let roundedWidth = (UInt32(texture.width - 1) / coreSize.width) * coreSize.width + coreSize.width
+            let roundedHeight = (UInt32(texture.height - 1) / coreSize.height) * coreSize.height + coreSize.height
+            let count = Int(roundedWidth * roundedHeight * pointsPerPixel)
+            
             guard
                 let pointBuffer = Buffer<PixelPoint>(device: device, count: count),
                 let runBuffer = Buffer<Run>(device: device, count: count),
