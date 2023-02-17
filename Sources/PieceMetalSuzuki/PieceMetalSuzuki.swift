@@ -6,7 +6,7 @@ import MetalPerformanceShaders
 
 public struct PieceMetalSuzuki {
     public init(imageUrl: URL) {
-        LookupTableBuilder.shared = .init(PixelSize(width: 2, height: 1))
+        LookupTableBuilder.shared = .init(LookupTableBuilder.CoreSize)
         
         guard let ciImage = CIImage(contentsOf: imageUrl) else {
             assert(false, "Couldn't load image.")
