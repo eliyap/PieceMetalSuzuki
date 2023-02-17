@@ -28,3 +28,16 @@ struct StartRun {
     uint8_t from;
     uint8_t to;
 };
+
+kernel void matchPatterns(
+    texture2d<half, access::read>  tex               [[ texture(0) ]],
+    device PixelPoint*             points            [[ buffer (0) ]],
+    device Run*                    runs              [[ buffer (1) ]],
+    device const StartRun*         startRuns         [[ buffer (2) ]],
+    device const uint16_t*         startRunIndices   [[ buffer (3) ]],
+    device const StartPoint*       startPoints       [[ buffer (4) ]],
+    device const uint16_t*         startPointIndices [[ buffer (5) ]],
+    uint2                          gid               [[thread_position_in_grid]]
+) {
+
+}
