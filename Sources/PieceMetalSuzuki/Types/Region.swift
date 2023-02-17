@@ -18,7 +18,7 @@ import Metal
  
  The memory location of the runs in this region is derived from information in this class and the grid structure.
  */
-class Region {
+internal final class Region {
     /// Location of the pixel's top left corner in the image.
     let origin: PixelPoint
     
