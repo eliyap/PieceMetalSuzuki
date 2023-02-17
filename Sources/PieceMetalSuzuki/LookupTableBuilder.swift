@@ -113,8 +113,42 @@ internal final class LookupTableBuilder {
         /// Report.
         debugPrint("\(runTable.count) distinct runs")
         debugPrint("\(pointTable.count) distinct points")
+        
+        setBuffers(device: device)
+    }
+    
+    func setBuffers(device: MTLDevice) -> Void {
+        let startPointBuffer = Buffer<StartPoint>.init(device: device, count: pointTable.count)!
+        memcpy(
+            startPointBuffer.array,
+            Array(pointTable),
+            MemoryLayout<StartPoint>.stride * pointTable.count
+        )
+        StartPoint.lookupTable = startPointBuffer
+        
+        let startPointIndicesBuffer = Buffer<UInt16>.init(device: device, count: pointIndices.count)!
+        memcpy(
+            startPointIndicesBuffer.array,
+            pointIndices,
+            MemoryLayout<UInt16>.stride * pointIndices.count
+        )
+        StartPoint.lookupTableIndices = startPointIndicesBuffer
 
-        saveBufferToPng(buffer: buffer.buffer, format: .BGRA8)
+        let startRunBuffer = Buffer<StartRun>.init(device: device, count: runTable.count)!
+        memcpy(
+            startRunBuffer.array,
+            Array(runTable),
+            MemoryLayout<StartRun>.stride * runTable.count
+        )
+        StartRun.lookupTable = startRunBuffer
+
+        let startRunIndicesBuffer = Buffer<UInt16>.init(device: device, count: runIndices.count)!
+        memcpy(
+            startRunIndicesBuffer.array,
+            runIndices,
+            MemoryLayout<UInt16>.stride * runIndices.count
+        )
+        StartRun.lookupTableIndices = startRunIndicesBuffer
     }
 }
 

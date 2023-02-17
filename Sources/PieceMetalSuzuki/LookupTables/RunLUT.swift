@@ -8,6 +8,14 @@
 import Foundation
 import Metal
 
+extension StartRun {
+    /// Set by `LookupTableBuilder`.
+    static var lookupTableIndices: Buffer<UInt16>! = nil
+    
+    /// Set by `LookupTableBuilder`.
+    static var lookupTable: Buffer<Self>! = nil
+}
+
 extension Run {
     
     static var LUTBuffer: Buffer<Run>? = {
