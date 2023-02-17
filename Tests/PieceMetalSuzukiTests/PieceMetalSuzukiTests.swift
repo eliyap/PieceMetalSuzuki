@@ -43,4 +43,19 @@ final class PieceMetalSuzukiTests: XCTestCase {
     func testDonut() throws {
         _ = PieceMetalSuzuki(imageUrl: url("donut"))
     }
+    
+    func testIndirectLUT() throws {
+        guard
+            let device = MTLCreateSystemDefaultDevice(),
+            let commandQueue = device.makeCommandQueue()
+        else {
+            assert(false, "Failed to get metal device.")
+            return
+        }
+        
+        LookupTableBuilder.shared = .init(LookupTableBuilder.CoreSize)
+        LookupTableBuilder.shared.setBuffers(device: device)
+        
+        _ = PieceMetalSuzuki(imageUrl: url("square"))
+    }
 }

@@ -6,7 +6,13 @@ import MetalPerformanceShaders
 
 public struct PieceMetalSuzuki {
     public init(imageUrl: URL) {
-        LookupTableBuilder.shared = .init(LookupTableBuilder.CoreSize)
+        guard
+            let device = MTLCreateSystemDefaultDevice(),
+            let commandQueue = device.makeCommandQueue()
+        else {
+            assert(false, "Failed to get metal device.")
+            return
+        }
         
         guard let ciImage = CIImage(contentsOf: imageUrl) else {
             assert(false, "Couldn't load image.")
@@ -30,14 +36,6 @@ public struct PieceMetalSuzuki {
         /// Copy image to pixel buffer.
         let context = CIContext()
         context.render(ciImage, to: bufferA)
-        
-        guard
-            let device = MTLCreateSystemDefaultDevice(),
-            let commandQueue = device.makeCommandQueue()
-        else {
-            assert(false, "Failed to get metal device.")
-            return
-        }
         
         var metalTextureCache: CVMetalTextureCache!
         guard CVMetalTextureCacheCreate(kCFAllocatorDefault, nil, device, nil, &metalTextureCache) == kCVReturnSuccess else {
