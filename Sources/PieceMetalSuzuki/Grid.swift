@@ -225,7 +225,7 @@ struct Grid {
      The algorithm's objective is to join `Run`s into longer `Run`s by finding pairs with one's head matching the other's tail.
      Both the location and direction must match.
      Matching means having a pixel in the correct direction relative to the other pixel.
-     e.g. if fragment Alice has head position (3,4) pointed right, then fragment Bob with tail at (3,5) pointed left is a match.
+     e.g. if fragment Alice has head position (3,5) pointed right, then fragment Bob with tail at (3,6) pointed left is a match.
      
      The algorithm proceeds as follows:
      - we have a pool of runs from regions `a` and `b`.

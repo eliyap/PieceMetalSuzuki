@@ -63,7 +63,7 @@ func matchPatterns(
     
     #if SHOW_GRID_WORK
     debugPrint("[Initial Points]")
-    let count = texture.width * texture.height * 4
+    let count = texture.width * texture.height * PointsPerPixel
     for i in 0..<count {
         print(i, runBuffer.array[i], pointBuffer.array[i])
     }

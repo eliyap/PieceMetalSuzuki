@@ -9,6 +9,7 @@ import Foundation
 import CoreVideo
 import OrderedCollections
 
+public let PointsPerPixel = 4
 public let TableWidth = 4
 
 /**
