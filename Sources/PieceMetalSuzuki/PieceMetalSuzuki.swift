@@ -208,7 +208,7 @@ public func applyMetalSuzuki_LUT(
         imageSize: PixelSize(width: UInt32(texture.width), height: UInt32(texture.height)),
         gridSize: coreSize,
         regions: Profiler.time(.initRegions) {
-            return initializeRegions_LUT(runBuffer: runsFilled, texture: texture, coreSize: coreSize, tableWidth: tableWidth)
+            return initializeRegions_LUT(runBuffer: runsFilled, texture: texture, coreSize: coreSize, tableWidth: tableWidth, pointsPerPixel: pointsPerPixel)
         },
         pointsPerPixel: pointsPerPixel
     )

@@ -106,7 +106,7 @@ func initializeRegions_LUT(
     texture: MTLTexture,
     coreSize: PixelSize,
     tableWidth: Int,
-    pointsPerPixel: UInt32 = 4
+    pointsPerPixel: UInt32
 ) -> [[Region]] {
     let coreWidth = Int(coreSize.width)
     let coreHeight = Int(coreSize.height)
