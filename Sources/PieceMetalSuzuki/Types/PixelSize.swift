@@ -7,11 +7,11 @@
 
 import Foundation
 
-struct PixelSize: Equatable, CustomStringConvertible {
+public struct PixelSize: Equatable, CustomStringConvertible {
     let width: UInt32
     let height: UInt32
 
-    var description: String {
+    public var description: String {
         return "w\(width)h\(height)"
     }
 }

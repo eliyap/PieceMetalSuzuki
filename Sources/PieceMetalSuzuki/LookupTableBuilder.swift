@@ -32,8 +32,6 @@ public let TableWidth = 6
  */
 internal final class LookupTableBuilder {
     
-    public static let CoreSize = PixelSize(width: 2, height: 1)
-    
     let coreSize: PixelSize
     
     /// Contains distinct series of points.

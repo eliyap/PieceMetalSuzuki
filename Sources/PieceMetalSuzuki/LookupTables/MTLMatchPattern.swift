@@ -12,10 +12,11 @@ func matchPatterns(
     commandQueue: MTLCommandQueue,
     texture: MTLTexture,
     runBuffer: Buffer<Run>,
-    pointBuffer: Buffer<PixelPoint>
+    pointBuffer: Buffer<PixelPoint>,
+    coreSize: PixelSize
 ) -> Bool {
     guard
-        let kernelFunction = loadMatchPatternFunction(device: device),
+        let kernelFunction = loadMatchPatternFunction(device: device, coreSize: coreSize),
         let pipelineState = try? device.makeComputePipelineState(function: kernelFunction),
         let cmdBuffer = commandQueue.makeCommandBuffer(),
         let cmdEncoder = cmdBuffer.makeComputeCommandEncoder()
@@ -72,7 +73,7 @@ func matchPatterns(
     return true
 }
 
-func loadMatchPatternFunction(device: MTLDevice) -> MTLFunction? {
+func loadMatchPatternFunction(device: MTLDevice, coreSize: PixelSize) -> MTLFunction? {
     do {
         guard let libUrl = Bundle.module.url(forResource: "MatchPattern", withExtension: "metal", subdirectory: "Metal") else {
             assert(false, "Failed to get library.")

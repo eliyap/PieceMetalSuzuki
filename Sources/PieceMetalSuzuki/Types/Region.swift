@@ -98,10 +98,11 @@ func initializeRegions(
 
 func initializeRegions_LUT(
     runBuffer: Buffer<Run>,
-    texture: MTLTexture
+    texture: MTLTexture,
+    coreSize: PixelSize
 ) -> [[Region]] {
-    let coreWidth = Int(LookupTableBuilder.CoreSize.width)
-    let coreHeight = Int(LookupTableBuilder.CoreSize.height)
+    let coreWidth = Int(coreSize.width)
+    let coreHeight = Int(coreSize.height)
     let regionTableWidth = (texture.width + coreWidth - 1) / coreWidth
     let regionTableHeight = (texture.height + coreHeight - 1) / coreHeight
     
@@ -124,7 +125,7 @@ func initializeRegions_LUT(
                 /// https://forums.swift.org/t/how-to-initialize-array-of-class-instances-using-a-buffer-of-uninitialised-memory/39174/5
                 buffer.baseAddress!.advanced(by: col).initialize(to: Region(
                     origin: PixelPoint(x: UInt32(col), y: UInt32(row)),
-                    size: LookupTableBuilder.CoreSize,
+                    size: coreSize,
                     gridPos: GridPosition(row: UInt32(row), col: UInt32(col)),
                     runsCount: validCount
                 ))
