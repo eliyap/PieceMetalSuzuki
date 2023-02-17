@@ -5,7 +5,10 @@ import Metal
 import MetalPerformanceShaders
 
 public struct PieceMetalSuzuki {
-    public init(imageUrl: URL) {
+    public init(
+        imageUrl: URL,
+        _ block: (MTLDevice, MTLCommandQueue, MTLTexture, Buffer<PixelPoint>, Buffer<Run>, Buffer<PixelPoint>, Buffer<Run>) -> Void
+    ) {
         guard
             let device = MTLCreateSystemDefaultDevice(),
             let commandQueue = device.makeCommandQueue()
@@ -69,8 +72,7 @@ public struct PieceMetalSuzuki {
                 return
             }
 
-            /// Apply Metal filter to pixel buffer.
-            applyMetalSuzuki(device: device, commandQueue: commandQueue, texture: texture, pointsFilled: pointBuffer, runsFilled: runBuffer, pointsUnfilled: pointsUnfilled, runsUnfilled: runsUnfilled)
+            block(device, commandQueue, texture, pointBuffer, runBuffer, pointsUnfilled, runsUnfilled)
         }
         
         //        bufferA = filteredBuffer
