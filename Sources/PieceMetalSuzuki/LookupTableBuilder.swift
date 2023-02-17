@@ -135,7 +135,7 @@ internal final class LookupTableBuilder {
         memcpy(
             startPointBuffer.array,
             pointArray,
-            MemoryLayout<StartPoint>.stride * pointTable.count
+            MemoryLayout<StartPoint>.stride * pointArray.count
         )
         StartPoint.lookupTable = startPointBuffer
         
@@ -152,7 +152,7 @@ internal final class LookupTableBuilder {
         memcpy(
             startRunBuffer.array,
             runArray,
-            MemoryLayout<StartRun>.stride * runTable.count
+            MemoryLayout<StartRun>.stride * runArray.count
         )
         StartRun.lookupTable = startRunBuffer
 
