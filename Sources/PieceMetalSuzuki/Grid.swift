@@ -474,6 +474,8 @@ extension Grid {
         runsUnfilled: Buffer<Run>,
         commandQueue: MTLCommandQueue
     ) -> (Region, [Run], [PixelPoint]) {
+        /// First iteration will combine regions with their horizontal neighbors.
+        /// Hence we copy from the "vertical" buffers to the "horizontal" buffers.
         var dxn = ReduceDirection.horizontal
         let pointsVertical = pointsFilled
         let runsVertical = runsFilled
