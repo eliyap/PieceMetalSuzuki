@@ -186,7 +186,7 @@ internal final class BGRAPixelBuffer {
 
         CVPixelBufferLockBaseAddress(buffer, [])
         self.ptr = CVPixelBufferGetBaseAddress(buffer)!
-            .bindMemory(to: UInt8.self, capacity: bufferWidth * bufferHeight * 4)
+            .bindMemory(to: UInt8.self, capacity: bufferWidth * bufferHeight * BGRAChannels)
 
         var leftPixels: Int = 0
         var rightPixels: Int = 0
@@ -211,10 +211,10 @@ internal final class BGRAPixelBuffer {
     private func fill() -> Void {
         let count = bufferWidth * bufferHeight
         for idx in 0..<count {
-            ptr[idx*4+0] = .zero
-            ptr[idx*4+1] = .zero
-            ptr[idx*4+2] = .zero
-            ptr[idx*4+3] = 255
+            ptr[idx*BGRAChannels+0] = .zero
+            ptr[idx*BGRAChannels+1] = .zero
+            ptr[idx*BGRAChannels+2] = .zero
+            ptr[idx*BGRAChannels+3] = 255
         }
     }
     
