@@ -9,6 +9,8 @@ import Foundation
 import CoreVideo
 import OrderedCollections
 
+public let TableWidth = 4
+
 /**
  The objective of a Lookup Table is to quick-start the creation of a `Region` from a pattern.
  
@@ -84,23 +86,33 @@ internal final class LookupTableBuilder {
                 commandQueue: commandQueue
             )
 
-            let startRuns = runs.map { run in
-                let base = Int32(baseOffset(grid: grid, region: region))
-                return StartRun(
-                    tail: Int8(run.oldTail - base),
-                    head: Int8(run.oldHead - base),
-                    from: run.tailTriadFrom,
-                    to: run.headTriadTo
-                )
+            let startRuns = (0..<TableWidth).map { runIdx in
+                if runs.indices.contains(runIdx) {
+                    let run = runs[runIdx]
+                    let base = Int32(baseOffset(grid: grid, region: region))
+                    return StartRun(
+                        tail: Int8(run.oldTail - base),
+                        head: Int8(run.oldHead - base),
+                        from: run.tailTriadFrom,
+                        to: run.headTriadTo
+                    )
+                } else {
+                    return .invalid
+                }
             }
             runTable.append(startRuns)
             runIndices.append(UInt16(runTable.firstIndex(of: startRuns)!))
 
-            let startPoints = points.map { point in
-                StartPoint(
-                    x: UInt8(point.x - coreSize.width),
-                    y: UInt8(point.y - coreSize.height)
-                )
+            let startPoints = (0..<TableWidth).map { pointIdx in
+                if points.indices.contains(pointIdx) {
+                    let point = points[pointIdx]
+                    return StartPoint(
+                        x: UInt8(point.x - coreSize.width),
+                        y: UInt8(point.y - coreSize.height)
+                    )
+                } else {
+                    return .invalid
+                }
             }
             pointTable.append(startPoints)
             pointIndices.append(UInt16(pointTable.firstIndex(of: startPoints)!))
