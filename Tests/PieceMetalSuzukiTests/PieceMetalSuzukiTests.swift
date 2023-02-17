@@ -59,21 +59,14 @@ final class PieceMetalSuzukiTests: XCTestCase {
         }
     }
     
-    func testIndirectLUT() throws {
-        guard
-            let device = MTLCreateSystemDefaultDevice(),
-            let commandQueue = device.makeCommandQueue()
-        else {
-            assert(false, "Failed to get metal device.")
-            return
-        }
-        
+    func testIndirectLUT1x1() throws {
+        let device = MTLCreateSystemDefaultDevice()!
         let coreSize = PixelSize(width: 1, height: 1)
         let ltb = LookupTableBuilder(coreSize: coreSize)
         ltb.setBuffers(device: device)
         
         _ = PieceMetalSuzuki(imageUrl: url("square")) { device, queue, texture, pointsFilled, runsFilled, pointsUnfilled, runsUnfilled in
-            applyMetalSuzuki_LUT(device: device, commandQueue: commandQueue, texture: texture, pointsFilled: pointsFilled, runsFilled: runsFilled, pointsUnfilled: pointsUnfilled, runsUnfilled: runsUnfilled, coreSize: coreSize)
+            applyMetalSuzuki_LUT(device: device, commandQueue: queue, texture: texture, pointsFilled: pointsFilled, runsFilled: runsFilled, pointsUnfilled: pointsUnfilled, runsUnfilled: runsUnfilled, coreSize: coreSize)
         }
     }
 }
