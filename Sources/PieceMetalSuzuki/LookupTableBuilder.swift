@@ -32,11 +32,11 @@ internal final class LookupTableBuilder {
     
     /// Contains distinct series of points.
     var pointTable: OrderedSet<[StartPoint]> = []
-    var pointIndices: [Int] = []
+    var pointIndices: [UInt16] = []
     
     /// Contains distinct series of runs.
     var runTable: OrderedSet<[StartRun]> = []
-    var runIndices: [Int] = []
+    var runIndices: [UInt16] = []
     
     public static var shared: LookupTableBuilder! = nil
     public init(_ coreSize: PixelSize) {
@@ -94,6 +94,7 @@ internal final class LookupTableBuilder {
                 )
             }
             runTable.append(startRuns)
+            runIndices.append(UInt16(runTable.firstIndex(of: startRuns)!))
 
             let startPoints = points.map { point in
                 StartPoint(
@@ -102,6 +103,8 @@ internal final class LookupTableBuilder {
                 )
             }
             pointTable.append(startPoints)
+            pointIndices.append(UInt16(pointTable.firstIndex(of: startPoints)!))
+            
             if (iteration.isMultiple(of: 10000)) {
                 print(iteration)
             }
