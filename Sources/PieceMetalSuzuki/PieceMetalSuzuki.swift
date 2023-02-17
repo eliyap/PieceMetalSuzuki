@@ -323,6 +323,7 @@ func createChainStarters(
     
     #if SHOW_GRID_WORK
     debugPrint("[Initial Points]")
+    let count = texture.width * texture.height * 4
     for i in 0..<count where runBuffer.array[i].isValid {
         print(runBuffer.array[i], pointBuffer.array[i])
     }
