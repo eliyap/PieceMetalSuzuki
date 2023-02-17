@@ -40,7 +40,7 @@ static bool readPixel(
     return (coords.x >= minCol) && (coords.x <= maxCol) && (coords.y >= minRow) && (coords.y <= maxRow) && (tex.read(coords).r != 0.0);
 }
 #define TableWidth 4
-kernel void matchPatterns(
+kernel void matchPatterns1x1(
     texture2d<half, access::read>  tex               [[ texture(0) ]],
     device PixelPoint*             points            [[ buffer (0) ]],
     device Run*                    runs              [[ buffer (1) ]],

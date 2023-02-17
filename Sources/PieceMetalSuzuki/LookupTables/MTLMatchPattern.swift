@@ -81,7 +81,8 @@ func loadMatchPatternFunction(device: MTLDevice, coreSize: PixelSize) -> MTLFunc
         }
         let source = try String(contentsOf: libUrl)
         let library = try device.makeLibrary(source: source, options: nil)
-        guard let function = library.makeFunction(name: "matchPatterns") else {
+        let functionLabel = "\(coreSize.width)x\(coreSize.height)"
+        guard let function = library.makeFunction(name: "matchPatterns\(functionLabel)") else {
             assert(false, "Failed to get library.")
             return nil
         }
