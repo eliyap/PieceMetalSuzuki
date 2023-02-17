@@ -192,7 +192,8 @@ public func applyMetalSuzuki_LUT(
     runsFilled: Buffer<Run>,
     pointsUnfilled: Buffer<PixelPoint>,
     runsUnfilled: Buffer<Run>,
-    coreSize: PixelSize
+    coreSize: PixelSize,
+    tableWidth: Int
 ) -> Void {
     /// Apply Metal filter to pixel buffer.
     guard matchPatterns(device: device, commandQueue: commandQueue, texture: texture, runBuffer: runsFilled, pointBuffer: pointsFilled, coreSize: coreSize) else {
@@ -204,7 +205,7 @@ public func applyMetalSuzuki_LUT(
         imageSize: PixelSize(width: UInt32(texture.width), height: UInt32(texture.height)),
         gridSize: coreSize,
         regions: Profiler.time(.initRegions) {
-            return initializeRegions_LUT(runBuffer: runsFilled, texture: texture, coreSize: coreSize)
+            return initializeRegions_LUT(runBuffer: runsFilled, texture: texture, coreSize: coreSize, tableWidth: tableWidth)
         }
     )
     

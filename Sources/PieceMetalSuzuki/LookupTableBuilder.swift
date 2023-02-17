@@ -11,7 +11,6 @@ import OrderedCollections
 
 public let PointsPerPixel1x1 = 4
 public let PointsPerPixel = 4
-public let TableWidth = 6
 
 /**
  The objective of a Lookup Table is to quick-start the creation of a `Region` from a pattern.
@@ -42,7 +41,7 @@ internal final class LookupTableBuilder {
     var runTable: OrderedSet<[StartRun]> = []
     var runIndices: [UInt16] = []
     
-    public init(coreSize: PixelSize) {
+    public init(coreSize: PixelSize, tableWidth: Int) {
         self.coreSize = coreSize
         let buffer = BGRAPixelBuffer(coreSize: coreSize)
         
@@ -87,8 +86,8 @@ internal final class LookupTableBuilder {
                 commandQueue: commandQueue
             )
 
-            assert(runs.count <= TableWidth)
-            let startRuns = (0..<TableWidth).map { runIdx in
+            assert(runs.count <= tableWidth)
+            let startRuns = (0..<tableWidth).map { runIdx in
                 if runs.indices.contains(runIdx) {
                     let run = runs[runIdx]
                     let base = Int32(baseOffset(grid: grid, region: region))
@@ -105,8 +104,8 @@ internal final class LookupTableBuilder {
             runTable.append(startRuns)
             runIndices.append(UInt16(runTable.firstIndex(of: startRuns)!))
 
-            assert(points.count <= TableWidth)
-            let startPoints = (0..<TableWidth).map { pointIdx in
+            assert(points.count <= tableWidth)
+            let startPoints = (0..<tableWidth).map { pointIdx in
                 if points.indices.contains(pointIdx) {
                     let point = points[pointIdx]
                     return StartPoint(

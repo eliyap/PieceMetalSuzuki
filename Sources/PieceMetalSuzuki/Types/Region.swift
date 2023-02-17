@@ -99,7 +99,8 @@ func initializeRegions(
 func initializeRegions_LUT(
     runBuffer: Buffer<Run>,
     texture: MTLTexture,
-    coreSize: PixelSize
+    coreSize: PixelSize,
+    tableWidth: Int
 ) -> [[Region]] {
     let coreWidth = Int(coreSize.width)
     let coreHeight = Int(coreSize.height)
@@ -111,9 +112,9 @@ func initializeRegions_LUT(
         let regionRow = [Region](unsafeUninitializedCapacity: regionTableWidth) { buffer, initializedCount in
             DispatchQueue.concurrentPerform(iterations: regionTableWidth) { col in
                 /// Count valid elements in each 1x1 region.
-                let bufferBase = ((row * regionTableWidth) + col) * TableWidth
+                let bufferBase = ((row * regionTableWidth) + col) * tableWidth
                 var validCount = UInt32.zero
-                for offset in 0..<TableWidth {
+                for offset in 0..<tableWidth {
                     if runBuffer.array[bufferBase + offset].isValid {
                         validCount += 1
                     } else {
