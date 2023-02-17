@@ -458,7 +458,9 @@ struct Grid {
 }
 
 func baseOffset(imageSize: PixelSize, gridSize: PixelSize, regionSize: PixelSize, gridPos: GridPosition, pointsPerPixel: UInt32, coreSize: PixelSize) -> UInt32 {
-    pointsPerPixel * ((imageSize.width * gridSize.height * gridPos.row) + (gridSize.width * regionSize.height * gridPos.col))
+    let rowOffset = imageSize.width.roundedUp(toClosest: coreSize.width) * gridSize.height * gridPos.row
+    let colOffset = gridSize.width * regionSize.height * gridPos.col
+    return pointsPerPixel * (rowOffset + colOffset)
 }
 
 func baseOffset(grid: Grid, region: Region) -> UInt32 {
