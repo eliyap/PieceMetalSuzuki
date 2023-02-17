@@ -10,10 +10,10 @@ import Metal
 
 extension StartRun {
     /// Set by `LookupTableBuilder`.
-    static var lookupTableIndices: Buffer<UInt16>! = nil
+    static var lookupTableIndices: [UInt16] = []
     
     /// Set by `LookupTableBuilder`.
-    static var lookupTable: Buffer<Self>! = nil
+    static var lookupTable: [Self] = []
 }
 
 extension Run {

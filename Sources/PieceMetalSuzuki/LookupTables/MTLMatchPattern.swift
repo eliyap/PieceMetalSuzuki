@@ -30,10 +30,30 @@ func matchPatterns(
 
     cmdEncoder.setBuffer(pointBuffer.mtlBuffer, offset: 0, index: 0)
     cmdEncoder.setBuffer(runBuffer.mtlBuffer, offset: 0, index: 1)
-    cmdEncoder.setBuffer(StartRun.lookupTable.mtlBuffer, offset: 0, index: 2)
-    cmdEncoder.setBuffer(StartRun.lookupTableIndices.mtlBuffer, offset: 0, index: 3)
-    cmdEncoder.setBuffer(StartPoint.lookupTable.mtlBuffer, offset: 0, index: 4)
-    cmdEncoder.setBuffer(StartPoint.lookupTableIndices.mtlBuffer, offset: 0, index: 5)
+
+    let runTableBuffer = device.makeBuffer(
+        bytes: &StartRun.lookupTable,
+        length: MemoryLayout<StartRun>.stride * StartRun.lookupTable.count
+    )
+    cmdEncoder.setBuffer(runTableBuffer, offset: 0, index: 2)
+
+    let runTableIndicesBuffer = device.makeBuffer(
+        bytes: &StartRun.lookupTableIndices,
+        length: MemoryLayout<StartRun>.stride * StartRun.lookupTableIndices.count
+    )
+    cmdEncoder.setBuffer(runTableIndicesBuffer, offset: 0, index: 3)
+
+    let pointTableBuffer = device.makeBuffer(
+        bytes: &StartPoint.lookupTable,
+        length: MemoryLayout<StartPoint>.stride * StartPoint.lookupTable.count
+    )
+    cmdEncoder.setBuffer(pointTableBuffer, offset: 0, index: 4)
+    
+    let pointTableIndicesBuffer = device.makeBuffer(
+        bytes: &StartPoint.lookupTableIndices,
+        length: MemoryLayout<StartPoint>.stride * StartPoint.lookupTableIndices.count
+    )
+    cmdEncoder.setBuffer(pointTableIndicesBuffer, offset: 0, index: 5)
     
     let (tPerTG, tgPerGrid) = pipelineState.threadgroupParameters(texture: texture)
     cmdEncoder.dispatchThreadgroups(tgPerGrid, threadsPerThreadgroup: tPerTG)
