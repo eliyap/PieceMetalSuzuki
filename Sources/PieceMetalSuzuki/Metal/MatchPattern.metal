@@ -39,7 +39,7 @@ static bool readPixel(
 ) {
     return (coords.x >= minCol) && (coords.x <= maxCol) && (coords.y >= minRow) && (coords.y <= maxRow) && (tex.read(coords).r != 0.0);
 }
-#define TableWidth 4
+
 kernel void matchPatterns1x1(
     texture2d<half, access::read>  tex               [[ texture(0) ]],
     device PixelPoint*             points            [[ buffer (0) ]],
@@ -50,6 +50,7 @@ kernel void matchPatterns1x1(
     device const uint16_t*         startPointIndices [[ buffer (5) ]],
     uint2                          gid               [[thread_position_in_grid]]
 ) {
+    uint8_t TableWidth = 4;
     int32_t idx = ((tex.get_width() * gid.y) + gid.x) * TableWidth;
     uint32_t texWidth = tex.get_width();
     uint32_t texHeight = tex.get_height();
