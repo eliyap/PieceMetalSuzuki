@@ -68,12 +68,12 @@ final class PieceMetalSuzukiTests: XCTestCase {
             return
         }
         
-        let ltb = LookupTableBuilder(coreSize: PixelSize(width: 1, height: 1))
+        let coreSize = PixelSize(width: 1, height: 1)
+        let ltb = LookupTableBuilder(coreSize: coreSize)
         ltb.setBuffers(device: device)
         
         _ = PieceMetalSuzuki(imageUrl: url("square")) { device, queue, texture, pointsFilled, runsFilled, pointsUnfilled, runsUnfilled in
-            #warning("todo fix")
-            applyMetalSuzuki_LUT(device: device, commandQueue: commandQueue, texture: texture, pointsFilled: pointsFilled, runsFilled: runsFilled, pointsUnfilled: pointsUnfilled, runsUnfilled: runsUnfilled, coreSize: PixelSize(width: 1, height: 1))
+            applyMetalSuzuki_LUT(device: device, commandQueue: commandQueue, texture: texture, pointsFilled: pointsFilled, runsFilled: runsFilled, pointsUnfilled: pointsUnfilled, runsUnfilled: runsUnfilled, coreSize: coreSize)
         }
     }
 }
