@@ -13,7 +13,8 @@ func matchPatterns(
     texture: MTLTexture,
     runBuffer: Buffer<Run>,
     pointBuffer: Buffer<PixelPoint>,
-    coreSize: PixelSize
+    coreSize: PixelSize,
+    pointsPerPixel: UInt32
 ) -> Bool {
     guard
         let kernelFunction = loadMatchPatternFunction(device: device, coreSize: coreSize),
@@ -64,7 +65,7 @@ func matchPatterns(
     
     #if SHOW_GRID_WORK
     debugPrint("[Initial Points]")
-    let count = texture.width * texture.height * PointsPerPixel
+    let count = texture.width * texture.height * Int(pointsPerPixel)
     for i in 0..<count {
         print(i, runBuffer.array[i], pointBuffer.array[i])
     }

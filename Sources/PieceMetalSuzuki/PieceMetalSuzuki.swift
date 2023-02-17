@@ -7,6 +7,7 @@ import MetalPerformanceShaders
 public struct PieceMetalSuzuki {
     public init(
         imageUrl: URL,
+        pointsPerPixel: UInt32,
         _ block: (MTLDevice, MTLCommandQueue, MTLTexture, Buffer<PixelPoint>, Buffer<Run>, Buffer<PixelPoint>, Buffer<Run>) -> Void
     ) {
         guard
@@ -61,7 +62,7 @@ public struct PieceMetalSuzuki {
                 return
             }
             
-            let count = texture.width * texture.height * 4
+            let count = texture.width * texture.height * Int(pointsPerPixel)
             guard
                 let pointBuffer = Buffer<PixelPoint>(device: device, count: count),
                 let runBuffer = Buffer<Run>(device: device, count: count),
@@ -198,7 +199,7 @@ public func applyMetalSuzuki_LUT(
     pointsPerPixel: UInt32
 ) -> Void {
     /// Apply Metal filter to pixel buffer.
-    guard matchPatterns(device: device, commandQueue: commandQueue, texture: texture, runBuffer: runsFilled, pointBuffer: pointsFilled, coreSize: coreSize) else {
+    guard matchPatterns(device: device, commandQueue: commandQueue, texture: texture, runBuffer: runsFilled, pointBuffer: pointsFilled, coreSize: coreSize, pointsPerPixel: pointsPerPixel) else {
         assert(false, "Failed to run chain start kernel.")
         return
     }
