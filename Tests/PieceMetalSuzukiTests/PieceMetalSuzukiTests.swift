@@ -91,12 +91,12 @@ final class PieceMetalSuzukiTests: XCTestCase {
         let ltb = LookupTableBuilder(patternSize: patternSize)
         ltb.setBuffers(device: device)
         
-//        measure {
+        measure {
             _ = PieceMetalSuzuki(imageUrl: url("input"), patternSize: patternSize) { device, queue, texture, pointsFilled, runsFilled, pointsUnfilled, runsUnfilled in
                 applyMetalSuzuki_LUT(device: device, commandQueue: queue, texture: texture, pointsFilled: pointsFilled, runsFilled: runsFilled, pointsUnfilled: pointsUnfilled, runsUnfilled: runsUnfilled, patternSize: patternSize)
             }
-//        }
-//
-//        await Profiler.report()
+        }
+
+        await Profiler.report()
     }
 }
