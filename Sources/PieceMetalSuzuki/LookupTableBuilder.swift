@@ -54,7 +54,6 @@ internal final class LookupTableBuilder {
             createChainStarters(device: device, commandQueue: commandQueue, texture: texture, runBuffer: runBuffer, pointBuffer: pointBuffer)
             var grid = Grid(
                 imageSize: PixelSize(width: UInt32(texture.width), height: UInt32(texture.height)),
-                gridSize: PixelSize(width: 1, height: 1),
                 regions: Profiler.time(.initRegions) {
                     return initializeRegions(runBuffer: runBuffer, texture: texture)
                 },

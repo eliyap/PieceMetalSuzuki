@@ -171,7 +171,6 @@ public func applyMetalSuzuki(
     
     var grid = Grid(
         imageSize: PixelSize(width: UInt32(texture.width), height: UInt32(texture.height)),
-        gridSize: PixelSize(width: 1, height: 1),
         regions: Profiler.time(.initRegions) {
             return initializeRegions(runBuffer: runsFilled, texture: texture)
         },
@@ -210,7 +209,6 @@ public func applyMetalSuzuki_LUT(
     
     var grid = Grid(
         imageSize: PixelSize(width: UInt32(texture.width), height: UInt32(texture.height)),
-        gridSize: patternSize.coreSize,
         regions: Profiler.time(.initRegions) {
             return initializeRegions_LUT(runBuffer: runsFilled, texture: texture, coreSize: patternSize.coreSize, tableWidth: patternSize.tableWidth, pointsPerPixel: patternSize.pointsPerPixel)
         },

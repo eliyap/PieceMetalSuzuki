@@ -11,6 +11,13 @@ struct Grid {
     
     let patternSize: PatternSize
     
+    init(imageSize: PixelSize, regions: [[Region]], patternSize: PatternSize) {
+        self.imageSize = imageSize
+        self.regions = regions
+        self.patternSize = patternSize
+        self.gridSize = patternSize.coreSize
+    }
+    
     enum ReduceDirection {
         case horizontal, vertical
         mutating func flip() {
