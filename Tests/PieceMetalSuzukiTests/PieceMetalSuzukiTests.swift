@@ -72,7 +72,7 @@ final class PieceMetalSuzukiTests: XCTestCase {
         }
     }
     
-    func testIndirectLUT2x1() throws {
+    func testIndirectLUT2x1() async throws {
         let device = MTLCreateSystemDefaultDevice()!
         let coreSize = PixelSize(width: 2, height: 1)
         let tableWidth = 6
@@ -80,8 +80,12 @@ final class PieceMetalSuzukiTests: XCTestCase {
         let ltb = LookupTableBuilder(coreSize: coreSize, tableWidth: tableWidth, pointsPerPixel: pointsPerPixel)
         ltb.setBuffers(device: device)
         
-        _ = PieceMetalSuzuki(imageUrl: url("waffle"), coreSize: coreSize, pointsPerPixel: pointsPerPixel) { device, queue, texture, pointsFilled, runsFilled, pointsUnfilled, runsUnfilled in
-            applyMetalSuzuki_LUT(device: device, commandQueue: queue, texture: texture, pointsFilled: pointsFilled, runsFilled: runsFilled, pointsUnfilled: pointsUnfilled, runsUnfilled: runsUnfilled, coreSize: coreSize, tableWidth: tableWidth, pointsPerPixel: pointsPerPixel)
+        measure {
+            _ = PieceMetalSuzuki(imageUrl: url("input"), coreSize: coreSize, pointsPerPixel: pointsPerPixel) { device, queue, texture, pointsFilled, runsFilled, pointsUnfilled, runsUnfilled in
+                applyMetalSuzuki_LUT(device: device, commandQueue: queue, texture: texture, pointsFilled: pointsFilled, runsFilled: runsFilled, pointsUnfilled: pointsUnfilled, runsUnfilled: runsUnfilled, coreSize: coreSize, tableWidth: tableWidth, pointsPerPixel: pointsPerPixel)
+            }
         }
+        
+        await Profiler.report()
     }
 }
