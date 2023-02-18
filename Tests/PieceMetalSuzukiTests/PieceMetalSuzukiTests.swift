@@ -64,7 +64,7 @@ final class PieceMetalSuzukiTests: XCTestCase {
         let coreSize = PixelSize(width: 1, height: 1)
         let tableWidth = 4
         let pointsPerPixel: UInt32 = 4
-        let ltb = LookupTableBuilder(coreSize: coreSize, tableWidth: tableWidth, pointsPerPixel: pointsPerPixel)
+        let ltb = LookupTableBuilder(patternSize: .w1h1)
         ltb.setBuffers(device: device)
         
         _ = PieceMetalSuzuki(imageUrl: url("square"), coreSize: coreSize, pointsPerPixel: pointsPerPixel) { device, queue, texture, pointsFilled, runsFilled, pointsUnfilled, runsUnfilled in
@@ -77,7 +77,7 @@ final class PieceMetalSuzukiTests: XCTestCase {
         let coreSize = PixelSize(width: 2, height: 1)
         let tableWidth = 6
         let pointsPerPixel: UInt32 = 3
-        let ltb = LookupTableBuilder(coreSize: coreSize, tableWidth: tableWidth, pointsPerPixel: pointsPerPixel)
+        let ltb = LookupTableBuilder(patternSize: .w2h1)
         ltb.setBuffers(device: device)
         
         measure {

@@ -37,3 +37,26 @@ struct PatternSize {
     public let tableWidth: Int
     public let pointsPerPixel: UInt32
 }
+
+extension PatternSize {
+    /// Number of rows in the Lookup Table for this pattern.
+    var lutHeight: Int {
+        /// Including the perimeter adds 2 to the height and width of the core size.
+        /// The total number of rows is `2^num_bits`.
+        return 2 << Int((coreSize.height + 2) * (coreSize.width + 2))
+    }
+}
+
+extension PatternSize {
+    public static let w1h1 = PatternSize(
+        coreSize: PixelSize(width: 1, height: 1),
+        tableWidth: 4,
+        pointsPerPixel: 4
+    )
+    
+    public static let w2h1 = PatternSize(
+        coreSize: PixelSize(width: 2, height: 1),
+        tableWidth: 6,
+        pointsPerPixel: 3
+    )
+}

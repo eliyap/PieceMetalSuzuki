@@ -14,7 +14,7 @@ import OrderedCollections
  */
 internal final class LookupTableBuilder {
     
-    let coreSize: PixelSize
+    let patternSize: PatternSize
     
     /// Contains distinct series of points.
     var pointTable: OrderedSet<[StartPoint]> = []
@@ -24,9 +24,9 @@ internal final class LookupTableBuilder {
     var runTable: OrderedSet<[StartRun]> = []
     var runIndices: [UInt16] = []
     
-    public init(coreSize: PixelSize, tableWidth: Int, pointsPerPixel: UInt32) {
-        self.coreSize = coreSize
-        let buffer = BGRAPixelBuffer(coreSize: coreSize)
+    public init(patternSize: PatternSize) {
+        self.patternSize = patternSize
+        let buffer = BGRAPixelBuffer(coreSize: patternSize.coreSize)
         
         /// Setup.
         let device = MTLCreateSystemDefaultDevice()!
@@ -45,9 +45,9 @@ internal final class LookupTableBuilder {
             return
         }
         
-        let iterations = 0..<(2 << Int((coreSize.height + 2) * (coreSize.width + 2)))
+        let iterations = 0..<patternSize.lutHeight
         for iteration in iterations {
-            buffer.setPattern(coreSize: coreSize, iteration: iteration)
+            buffer.setPattern(coreSize: patternSize.coreSize, iteration: iteration)
             let texture = makeTextureFromCVPixelBuffer(pixelBuffer: buffer.buffer, textureFormat: .bgra8Unorm, textureCache: metalTextureCache)!
             
             createChainStarters(device: device, commandQueue: commandQueue, texture: texture, runBuffer: runBuffer, pointBuffer: pointBuffer)
@@ -62,7 +62,7 @@ internal final class LookupTableBuilder {
             )
             
             let (region, runs, points) = grid.combineAllForLUT(
-                coreSize: coreSize,
+                coreSize: patternSize.coreSize,
                 device: device,
                 pointsFilled: pointBuffer,
                 runsFilled: runBuffer,
@@ -71,8 +71,8 @@ internal final class LookupTableBuilder {
                 commandQueue: commandQueue
             )
 
-            assert(runs.count <= tableWidth)
-            let startRuns = (0..<tableWidth).map { runIdx in
+            assert(runs.count <= patternSize.tableWidth)
+            let startRuns = (0..<patternSize.tableWidth).map { runIdx in
                 if runs.indices.contains(runIdx) {
                     let run = runs[runIdx]
                     let base = Int32(baseOffset(grid: grid, region: region))
@@ -89,13 +89,13 @@ internal final class LookupTableBuilder {
             runTable.append(startRuns)
             runIndices.append(UInt16(runTable.firstIndex(of: startRuns)!))
 
-            assert(points.count <= tableWidth)
-            let startPoints = (0..<tableWidth).map { pointIdx in
+            assert(points.count <= patternSize.tableWidth)
+            let startPoints = (0..<patternSize.tableWidth).map { pointIdx in
                 if points.indices.contains(pointIdx) {
                     let point = points[pointIdx]
                     return StartPoint(
-                        x: UInt8(point.x - coreSize.width),
-                        y: UInt8(point.y - coreSize.height)
+                        x: UInt8(point.x - patternSize.coreSize.width),
+                        y: UInt8(point.y - patternSize.coreSize.height)
                     )
                 } else {
                     return .invalid
