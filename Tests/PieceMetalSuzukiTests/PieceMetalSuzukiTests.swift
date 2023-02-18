@@ -63,7 +63,7 @@ final class PieceMetalSuzukiTests: XCTestCase {
         let device = MTLCreateSystemDefaultDevice()!
         let patternSize = PatternSize.w1h1
         let ltb = LookupTableBuilder(patternSize: patternSize)
-        ltb.setBuffers(device: device)
+        ltb.setBuffers()
         
         _ = PieceMetalSuzuki(imageUrl: url("square"), patternSize: patternSize) { device, queue, texture, pointsFilled, runsFilled, pointsUnfilled, runsUnfilled in
             applyMetalSuzuki_LUT(device: device, commandQueue: queue, texture: texture, pointsFilled: pointsFilled, runsFilled: runsFilled, pointsUnfilled: pointsUnfilled, runsUnfilled: runsUnfilled, patternSize: patternSize)
