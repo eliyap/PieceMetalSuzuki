@@ -18,7 +18,7 @@ import Metal
  
  The memory location of the runs in this region is derived from information in this class and the grid structure.
  */
-class Region {
+internal final class Region {
     /// Location of the pixel's top left corner in the image.
     let origin: PixelPoint
     
@@ -32,17 +32,20 @@ class Region {
 
     /// Number of runs in this region.
     var runsCount: UInt32
+    
+    let patternSize: PatternSize
 
-    init(origin: PixelPoint, size: PixelSize, gridPos: GridPosition, runsCount: UInt32) {
+    init(origin: PixelPoint, size: PixelSize, gridPos: GridPosition, runsCount: UInt32, patternSize: PatternSize) {
         self.origin = origin
         self.size = size
         self.gridPos = gridPos
         self.runsCount = runsCount
+        self.patternSize = patternSize
     }
 
     /// Get run indices, given the present image size and grid size.
     func runIndices(imageSize: PixelSize, gridSize: PixelSize) -> Range<Int> {
-        let base = baseOffset(imageSize: imageSize, gridSize: gridSize, regionSize: self.size, gridPos: self.gridPos)
+        let base = baseOffset(imageSize: imageSize, gridSize: gridSize, regionSize: self.size, gridPos: self.gridPos, patternSize: patternSize)
         return Int(base)..<Int(base + runsCount)
     }
 }
@@ -63,16 +66,17 @@ extension Region: CustomStringConvertible {
  */
 func initializeRegions(
     runBuffer: Buffer<Run>,
-    texture: MTLTexture
+    texture: MTLTexture,
+    patternSize: PatternSize
 ) -> [[Region]] {
     var regions: [[Region]] = []
     for row in 0..<texture.height {
         let regionRow = [Region](unsafeUninitializedCapacity: texture.width) { buffer, initializedCount in
             DispatchQueue.concurrentPerform(iterations: texture.width) { col in
                 /// Count valid elements in each 1x1 region.
-                let bufferBase = ((row * texture.width) + col) * 4
+                let bufferBase = ((row * texture.width) + col) * Int(patternSize.pointsPerPixel)
                 var validCount = UInt32.zero
-                for offset in 0..<4 {
+                for offset in 0..<Int(patternSize.pointsPerPixel) {
                     if runBuffer.array[bufferBase + offset].isValid {
                         validCount += 1
                     } else {
@@ -86,10 +90,55 @@ func initializeRegions(
                     origin: PixelPoint(x: UInt32(col), y: UInt32(row)),
                     size: PixelSize(width: 1, height: 1),
                     gridPos: GridPosition(row: UInt32(row), col: UInt32(col)),
-                    runsCount: validCount
+                    runsCount: validCount,
+                    patternSize: patternSize
                 ))
             }
             initializedCount = texture.width
+        }
+        regions.append(regionRow)
+    }
+    return regions
+}
+
+func initializeRegions_LUT(
+    runBuffer: Buffer<Run>,
+    texture: MTLTexture,
+    patternSize: PatternSize
+) -> [[Region]] {
+    let coreWidth = Int(patternSize.coreSize.width)
+    let coreHeight = Int(patternSize.coreSize.height)
+    
+    /// Divide pixel width by core width, rounding up.
+    let regionTableWidth = texture.width.dividedByRoundingUp(divisor: coreWidth)
+    let regionTableHeight = texture.height.dividedByRoundingUp(divisor: coreHeight)
+    
+    var regions: [[Region]] = []
+    for row in 0..<regionTableHeight {
+        let regionRow = [Region](unsafeUninitializedCapacity: regionTableWidth) { buffer, initializedCount in
+            DispatchQueue.concurrentPerform(iterations: regionTableWidth) { col in
+                /// Count valid elements in each 1x1 region.
+                let bufferBase = ((row * regionTableWidth) + col) * Int(patternSize.tableWidth)
+                var validCount = UInt32.zero
+                for offset in 0..<patternSize.tableWidth {
+                    if runBuffer.array[bufferBase + offset].isValid {
+                        validCount += 1
+                    } else {
+                        break
+                    }
+                }
+                
+                /// Cannot use subscript notation to set uninitialized memory.
+                /// https://forums.swift.org/t/how-to-initialize-array-of-class-instances-using-a-buffer-of-uninitialised-memory/39174/5
+                buffer.baseAddress!.advanced(by: col).initialize(to: Region(
+                    origin: PixelPoint(x: UInt32(col), y: UInt32(row)),
+                    size: patternSize.coreSize,
+                    gridPos: GridPosition(row: UInt32(row), col: UInt32(col)),
+                    runsCount: validCount,
+                    patternSize: patternSize
+                ))
+            }
+            initializedCount = regionTableWidth
         }
         regions.append(regionRow)
     }

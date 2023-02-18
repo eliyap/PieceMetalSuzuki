@@ -8,7 +8,7 @@
 import Foundation
 
 // @metal-type
-struct PixelPoint: Equatable {
+public struct PixelPoint: Equatable, CustomStringConvertible {
     /// Corresponds to `thread_position_in_grid` with type `uint2`.
     /// https://developer.apple.com/documentation/metal/mtlattributeformat/uint2
     /// > Two unsigned 32-bit values.
@@ -31,10 +31,8 @@ struct PixelPoint: Equatable {
         }
     }
 
-    /// An invalid point, since the frame should never be analyzed.
-    static let zero = PixelPoint(x: .zero, y: .zero)
-}
+    /// An invalid point.
+    static let invalid = PixelPoint(x: UInt32.max, y: UInt32.max)
 
-extension PixelPoint: CustomStringConvertible {
-    var description: String { "r\(y)c\(x)"}
+    public var description: String { "r\(y)c\(x)"}
 }

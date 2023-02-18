@@ -1,8 +1,6 @@
 import Foundation
 import Metal
 
-
-
 struct Grid {
     let imageSize: PixelSize
     
@@ -10,6 +8,15 @@ struct Grid {
     var gridSize: PixelSize
     
     var regions: [[Region]]
+    
+    let patternSize: PatternSize
+    
+    init(imageSize: PixelSize, regions: [[Region]], patternSize: PatternSize) {
+        self.imageSize = imageSize
+        self.regions = regions
+        self.patternSize = patternSize
+        self.gridSize = patternSize.coreSize
+    }
     
     enum ReduceDirection {
         case horizontal, vertical
@@ -23,36 +30,32 @@ struct Grid {
     
     mutating func combineAll(
         device: MTLDevice,
-        pointsHorizontal: Buffer<PixelPoint>,
-        runsHorizontal: Buffer<Run>,
+        pointsFilled: Buffer<PixelPoint>,
+        runsFilled: Buffer<Run>,
+        pointsUnfilled: Buffer<PixelPoint>,
+        runsUnfilled: Buffer<Run>,
         commandQueue: MTLCommandQueue
     ) -> Void {
-        guard 
-            let pointsVertical = Buffer<PixelPoint>(device: device, count: pointsHorizontal.count),
-            let runsVertical = Buffer<Run>(device: device, count: runsHorizontal.count)
-        else {
-            assert(false, "Failed to create buffer.")
-            return
-        }
-        
         var dxn = ReduceDirection.vertical
+        let pointsHorizontal = pointsFilled
+        let runsHorizontal = runsFilled
+        let pointsVertical = pointsUnfilled
+        let runsVertical = runsUnfilled
+        
+        var srcPts: UnsafeMutablePointer<PixelPoint>
+        var dstPts: UnsafeMutablePointer<PixelPoint>
+        var srcRuns: UnsafeMutablePointer<Run>
+        var dstRuns: UnsafeMutablePointer<Run>
+        
         var iteration = 0
         while (regions.count > 1) || (regions[0].count > 1) {
             let start = CFAbsoluteTimeGetCurrent()
-            
-            let srcBuffer: Buffer<PixelPoint>
-            let dstBuffer: Buffer<PixelPoint>
-            let srcPts: UnsafeMutablePointer<PixelPoint>
-            let dstPts: UnsafeMutablePointer<PixelPoint>
-            let srcRuns: UnsafeMutablePointer<Run>
-            let dstRuns: UnsafeMutablePointer<Run>
             
             let numRows = regions.count
             let numCols = regions[0].count
             
             switch dxn {
             case .horizontal:
-                (srcBuffer, dstBuffer) = (pointsVertical, pointsHorizontal)
                 (srcRuns, dstRuns) = (runsVertical.array, runsHorizontal.array)
                 (srcPts, dstPts) = (pointsVertical.array, pointsHorizontal.array)
 
@@ -110,7 +113,6 @@ struct Grid {
                 gridSize = newGridSize
             
             case .vertical:
-                (srcBuffer, dstBuffer) = (pointsHorizontal, pointsVertical)
                 (srcRuns, dstRuns) = (runsHorizontal.array, runsVertical.array)
                 (srcPts, dstPts) = (pointsHorizontal.array, pointsVertical.array)
 
@@ -185,12 +187,12 @@ struct Grid {
         let runBuffer: UnsafeMutablePointer<Run>
         
         switch dxn {
-        case .horizontal:
-            pointBuffer = pointsHorizontal.array
-            runBuffer = runsHorizontal.array
-        case .vertical:
+        case .horizontal: /// Last iteration was vertical.
             pointBuffer = pointsVertical.array
             runBuffer = runsVertical.array
+        case .vertical: /// Last iteration was horizontal.
+            pointBuffer = pointsHorizontal.array
+            runBuffer = runsHorizontal.array
         }
         
         #if DEBUG
@@ -198,6 +200,8 @@ struct Grid {
             let run = runBuffer[runIdx]
 //            print((run.oldTail..<run.oldHead).map { pointBuffer[Int($0)] })
             assert(run.isValid)
+            assert(run.headTriadTo == ChainDirection.closed.rawValue)
+            assert(run.tailTriadFrom == ChainDirection.closed.rawValue)
         }
         print("Found \(regions[0][0].runsCount) contours.")
         #endif
@@ -228,7 +232,7 @@ struct Grid {
      The algorithm's objective is to join `Run`s into longer `Run`s by finding pairs with one's head matching the other's tail.
      Both the location and direction must match.
      Matching means having a pixel in the correct direction relative to the other pixel.
-     e.g. if fragment Alice has head position (3,4) pointed right, then fragment Bob with tail at (3,5) pointed left is a match.
+     e.g. if fragment Alice has head position (3,5) pointed right, then fragment Bob with tail at (3,6) pointed left is a match.
      
      The algorithm proceeds as follows:
      - we have a pool of runs from regions `a` and `b`.
@@ -275,6 +279,8 @@ struct Grid {
         let srcRuns: UnsafeMutablePointer<Run>
         let dstRuns: UnsafeMutablePointer<Run>
         
+        let pointsPerPixel: UInt32
+        
         init(
             a: Region, b: Region,
             dxn: ReduceDirection, newGridSize: PixelSize,
@@ -285,6 +291,7 @@ struct Grid {
             self.srcPts = srcPts
             self.srcRuns = srcRuns
             self.dstRuns = dstRuns
+            self.pointsPerPixel = grid.patternSize.pointsPerPixel
             
             #if SHOW_GRID_WORK
             debugPrint("Combining \(a) and \(b)")
@@ -317,9 +324,9 @@ struct Grid {
 
             switch dxn {
             case .vertical:
-                self.newBaseOffset = baseOffset(imageSize: grid.imageSize, gridSize: newGridSize, regionSize: newRegionSize, gridPos: GridPosition(row: a.gridPos.row / 2, col: a.gridPos.col))
+                self.newBaseOffset = baseOffset(imageSize: grid.imageSize, gridSize: newGridSize, regionSize: newRegionSize, gridPos: GridPosition(row: a.gridPos.row / 2, col: a.gridPos.col), patternSize: grid.patternSize)
             case .horizontal:
-                self.newBaseOffset = baseOffset(imageSize: grid.imageSize, gridSize: newGridSize, regionSize: newRegionSize, gridPos: GridPosition(row: a.gridPos.row, col: a.gridPos.col / 2))
+                self.newBaseOffset = baseOffset(imageSize: grid.imageSize, gridSize: newGridSize, regionSize: newRegionSize, gridPos: GridPosition(row: a.gridPos.row, col: a.gridPos.col / 2), patternSize: grid.patternSize)
             }
         }
         
@@ -448,7 +455,7 @@ struct Grid {
             while runIndices.isEmpty == false {
                 let runIdx = runIndices.removeLast()
                 #if SHOW_GRID_WORK
-                debugPrint("joining run \(srcRuns[runIdx]) with head \(headPoint(for: runIdx)) and tail \(tailPoint(for: runIdx))")
+                debugPrint("joining run @\(runIdx) \(srcRuns[runIdx]) with head \(headPoint(for: runIdx)) and tail \(tailPoint(for: runIdx))")
                 #endif
                 join(runIdx: runIdx)
             }
@@ -456,10 +463,183 @@ struct Grid {
     }
 }
 
-func baseOffset(imageSize: PixelSize, gridSize: PixelSize, regionSize: PixelSize, gridPos: GridPosition) -> UInt32 {
-    4 * ((imageSize.width * gridSize.height * gridPos.row) + (gridSize.width * regionSize.height * gridPos.col))
+func baseOffset(imageSize: PixelSize, gridSize: PixelSize, regionSize: PixelSize, gridPos: GridPosition, patternSize: PatternSize) -> UInt32 {
+    let rowOffset = imageSize.width.roundedUp(toClosest: patternSize.coreSize.width) * gridSize.height * gridPos.row
+    let colOffset = gridSize.width * regionSize.height * gridPos.col
+    return patternSize.pointsPerPixel * (rowOffset + colOffset)
 }
 
 func baseOffset(grid: Grid, region: Region) -> UInt32 {
-    baseOffset(imageSize: grid.imageSize, gridSize: grid.gridSize, regionSize: region.size, gridPos: region.gridPos)
+    baseOffset(imageSize: grid.imageSize, gridSize: grid.gridSize, regionSize: region.size, gridPos: region.gridPos, patternSize: grid.patternSize)
+}
+
+extension Grid {
+    mutating func combineAllForLUT(
+        coreSize: PixelSize,
+        device: MTLDevice,
+        pointsFilled: Buffer<PixelPoint>,
+        runsFilled: Buffer<Run>,
+        pointsUnfilled: Buffer<PixelPoint>,
+        runsUnfilled: Buffer<Run>,
+        commandQueue: MTLCommandQueue
+    ) -> (Region, [Run], [PixelPoint]) {
+        /// First iteration will combine regions with their horizontal neighbors.
+        /// Hence we copy from the "vertical" buffers to the "horizontal" buffers.
+        var dxn = ReduceDirection.horizontal
+        let pointsVertical = pointsFilled
+        let runsVertical = runsFilled
+        let pointsHorizontal = pointsUnfilled
+        let runsHorizontal = runsUnfilled
+        
+        var srcPts: UnsafeMutablePointer<PixelPoint>
+        var dstPts: UnsafeMutablePointer<PixelPoint>
+        var srcRuns: UnsafeMutablePointer<Run>
+        var dstRuns: UnsafeMutablePointer<Run>
+        
+        while (gridSize != coreSize) {
+            
+            let numRows = regions.count
+            let numCols = regions[0].count
+            
+            switch dxn {
+            case .horizontal:
+                (srcRuns, dstRuns) = (runsVertical.array, runsHorizontal.array)
+                (srcPts, dstPts) = (pointsVertical.array, pointsHorizontal.array)
+
+                if numCols.isMultiple(of: 2) == false {
+                    /// Request last column blit.
+                    for row in regions {
+                        let region = row.last!
+                        for runIdx in region.runIndices(imageSize: imageSize, gridSize: gridSize) {
+                            dstRuns[runIdx] = srcRuns[runIdx]
+                            srcRuns[runIdx].newTail = srcRuns[runIdx].oldTail
+                            srcRuns[runIdx].newHead = srcRuns[runIdx].oldHead
+                        }
+                        
+                        let runIndices = Array(region.runIndices(imageSize: imageSize, gridSize: gridSize))
+                        cpuBlit(runIndices: runIndices, srcPts: srcPts, srcRuns: srcRuns, dstPts: dstPts)
+                    }
+                }
+                
+                let newGridSize = PixelSize(width: gridSize.width * 2, height: gridSize.height)
+                var indices: [(Int, Int)] = []
+                for col in stride(from: 0, to: numCols - 1, by: 2).reversed() {
+                    for row in 0..<numRows {
+                        indices.append((row, col))
+                    }
+                }
+                DispatchQueue.concurrentPerform(iterations: indices.count) { indicesIdx in
+                    let (row, col) = indices[indicesIdx]
+                    let a = regions[row][col]
+                    let b = regions[row][col + 1]
+                    let newRequests = combine(a: a, b: b,
+                            dxn: dxn, newGridSize: newGridSize,
+                            srcPts: srcPts, srcRuns: srcRuns,
+                            dstRuns: dstRuns)
+                    cpuBlit(runIndices: newRequests, srcPts: srcPts, srcRuns: srcRuns, dstPts: dstPts)
+                    /// Update grid position for remaining regions.
+                }
+
+                DispatchQueue.concurrentPerform(iterations: numRows) { rowIdx in
+                    for region in regions[rowIdx] {
+                        region.gridPos.col /= 2
+                    }
+                }
+                
+                for rowIdx in 0..<numRows {
+                    for colIdx in stride(from: 0, to: numCols - 1, by: 2).reversed() {
+                        regions[rowIdx].remove(at: colIdx + 1)
+                    }
+                }
+                gridSize = newGridSize
+            
+            case .vertical:
+                (srcRuns, dstRuns) = (runsHorizontal.array, runsVertical.array)
+                (srcPts, dstPts) = (pointsHorizontal.array, pointsVertical.array)
+
+                if numRows.isMultiple(of: 2) == false {
+                    /// Request last column blit.
+                    for region in regions.last! {
+                        for runIdx in region.runIndices(imageSize: imageSize, gridSize: gridSize) {
+                            dstRuns[runIdx] = srcRuns[runIdx]
+                            srcRuns[runIdx].newTail = srcRuns[runIdx].oldTail
+                            srcRuns[runIdx].newHead = srcRuns[runIdx].oldHead
+                        }
+                        
+                        let runIndices = Array(region.runIndices(imageSize: imageSize, gridSize: gridSize))
+                        cpuBlit(runIndices: runIndices, srcPts: srcPts, srcRuns: srcRuns, dstPts: dstPts)
+                    }
+                }
+                
+                let newGridSize = PixelSize(width: gridSize.width, height: gridSize.height * 2)
+                var indices: [(Int, Int)] = []
+                for col in 0..<numCols {
+                    for row in stride(from: 0, to: numRows - 1, by: 2).reversed() {
+                        indices.append((row, col))
+                    }
+                }
+                DispatchQueue.concurrentPerform(iterations: indices.count) { indicesIdx in
+                    let (row, col) = indices[indicesIdx]
+                    let a = regions[row][col]
+                    let b = regions[row+1][col]
+                    let newRequests = combine(a: a, b: b,
+                            dxn: dxn, newGridSize: newGridSize,
+                            srcPts: srcPts, srcRuns: srcRuns,
+                            dstRuns: dstRuns)
+                    cpuBlit(runIndices: newRequests, srcPts: srcPts, srcRuns: srcRuns, dstPts: dstPts)
+                }
+                for rowIdx in stride(from: 0, to: numRows - 1, by: 2).reversed() {
+                    /// Remove entire row at once.
+                    regions.remove(at: rowIdx + 1)
+                }
+                /// Update grid position for remaining regions.
+                for rowIdx in 0..<regions.count {
+                    for colIdx in 0..<numCols {
+                        regions[rowIdx][colIdx].gridPos.row /= 2
+                    }
+                }
+                gridSize = newGridSize
+            }
+                
+            #if SHOW_GRID_WORK
+            for reg in regions.joined() {
+                dump(region: reg, points: dstPts, runs: dstRuns)
+            }
+            #endif
+            
+            dxn.flip()
+        }
+        
+        /// Return final results.
+        let pointBuffer: UnsafeMutablePointer<PixelPoint>
+        let runBuffer: UnsafeMutablePointer<Run>
+        
+        switch dxn {
+        case .horizontal: /// Last iteration was vertical.
+            pointBuffer = pointsVertical.array
+            runBuffer = runsVertical.array
+        case .vertical: /// Last iteration was horizontal.
+            pointBuffer = pointsHorizontal.array
+            runBuffer = runsHorizontal.array
+        }
+        
+        #if DEBUG
+        for runIdx in regions[0][0].runIndices(imageSize: imageSize, gridSize: gridSize) {
+            let run = runBuffer[runIdx]
+//            print((run.oldTail..<run.oldHead).map { pointBuffer[Int($0)] })
+            assert(run.isValid)
+        }
+        #endif
+        
+        let center = regions[1][1]
+        var runs: [Run] = []
+        var points: [PixelPoint] = []
+        for runIdx in center.runIndices(imageSize: imageSize, gridSize: gridSize) {
+            let run = runBuffer[runIdx]
+            runs.append(run)
+            points.append(contentsOf: (run.oldTail..<run.oldHead).map { pointBuffer[Int($0)] })
+        }
+        
+        return (center, runs, points)
+    }
 }

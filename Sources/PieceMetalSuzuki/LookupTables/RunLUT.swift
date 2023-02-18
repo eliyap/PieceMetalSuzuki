@@ -1,5 +1,5 @@
 //
-//  File.swift
+//  RunLUT.swift
 //  
 //
 //  Created by Secret Asian Man Dev on 14/2/23.
@@ -8,16 +8,25 @@
 import Foundation
 import Metal
 
+extension StartRun {
+    /// Set by `LookupTableBuilder`.
+    static var lookupTableIndices: [UInt16] = []
+    
+    /// Set by `LookupTableBuilder`.
+    static var lookupTable: [Self] = []
+}
+
 extension Run {
     
-    static func makeLUTBuffer(device: MTLDevice) -> Buffer<Run>? {
-        guard let buffer = Buffer<Run>(device: device, count: LUT.count) else {
+    static var LUTBuffer: Buffer<Run>? = {
+        let device = MTLCreateSystemDefaultDevice()!
+        guard let buffer = Buffer<Run>.init(device: device, count: LUT.count) else {
             assertionFailure("Failed to create LUT buffer")
             return nil
         }
         memcpy(buffer.array, LUT, MemoryLayout<Run>.stride * LUT.count)
         return buffer
-    }
+    }()
     
     static let LUT: [Run] = [
         // 000

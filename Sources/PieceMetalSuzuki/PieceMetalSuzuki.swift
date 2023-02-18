@@ -5,7 +5,19 @@ import Metal
 import MetalPerformanceShaders
 
 public struct PieceMetalSuzuki {
-    public init(imageUrl: URL) {
+    public init(
+        imageUrl: URL,
+        patternSize: PatternSize,
+        _ block: (MTLDevice, MTLCommandQueue, MTLTexture, Buffer<PixelPoint>, Buffer<Run>, Buffer<PixelPoint>, Buffer<Run>) -> Void
+    ) {
+        guard
+            let device = MTLCreateSystemDefaultDevice(),
+            let commandQueue = device.makeCommandQueue()
+        else {
+            assert(false, "Failed to get metal device.")
+            return
+        }
+        
         guard let ciImage = CIImage(contentsOf: imageUrl) else {
             assert(false, "Couldn't load image.")
             return
@@ -29,14 +41,6 @@ public struct PieceMetalSuzuki {
         let context = CIContext()
         context.render(ciImage, to: bufferA)
         
-        guard
-            let device = MTLCreateSystemDefaultDevice(),
-            let commandQueue = device.makeCommandQueue()
-        else {
-            assert(false, "Failed to get metal device.")
-            return
-        }
-        
         var metalTextureCache: CVMetalTextureCache!
         guard CVMetalTextureCacheCreate(kCFAllocatorDefault, nil, device, nil, &metalTextureCache) == kCVReturnSuccess else {
             assert(false, "Unable to allocate texture cache")
@@ -58,15 +62,21 @@ public struct PieceMetalSuzuki {
                 return
             }
             
-            guard let runLUTBuffer = Profiler.time(.lutCopy, {
-                Run.makeLUTBuffer(device: device)
-            })  else {
-                assertionFailure("Failed to create LUT buffer")
+            let roundedWidth = UInt32(texture.width).roundedUp(toClosest: patternSize.coreSize.width)
+            let roundedHeight = UInt32(texture.height).roundedUp(toClosest: patternSize.coreSize.height)
+            let count = Int(roundedWidth * roundedHeight * patternSize.pointsPerPixel)
+            
+            guard
+                let pointBuffer = Buffer<PixelPoint>(device: device, count: count),
+                let runBuffer = Buffer<Run>(device: device, count: count),
+                let pointsUnfilled = Buffer<PixelPoint>(device: device, count: count),
+                let runsUnfilled = Buffer<Run>(device: device, count: count)
+            else {
+                assert(false, "Failed to create buffer.")
                 return
             }
 
-            /// Apply Metal filter to pixel buffer.
-            applyMetalSuzuki(device: device, commandQueue: commandQueue, texture: texture, runLUTBuffer: runLUTBuffer)
+            block(device, commandQueue, texture, pointBuffer, runBuffer, pointsUnfilled, runsUnfilled)
         }
         
         //        bufferA = filteredBuffer
@@ -145,27 +155,72 @@ public func applyMetalSuzuki(
     device: MTLDevice,
     commandQueue: MTLCommandQueue,
     texture: MTLTexture,
-    runLUTBuffer: Buffer<Run>
+    pointsFilled: Buffer<PixelPoint>,
+    runsFilled: Buffer<Run>,
+    pointsUnfilled: Buffer<PixelPoint>,
+    runsUnfilled: Buffer<Run>
 ) -> Void {
+    let patternSize = PatternSize.w1h1
+    
     /// Apply Metal filter to pixel buffer.
-    guard let result = createChainStarters(device: device, commandQueue: commandQueue, texture: texture, runLUTBuffer: runLUTBuffer) else {
+    guard createChainStarters(device: device, commandQueue: commandQueue, texture: texture, runBuffer: runsFilled, pointBuffer: pointsFilled) else {
         assert(false, "Failed to run chain start kernel.")
         return
     }
-    let (pointBuffer, runBuffer) = result
     
     var grid = Grid(
         imageSize: PixelSize(width: UInt32(texture.width), height: UInt32(texture.height)),
-        gridSize: PixelSize(width: 1, height: 1),
         regions: Profiler.time(.initRegions) {
-            return initializeRegions(runBuffer: runBuffer, texture: texture)
-        }
+            return initializeRegions(runBuffer: runsFilled, texture: texture, patternSize: patternSize)
+        },
+        patternSize: patternSize
     )
+    
     Profiler.time(.combineAll) {
         grid.combineAll(
             device: device,
-            pointsHorizontal: pointBuffer,
-            runsHorizontal: runBuffer,
+            pointsFilled: pointsFilled,
+            runsFilled: runsFilled,
+            pointsUnfilled: pointsUnfilled,
+            runsUnfilled: runsUnfilled,
+            commandQueue: commandQueue
+        )
+    }
+    
+    return
+}
+
+public func applyMetalSuzuki_LUT(
+    device: MTLDevice,
+    commandQueue: MTLCommandQueue,
+    texture: MTLTexture,
+    pointsFilled: Buffer<PixelPoint>,
+    runsFilled: Buffer<Run>,
+    pointsUnfilled: Buffer<PixelPoint>,
+    runsUnfilled: Buffer<Run>,
+    patternSize: PatternSize
+) -> Void {
+    /// Apply Metal filter to pixel buffer.
+    guard matchPatterns(device: device, commandQueue: commandQueue, texture: texture, runBuffer: runsFilled, pointBuffer: pointsFilled, patternSize: patternSize) else {
+        assert(false, "Failed to run chain start kernel.")
+        return
+    }
+    
+    var grid = Grid(
+        imageSize: PixelSize(width: UInt32(texture.width), height: UInt32(texture.height)),
+        regions: Profiler.time(.initRegions) {
+            return initializeRegions_LUT(runBuffer: runsFilled, texture: texture, patternSize: patternSize)
+        },
+        patternSize: patternSize
+    )
+    
+    Profiler.time(.combineAll) {
+        grid.combineAll(
+            device: device,
+            pointsFilled: pointsFilled,
+            runsFilled: runsFilled,
+            pointsUnfilled: pointsUnfilled,
+            runsUnfilled: runsUnfilled,
             commandQueue: commandQueue
         )
     }
@@ -220,30 +275,6 @@ public func makeTextureFromCVPixelBuffer(
     return texture
 }
 
-public final class Buffer<Element> {
-    
-    public let count: Int
-    public let array: UnsafeMutablePointer<Element>
-    public let mtlBuffer: MTLBuffer
-    
-    init?(device: MTLDevice, count: Int) {
-        let start = CFAbsoluteTimeGetCurrent()
-        
-        let size = MemoryLayout<Element>.stride * count
-        guard let buffer = device.makeBuffer(length: size) else {
-            assert(false, "Failed to create buffer.")
-            return nil
-        }
-        
-        self.count = count
-        self.mtlBuffer = buffer
-        self.array = buffer.contents().bindMemory(to: Element.self, capacity: count)
-        
-        let end = CFAbsoluteTimeGetCurrent()
-        Profiler.add(end - start, to: .bufferInit)
-    }
-}
-
 func loadChainStarterFunction(device: MTLDevice) -> MTLFunction? {
     do {
         guard let libUrl = Bundle.module.url(forResource: "PieceSuzukiKernel", withExtension: "metal", subdirectory: "Metal") else {
@@ -267,8 +298,9 @@ func createChainStarters(
     device: MTLDevice,
     commandQueue: MTLCommandQueue,
     texture: MTLTexture,
-    runLUTBuffer: Buffer<Run>
-) -> (Buffer<PixelPoint>, Buffer<Run>)? {
+    runBuffer: Buffer<Run>,
+    pointBuffer: Buffer<PixelPoint>
+) -> Bool {
     let start = CFAbsoluteTimeGetCurrent()
     
     guard
@@ -278,24 +310,17 @@ func createChainStarters(
         let cmdEncoder = cmdBuffer.makeComputeCommandEncoder()
     else {
         assert(false, "Failed to setup pipeline.")
-        return nil
+        return false
     }
 
     cmdEncoder.label = "Custom Kernel Encoder"
     cmdEncoder.setComputePipelineState(pipelineState)
     cmdEncoder.setTexture(texture, index: 0)
 
-    let count = texture.width * texture.height * 4
-    guard
-        let pointBuffer = Buffer<PixelPoint>(device: device, count: count),
-        let runBuffer = Buffer<Run>(device: device, count: count)
-    else {
-        assert(false, "Failed to create buffer.")
-        return nil
-    }
     cmdEncoder.setBuffer(pointBuffer.mtlBuffer, offset: 0, index: 0)
     cmdEncoder.setBuffer(runBuffer.mtlBuffer, offset: 0, index: 1)
-    cmdEncoder.setBuffer(runLUTBuffer.mtlBuffer, offset: 0, index: 2)
+    cmdEncoder.setBuffer(Run.LUTBuffer!.mtlBuffer, offset: 0, index: 2)
+    cmdEncoder.setBuffer(PixelPoint.LUTBuffer!.mtlBuffer, offset: 0, index: 3)
 
     let (tPerTG, tgPerGrid) = pipelineState.threadgroupParameters(texture: texture)
     cmdEncoder.dispatchThreadgroups(tgPerGrid, threadsPerThreadgroup: tPerTG)
@@ -305,6 +330,7 @@ func createChainStarters(
     
     #if SHOW_GRID_WORK
     debugPrint("[Initial Points]")
+    let count = texture.width * texture.height * 4
     for i in 0..<count where runBuffer.array[i].isValid {
         print(runBuffer.array[i], pointBuffer.array[i])
     }
@@ -313,7 +339,7 @@ func createChainStarters(
     let end = CFAbsoluteTimeGetCurrent()
     Profiler.add(end - start, to: .startChains)
     
-    return (pointBuffer, runBuffer)
+    return true
 }
 
 extension MTLComputePipelineState {
