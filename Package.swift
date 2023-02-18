@@ -31,11 +31,12 @@ let package = Package(
             resources: [
                 .copy("Images/"),
                 .copy("Metal/"),
+                .copy("JSONLookupTables/"),
             ],
             swiftSettings: [
                 .unsafeFlags([
-                    "-DSHOW_GRID_WORK",
-                    "-DPROFILER_ON",
+//                    "-DSHOW_GRID_WORK",
+//                    "-DPROFILER_ON",
 //                    "-Ounchecked",
 //                    "-O",
                 ], nil)
