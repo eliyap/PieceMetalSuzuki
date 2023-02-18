@@ -103,11 +103,13 @@ final class PieceMetalSuzukiTests: XCTestCase {
         await Profiler.report()
     }
     
+    @available(iOS 16.0, *)
     @available(macOS 13.0, *)
     func testEmitLUT2x1() async throws {
         LookupTableBuilder(patternSize: .w2h1).emit()
     }
     
+    @available(iOS 16.0, *)
     @available(macOS 13.0, *)
     func testEmitLUT2x2() async throws {
         LookupTableBuilder(patternSize: .w2h2).emit()
