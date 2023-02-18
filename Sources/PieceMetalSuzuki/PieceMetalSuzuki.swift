@@ -199,24 +199,22 @@ public func applyMetalSuzuki_LUT(
     runsFilled: Buffer<Run>,
     pointsUnfilled: Buffer<PixelPoint>,
     runsUnfilled: Buffer<Run>,
-    coreSize: PixelSize,
-    tableWidth: Int,
-    pointsPerPixel: UInt32
+    patternSize: PatternSize
 ) -> Void {
     /// Apply Metal filter to pixel buffer.
-    guard matchPatterns(device: device, commandQueue: commandQueue, texture: texture, runBuffer: runsFilled, pointBuffer: pointsFilled, coreSize: coreSize, pointsPerPixel: pointsPerPixel) else {
+    guard matchPatterns(device: device, commandQueue: commandQueue, texture: texture, runBuffer: runsFilled, pointBuffer: pointsFilled, coreSize: patternSize.coreSize, pointsPerPixel: patternSize.pointsPerPixel) else {
         assert(false, "Failed to run chain start kernel.")
         return
     }
     
     var grid = Grid(
         imageSize: PixelSize(width: UInt32(texture.width), height: UInt32(texture.height)),
-        gridSize: coreSize,
+        gridSize: patternSize.coreSize,
         regions: Profiler.time(.initRegions) {
-            return initializeRegions_LUT(runBuffer: runsFilled, texture: texture, coreSize: coreSize, tableWidth: tableWidth, pointsPerPixel: pointsPerPixel)
+            return initializeRegions_LUT(runBuffer: runsFilled, texture: texture, coreSize: patternSize.coreSize, tableWidth: patternSize.tableWidth, pointsPerPixel: patternSize.pointsPerPixel)
         },
-        pointsPerPixel: pointsPerPixel,
-        coreSize: coreSize
+        pointsPerPixel: patternSize.pointsPerPixel,
+        coreSize: patternSize.coreSize
     )
     
     Profiler.time(.combineAll) {
