@@ -45,7 +45,7 @@ internal final class Region {
 
     /// Get run indices, given the present image size and grid size.
     func runIndices(imageSize: PixelSize, gridSize: PixelSize) -> Range<Int> {
-        let base = baseOffset(imageSize: imageSize, gridSize: gridSize, regionSize: self.size, gridPos: self.gridPos, pointsPerPixel: patternSize.pointsPerPixel, coreSize: patternSize.coreSize)
+        let base = baseOffset(imageSize: imageSize, gridSize: gridSize, regionSize: self.size, gridPos: self.gridPos, patternSize: patternSize)
         return Int(base)..<Int(base + runsCount)
     }
 }
