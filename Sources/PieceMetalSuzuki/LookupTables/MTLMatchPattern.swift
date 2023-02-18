@@ -34,25 +34,29 @@ func matchPatterns(
 
     let runTableBuffer = device.makeBuffer(
         bytes: &StartRun.lookupTable,
-        length: MemoryLayout<StartRun>.stride * StartRun.lookupTable.count
+        length: MemoryLayout<StartRun>.stride * StartRun.lookupTable.count,
+        options: [.storageModeShared]
     )
     cmdEncoder.setBuffer(runTableBuffer, offset: 0, index: 2)
 
     let runTableIndicesBuffer = device.makeBuffer(
         bytes: &StartRun.lookupTableIndices,
-        length: MemoryLayout<StartRun>.stride * StartRun.lookupTableIndices.count
+        length: MemoryLayout<StartRun>.stride * StartRun.lookupTableIndices.count,
+        options: [.storageModeShared]
     )
     cmdEncoder.setBuffer(runTableIndicesBuffer, offset: 0, index: 3)
 
     let pointTableBuffer = device.makeBuffer(
         bytes: &StartPoint.lookupTable,
-        length: MemoryLayout<StartPoint>.stride * StartPoint.lookupTable.count
+        length: MemoryLayout<StartPoint>.stride * StartPoint.lookupTable.count,
+        options: [.storageModeShared]
     )
     cmdEncoder.setBuffer(pointTableBuffer, offset: 0, index: 4)
     
     let pointTableIndicesBuffer = device.makeBuffer(
         bytes: &StartPoint.lookupTableIndices,
-        length: MemoryLayout<StartPoint>.stride * StartPoint.lookupTableIndices.count
+        length: MemoryLayout<StartPoint>.stride * StartPoint.lookupTableIndices.count,
+        options: [.storageModeShared]
     )
     cmdEncoder.setBuffer(pointTableIndicesBuffer, offset: 0, index: 5)
     
