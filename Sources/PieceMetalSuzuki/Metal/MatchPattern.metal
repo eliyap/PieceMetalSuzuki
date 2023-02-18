@@ -170,7 +170,7 @@ kernel void matchPatterns2x1(
     uint32_t maxRow = tex.get_height() - 1;
     
     // Find the values in a 2x1 kernel, and its border.
-    //  0124
+    //  0123
     // 0+--+
     // 1|XX|
     // 2+--+
