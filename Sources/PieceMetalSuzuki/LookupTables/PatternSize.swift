@@ -43,7 +43,7 @@ extension PatternSize {
     var lutHeight: Int {
         /// Including the perimeter adds 2 to the height and width of the core size.
         /// The total number of rows is `2^num_bits`.
-        return 2 << Int((coreSize.height + 2) * (coreSize.width + 2))
+        return 1 << Int((coreSize.height + 2) * (coreSize.width + 2))
     }
 }
 
