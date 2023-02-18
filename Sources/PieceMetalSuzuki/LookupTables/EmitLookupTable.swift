@@ -7,6 +7,7 @@
 
 import Foundation
 
+@available(iOS 16.0, *)
 @available(macOS 13.0, *)
 internal func write(to fileName: String, _ block: (FileHandle) -> Void) -> Void {
     let docsURLs = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)
@@ -26,6 +27,7 @@ internal func write(to fileName: String, _ block: (FileHandle) -> Void) -> Void 
 }
 
 extension LookupTableBuilder {
+    @available(iOS 16.0, *)
     @available(macOS 13.0, *)
     func emit() -> Void {
         let encoder = JSONEncoder()
