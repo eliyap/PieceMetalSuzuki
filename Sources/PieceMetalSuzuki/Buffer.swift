@@ -13,7 +13,7 @@ public final class Buffer<Element> {
     public let array: UnsafeMutablePointer<Element>
     public let mtlBuffer: MTLBuffer
     
-    init?(device: MTLDevice, count: Int) {
+    public init?(device: MTLDevice, count: Int) {
         let size = MemoryLayout<Element>.stride * count
         guard let buffer = device.makeBuffer(length: size) else {
             assert(false, "Failed to create buffer.")

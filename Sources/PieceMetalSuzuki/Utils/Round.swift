@@ -7,7 +7,7 @@
 
 import Foundation
 
-internal extension BinaryInteger {
+public extension BinaryInteger {
     func roundedUp(toClosest value: Self) -> Self {
         /// Round up to the closest multiple.
         /// If it wasn't a multiple, the "extra" is rounded off by integer division, then added back.
