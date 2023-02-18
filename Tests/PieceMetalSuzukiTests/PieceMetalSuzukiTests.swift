@@ -84,4 +84,19 @@ final class PieceMetalSuzukiTests: XCTestCase {
         
         await Profiler.report()
     }
+    
+    func testIndirectLUT2x2() async throws {
+        let device = MTLCreateSystemDefaultDevice()!
+        let patternSize = PatternSize.w2h2
+        let ltb = LookupTableBuilder(patternSize: patternSize)
+        ltb.setBuffers(device: device)
+        
+//        measure {
+            _ = PieceMetalSuzuki(imageUrl: url("input"), patternSize: patternSize) { device, queue, texture, pointsFilled, runsFilled, pointsUnfilled, runsUnfilled in
+                applyMetalSuzuki_LUT(device: device, commandQueue: queue, texture: texture, pointsFilled: pointsFilled, runsFilled: runsFilled, pointsUnfilled: pointsUnfilled, runsUnfilled: runsUnfilled, patternSize: patternSize)
+            }
+//        }
+//
+//        await Profiler.report()
+    }
 }

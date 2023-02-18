@@ -59,4 +59,10 @@ extension PatternSize {
         tableWidth: 6,
         pointsPerPixel: 3
     )
+    
+    public static let w2h2 = PatternSize(
+        coreSize: PixelSize(width: 2, height: 2),
+        tableWidth: 8,
+        pointsPerPixel: 2
+    )
 }
