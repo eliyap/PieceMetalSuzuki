@@ -45,6 +45,7 @@ internal final class LookupTableBuilder {
             return
         }
         
+        let starterSize = PatternSize.w1h1
         let iterations = 0..<patternSize.lutHeight
         for iteration in iterations {
             buffer.setPattern(coreSize: patternSize.coreSize, iteration: iteration)
@@ -57,8 +58,7 @@ internal final class LookupTableBuilder {
                 regions: Profiler.time(.initRegions) {
                     return initializeRegions(runBuffer: runBuffer, texture: texture)
                 },
-                pointsPerPixel: 4,
-                coreSize: PixelSize(width: 1, height: 1)
+                patternSize: starterSize
             )
             
             let (region, runs, points) = grid.combineAllForLUT(

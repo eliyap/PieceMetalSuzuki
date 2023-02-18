@@ -13,11 +13,10 @@ func matchPatterns(
     texture: MTLTexture,
     runBuffer: Buffer<Run>,
     pointBuffer: Buffer<PixelPoint>,
-    coreSize: PixelSize,
-    pointsPerPixel: UInt32
+    patternSize: PatternSize
 ) -> Bool {
     guard
-        let kernelFunction = loadMatchPatternFunction(device: device, coreSize: coreSize),
+        let kernelFunction = loadMatchPatternFunction(device: device, coreSize: patternSize.coreSize),
         let pipelineState = try? device.makeComputePipelineState(function: kernelFunction),
         let cmdBuffer = commandQueue.makeCommandBuffer(),
         let cmdEncoder = cmdBuffer.makeComputeCommandEncoder()

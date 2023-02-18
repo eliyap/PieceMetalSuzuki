@@ -161,6 +161,8 @@ public func applyMetalSuzuki(
     pointsUnfilled: Buffer<PixelPoint>,
     runsUnfilled: Buffer<Run>
 ) -> Void {
+    let patternSize = PatternSize.w1h1
+    
     /// Apply Metal filter to pixel buffer.
     guard createChainStarters(device: device, commandQueue: commandQueue, texture: texture, runBuffer: runsFilled, pointBuffer: pointsFilled) else {
         assert(false, "Failed to run chain start kernel.")
@@ -173,8 +175,7 @@ public func applyMetalSuzuki(
         regions: Profiler.time(.initRegions) {
             return initializeRegions(runBuffer: runsFilled, texture: texture)
         },
-        pointsPerPixel: 4,
-        coreSize: PixelSize(width: 1, height: 1)
+        patternSize: patternSize
     )
     
     Profiler.time(.combineAll) {
@@ -202,7 +203,7 @@ public func applyMetalSuzuki_LUT(
     patternSize: PatternSize
 ) -> Void {
     /// Apply Metal filter to pixel buffer.
-    guard matchPatterns(device: device, commandQueue: commandQueue, texture: texture, runBuffer: runsFilled, pointBuffer: pointsFilled, coreSize: patternSize.coreSize, pointsPerPixel: patternSize.pointsPerPixel) else {
+    guard matchPatterns(device: device, commandQueue: commandQueue, texture: texture, runBuffer: runsFilled, pointBuffer: pointsFilled, patternSize: patternSize) else {
         assert(false, "Failed to run chain start kernel.")
         return
     }
@@ -213,8 +214,7 @@ public func applyMetalSuzuki_LUT(
         regions: Profiler.time(.initRegions) {
             return initializeRegions_LUT(runBuffer: runsFilled, texture: texture, coreSize: patternSize.coreSize, tableWidth: patternSize.tableWidth, pointsPerPixel: patternSize.pointsPerPixel)
         },
-        pointsPerPixel: patternSize.pointsPerPixel,
-        coreSize: patternSize.coreSize
+        patternSize: patternSize
     )
     
     Profiler.time(.combineAll) {

@@ -9,8 +9,7 @@ struct Grid {
     
     var regions: [[Region]]
     
-    let pointsPerPixel: UInt32
-    let coreSize: PixelSize
+    let patternSize: PatternSize
     
     enum ReduceDirection {
         case horizontal, vertical
@@ -285,7 +284,7 @@ struct Grid {
             self.srcPts = srcPts
             self.srcRuns = srcRuns
             self.dstRuns = dstRuns
-            self.pointsPerPixel = grid.pointsPerPixel
+            self.pointsPerPixel = grid.patternSize.pointsPerPixel
             
             #if SHOW_GRID_WORK
             debugPrint("Combining \(a) and \(b)")
@@ -318,9 +317,9 @@ struct Grid {
 
             switch dxn {
             case .vertical:
-                self.newBaseOffset = baseOffset(imageSize: grid.imageSize, gridSize: newGridSize, regionSize: newRegionSize, gridPos: GridPosition(row: a.gridPos.row / 2, col: a.gridPos.col), pointsPerPixel: self.pointsPerPixel, coreSize: grid.coreSize)
+                self.newBaseOffset = baseOffset(imageSize: grid.imageSize, gridSize: newGridSize, regionSize: newRegionSize, gridPos: GridPosition(row: a.gridPos.row / 2, col: a.gridPos.col), pointsPerPixel: self.pointsPerPixel, coreSize: grid.patternSize.coreSize)
             case .horizontal:
-                self.newBaseOffset = baseOffset(imageSize: grid.imageSize, gridSize: newGridSize, regionSize: newRegionSize, gridPos: GridPosition(row: a.gridPos.row, col: a.gridPos.col / 2), pointsPerPixel: self.pointsPerPixel, coreSize: grid.coreSize)
+                self.newBaseOffset = baseOffset(imageSize: grid.imageSize, gridSize: newGridSize, regionSize: newRegionSize, gridPos: GridPosition(row: a.gridPos.row, col: a.gridPos.col / 2), pointsPerPixel: self.pointsPerPixel, coreSize: grid.patternSize.coreSize)
             }
         }
         
@@ -464,7 +463,7 @@ func baseOffset(imageSize: PixelSize, gridSize: PixelSize, regionSize: PixelSize
 }
 
 func baseOffset(grid: Grid, region: Region) -> UInt32 {
-    baseOffset(imageSize: grid.imageSize, gridSize: grid.gridSize, regionSize: region.size, gridPos: region.gridPos, pointsPerPixel: grid.pointsPerPixel, coreSize: grid.coreSize)
+    baseOffset(imageSize: grid.imageSize, gridSize: grid.gridSize, regionSize: region.size, gridPos: region.gridPos, pointsPerPixel: grid.patternSize.pointsPerPixel, coreSize: grid.patternSize.coreSize)
 }
 
 extension Grid {
