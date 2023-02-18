@@ -136,29 +136,7 @@ internal final class LookupTableBuilder {
     }
 }
 
-/// Represents a point within the pattern's core.
-/// Because patterns are small, we can use narrow integers.
-// @metal-type
-struct StartPoint: Hashable {
-    let x: UInt8
-    let y: UInt8
-    
-    public static let invalid = StartPoint(x: .max, y: .max)
-}
 
-/// Represents a series of points in the pattern's core.
-/// Because runs are short, we can use narrow integers.
-// @metal-type
-struct StartRun: Hashable {
-    /// Invalid negative values signal absence of a run.
-    let tail: Int8
-    let head: Int8
-    
-    let from: ChainDirection.RawValue
-    let to: ChainDirection.RawValue
-    
-    public static let invalid = StartRun(tail: -1, head: -1, from: .max, to: .max)
-}
 
 fileprivate let BGRAChannels = 4
 internal final class BGRAPixelBuffer {
