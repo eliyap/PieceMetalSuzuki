@@ -92,7 +92,7 @@ final class PieceMetalSuzukiTests: XCTestCase {
 //        ltb.setBuffers()
         
         /// Load LUT from JSON.
-        LookupTableBuilder.load(patternSize)
+        loadLookupTables(patternSize)
         
         measure {
             _ = PieceMetalSuzuki(imageUrl: url("input"), patternSize: patternSize) { device, queue, texture, pointsFilled, runsFilled, pointsUnfilled, runsUnfilled in

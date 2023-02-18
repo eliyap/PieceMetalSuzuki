@@ -54,36 +54,36 @@ extension LookupTableBuilder {
             fileHandle.write(data)
         }
     }
-    
-    static func load(_ patternSize: PatternSize) -> Bool {
-        let dir = "JSONLookupTables"
-        let ext = "json"
-        let patternCode = "\(patternSize.coreSize.width)x\(patternSize.coreSize.height)"
-        let decoder = JSONDecoder()
-        guard
-            let pointTableURL = Bundle.module.url(forResource: "pointTable\(patternCode)", withExtension: ext, subdirectory: dir),
-            let pointIndicesURL = Bundle.module.url(forResource: "pointIndices\(patternCode)", withExtension: ext, subdirectory: dir),
-            let runTableURL = Bundle.module.url(forResource: "runTable\(patternCode)", withExtension: ext, subdirectory: dir),
-            let runIndicesURL = Bundle.module.url(forResource: "runIndices\(patternCode)", withExtension: ext, subdirectory: dir)
-        else {
-            return false
-        }
-        
-        do {
-            let pointTableData   = try Data(contentsOf: pointTableURL)
-            let pointIndicesData = try Data(contentsOf: pointIndicesURL)
-            let runTableData     = try Data(contentsOf: runTableURL)
-            let runIndicesData   = try Data(contentsOf: runIndicesURL)
-            
-            StartPoint.lookupTable        = try decoder.decode([StartPoint].self, from: pointTableData)
-            StartPoint.lookupTableIndices = try decoder.decode([UInt16].self, from: pointIndicesData)
-            StartRun.lookupTable          = try decoder.decode([StartRun].self, from: runTableData)
-            StartRun.lookupTableIndices   = try decoder.decode([UInt16].self, from: runIndicesData)
-        } catch {
-            assertionFailure("\(error)")
-            return false
-        }
-        
-        return true
+}
+
+public func loadLookupTables(_ patternSize: PatternSize) -> Bool {
+    let dir = "JSONLookupTables"
+    let ext = "json"
+    let patternCode = "\(patternSize.coreSize.width)x\(patternSize.coreSize.height)"
+    let decoder = JSONDecoder()
+    guard
+        let pointTableURL = Bundle.module.url(forResource: "pointTable\(patternCode)", withExtension: ext, subdirectory: dir),
+        let pointIndicesURL = Bundle.module.url(forResource: "pointIndices\(patternCode)", withExtension: ext, subdirectory: dir),
+        let runTableURL = Bundle.module.url(forResource: "runTable\(patternCode)", withExtension: ext, subdirectory: dir),
+        let runIndicesURL = Bundle.module.url(forResource: "runIndices\(patternCode)", withExtension: ext, subdirectory: dir)
+    else {
+        return false
     }
+    
+    do {
+        let pointTableData   = try Data(contentsOf: pointTableURL)
+        let pointIndicesData = try Data(contentsOf: pointIndicesURL)
+        let runTableData     = try Data(contentsOf: runTableURL)
+        let runIndicesData   = try Data(contentsOf: runIndicesURL)
+        
+        StartPoint.lookupTable        = try decoder.decode([StartPoint].self, from: pointTableData)
+        StartPoint.lookupTableIndices = try decoder.decode([UInt16].self, from: pointIndicesData)
+        StartRun.lookupTable          = try decoder.decode([StartRun].self, from: runTableData)
+        StartRun.lookupTableIndices   = try decoder.decode([UInt16].self, from: runIndicesData)
+    } catch {
+        assertionFailure("\(error)")
+        return false
+    }
+    
+    return true
 }
