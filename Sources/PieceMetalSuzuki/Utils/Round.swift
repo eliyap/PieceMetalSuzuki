@@ -22,4 +22,3 @@ internal extension BinaryInteger {
         (self + divisor - 1) / divisor
     }
 }
-

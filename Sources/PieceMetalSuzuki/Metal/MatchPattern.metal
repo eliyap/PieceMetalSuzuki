@@ -40,6 +40,16 @@ static bool readPixel(
     return (coords.x >= minCol) && (coords.x <= maxCol) && (coords.y >= minRow) && (coords.y <= maxRow) && (tex.read(coords).r != 0.0);
 }
 
+// Round up to the closest multiple.
+// If it wasn't a multiple, the "extra" is rounded off by integer division, then added back.
+// If it was a multiple, it's taken down, then back up.
+static uint32_t roundedUp(uint32_t number, uint32_t step)
+{
+    return (((number-1)/step)*step)+step;
+}
+
+#define divideRoundingUp()
+
 kernel void matchPatterns1x1(
     texture2d<half, access::read>  tex               [[ texture(0) ]],
     device PixelPoint*             points            [[ buffer (0) ]],
@@ -140,8 +150,8 @@ kernel void matchPatterns2x1(
     
     uint32_t texWidth = tex.get_width();
     uint32_t texHeight = tex.get_height();
-    uint32_t roundWidth  = (((texWidth -1)/coreWidth )*coreWidth )+coreWidth;
-    uint32_t roundHeight = (((texHeight-1)/coreHeight)*coreHeight)+coreHeight;
+    uint32_t roundWidth  = roundedUp(texWidth, coreWidth);
+    uint32_t roundHeight = roundedUp(texHeight, coreHeight);
     int32_t idx = ((roundWidth * gid.y) + gid.x) * pointsPerPixel;
     
     // Don't exit the texture.
