@@ -86,8 +86,13 @@ final class PieceMetalSuzukiTests: XCTestCase {
     
     func testIndirectLUT2x2() async throws {
         let patternSize = PatternSize.w2h2
-        let ltb = LookupTableBuilder(patternSize: patternSize)
-        ltb.setBuffers()
+        
+        /// Generate LUT from scratch.
+//        let ltb = LookupTableBuilder(patternSize: patternSize)
+//        ltb.setBuffers()
+        
+        /// Load LUT from JSON.
+        LookupTableBuilder.load(patternSize)
         
         measure {
             _ = PieceMetalSuzuki(imageUrl: url("input"), patternSize: patternSize) { device, queue, texture, pointsFilled, runsFilled, pointsUnfilled, runsUnfilled in
