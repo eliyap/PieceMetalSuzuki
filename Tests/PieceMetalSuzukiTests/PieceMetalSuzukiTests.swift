@@ -71,10 +71,9 @@ final class PieceMetalSuzukiTests: XCTestCase {
     }
     
     func testIndirectLUT2x1() async throws {
-        let device = MTLCreateSystemDefaultDevice()!
         let patternSize = PatternSize.w2h1
         let ltb = LookupTableBuilder(patternSize: patternSize)
-        ltb.setBuffers(device: device)
+        ltb.setBuffers()
         
         measure {
             _ = PieceMetalSuzuki(imageUrl: url("input"), patternSize: patternSize) { device, queue, texture, pointsFilled, runsFilled, pointsUnfilled, runsUnfilled in
@@ -86,10 +85,9 @@ final class PieceMetalSuzukiTests: XCTestCase {
     }
     
     func testIndirectLUT2x2() async throws {
-        let device = MTLCreateSystemDefaultDevice()!
         let patternSize = PatternSize.w2h2
         let ltb = LookupTableBuilder(patternSize: patternSize)
-        ltb.setBuffers(device: device)
+        ltb.setBuffers()
         
         measure {
             _ = PieceMetalSuzuki(imageUrl: url("input"), patternSize: patternSize) { device, queue, texture, pointsFilled, runsFilled, pointsUnfilled, runsUnfilled in

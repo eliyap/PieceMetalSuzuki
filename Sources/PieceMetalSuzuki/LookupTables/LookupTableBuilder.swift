@@ -113,7 +113,7 @@ internal final class LookupTableBuilder {
         debugPrint("\(pointTable.count) distinct points")
     }
     
-    public func setBuffers(device: MTLDevice) -> Void {
+    public func setBuffers() -> Void {
         StartPoint.lookupTable = pointTable.reduce([], +)
         StartPoint.lookupTableIndices = pointIndices
         StartRun.lookupTable = runTable.reduce([], +)
