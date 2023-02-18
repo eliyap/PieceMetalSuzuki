@@ -55,7 +55,7 @@ internal final class LookupTableBuilder {
             var grid = Grid(
                 imageSize: PixelSize(width: UInt32(texture.width), height: UInt32(texture.height)),
                 regions: Profiler.time(.initRegions) {
-                    return initializeRegions(runBuffer: runBuffer, texture: texture)
+                    return initializeRegions(runBuffer: runBuffer, texture: texture, patternSize: starterSize)
                 },
                 patternSize: starterSize
             )
