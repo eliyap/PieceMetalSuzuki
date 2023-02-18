@@ -11,20 +11,6 @@ import OrderedCollections
 
 /**
  The objective of a Lookup Table is to quick-start the creation of a `Region` from a pattern.
- 
- A "pattern" is an arrangement of initial on / off pixels.
- It consists of
- - a core: the pixels we're interested in, which the `Region` covers
- - a perimeter: the immediate surroundings, which inform how this `Region` will combine with adjoining ones.
- 
- For example, here's a simple 3x3 pattern, with a 1x1 core:
- ```
- 101
- 010
- 101
- ```
- This pattern produces 4 distinct runs; the most any 3x3 pattern can have.
- Hence, the 3x3 lookup table has 4 columns.
  */
 internal final class LookupTableBuilder {
     
@@ -135,8 +121,6 @@ internal final class LookupTableBuilder {
         StartRun.lookupTableIndices = runIndices
     }
 }
-
-
 
 fileprivate let BGRAChannels = 4
 internal final class BGRAPixelBuffer {
