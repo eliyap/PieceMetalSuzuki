@@ -15,7 +15,7 @@ final class PieceMetalSuzukiTests: XCTestCase {
     
     func testDoubleDonut() async throws {
         measure {
-            _ = PieceMetalSuzuki(imageUrl: url("input"), coreSize: PixelSize(width: 1, height: 1), pointsPerPixel: 4) { device, queue, texture, pointsFilled, runsFilled, pointsUnfilled, runsUnfilled in
+            _ = PieceMetalSuzuki(imageUrl: url("input"), patternSize: .w1h1) { device, queue, texture, pointsFilled, runsFilled, pointsUnfilled, runsUnfilled in
                 applyMetalSuzuki(device: device, commandQueue: queue, texture: texture, pointsFilled: pointsFilled, runsFilled: runsFilled, pointsUnfilled: pointsUnfilled, runsUnfilled: runsUnfilled)
             }
         }
@@ -24,66 +24,60 @@ final class PieceMetalSuzukiTests: XCTestCase {
     }
     
     func testWaffle() throws {
-        _ = PieceMetalSuzuki(imageUrl: url("waffle"), coreSize: PixelSize(width: 1, height: 1), pointsPerPixel: 4) { device, queue, texture, pointsFilled, runsFilled, pointsUnfilled, runsUnfilled in
+        _ = PieceMetalSuzuki(imageUrl: url("waffle"), patternSize: .w1h1) { device, queue, texture, pointsFilled, runsFilled, pointsUnfilled, runsUnfilled in
             applyMetalSuzuki(device: device, commandQueue: queue, texture: texture, pointsFilled: pointsFilled, runsFilled: runsFilled, pointsUnfilled: pointsUnfilled, runsUnfilled: runsUnfilled)
         }
     }
     
     func testWhite() throws {
-        _ = PieceMetalSuzuki(imageUrl: url("white"), coreSize: PixelSize(width: 1, height: 1), pointsPerPixel: 4) { device, queue, texture, pointsFilled, runsFilled, pointsUnfilled, runsUnfilled in
+        _ = PieceMetalSuzuki(imageUrl: url("white"), patternSize: .w1h1) { device, queue, texture, pointsFilled, runsFilled, pointsUnfilled, runsUnfilled in
             applyMetalSuzuki(device: device, commandQueue: queue, texture: texture, pointsFilled: pointsFilled, runsFilled: runsFilled, pointsUnfilled: pointsUnfilled, runsUnfilled: runsUnfilled)
         }
     }
     
     func testDots() throws {
-        _ = PieceMetalSuzuki(imageUrl: url("dots"), coreSize: PixelSize(width: 1, height: 1), pointsPerPixel: 4) { device, queue, texture, pointsFilled, runsFilled, pointsUnfilled, runsUnfilled in
+        _ = PieceMetalSuzuki(imageUrl: url("dots"), patternSize: .w1h1) { device, queue, texture, pointsFilled, runsFilled, pointsUnfilled, runsUnfilled in
             applyMetalSuzuki(device: device, commandQueue: queue, texture: texture, pointsFilled: pointsFilled, runsFilled: runsFilled, pointsUnfilled: pointsUnfilled, runsUnfilled: runsUnfilled)
         }
     }
     
     func testDiamonds() throws {
-        _ = PieceMetalSuzuki(imageUrl: url("diamonds"), coreSize: PixelSize(width: 1, height: 1), pointsPerPixel: 4) { device, queue, texture, pointsFilled, runsFilled, pointsUnfilled, runsUnfilled in
+        _ = PieceMetalSuzuki(imageUrl: url("diamonds"), patternSize: .w1h1) { device, queue, texture, pointsFilled, runsFilled, pointsUnfilled, runsUnfilled in
             applyMetalSuzuki(device: device, commandQueue: queue, texture: texture, pointsFilled: pointsFilled, runsFilled: runsFilled, pointsUnfilled: pointsUnfilled, runsUnfilled: runsUnfilled)
         }
     }
     
     func testSquare() throws {
-        _ = PieceMetalSuzuki(imageUrl: url("square"), coreSize: PixelSize(width: 1, height: 1), pointsPerPixel: 4) { device, queue, texture, pointsFilled, runsFilled, pointsUnfilled, runsUnfilled in
+        _ = PieceMetalSuzuki(imageUrl: url("square"), patternSize: .w1h1) { device, queue, texture, pointsFilled, runsFilled, pointsUnfilled, runsUnfilled in
             applyMetalSuzuki(device: device, commandQueue: queue, texture: texture, pointsFilled: pointsFilled, runsFilled: runsFilled, pointsUnfilled: pointsUnfilled, runsUnfilled: runsUnfilled)
         }
     }
     
     func testDonut() throws {
-        _ = PieceMetalSuzuki(imageUrl: url("donut"), coreSize: PixelSize(width: 1, height: 1), pointsPerPixel: 4) { device, queue, texture, pointsFilled, runsFilled, pointsUnfilled, runsUnfilled in
+        _ = PieceMetalSuzuki(imageUrl: url("donut"), patternSize: .w1h1) { device, queue, texture, pointsFilled, runsFilled, pointsUnfilled, runsUnfilled in
             applyMetalSuzuki(device: device, commandQueue: queue, texture: texture, pointsFilled: pointsFilled, runsFilled: runsFilled, pointsUnfilled: pointsUnfilled, runsUnfilled: runsUnfilled)
         }
     }
     
     func testIndirectLUT1x1() throws {
         let device = MTLCreateSystemDefaultDevice()!
-        let coreSize = PixelSize(width: 1, height: 1)
-        let tableWidth = 4
-        let pointsPerPixel: UInt32 = 4
         let patternSize = PatternSize.w1h1
         let ltb = LookupTableBuilder(patternSize: patternSize)
         ltb.setBuffers(device: device)
         
-        _ = PieceMetalSuzuki(imageUrl: url("square"), coreSize: coreSize, pointsPerPixel: pointsPerPixel) { device, queue, texture, pointsFilled, runsFilled, pointsUnfilled, runsUnfilled in
+        _ = PieceMetalSuzuki(imageUrl: url("square"), patternSize: patternSize) { device, queue, texture, pointsFilled, runsFilled, pointsUnfilled, runsUnfilled in
             applyMetalSuzuki_LUT(device: device, commandQueue: queue, texture: texture, pointsFilled: pointsFilled, runsFilled: runsFilled, pointsUnfilled: pointsUnfilled, runsUnfilled: runsUnfilled, patternSize: patternSize)
         }
     }
     
     func testIndirectLUT2x1() async throws {
         let device = MTLCreateSystemDefaultDevice()!
-        let coreSize = PixelSize(width: 2, height: 1)
-        let tableWidth = 6
-        let pointsPerPixel: UInt32 = 3
         let patternSize = PatternSize.w2h1
         let ltb = LookupTableBuilder(patternSize: patternSize)
         ltb.setBuffers(device: device)
         
         measure {
-            _ = PieceMetalSuzuki(imageUrl: url("input"), coreSize: coreSize, pointsPerPixel: pointsPerPixel) { device, queue, texture, pointsFilled, runsFilled, pointsUnfilled, runsUnfilled in
+            _ = PieceMetalSuzuki(imageUrl: url("input"), patternSize: patternSize) { device, queue, texture, pointsFilled, runsFilled, pointsUnfilled, runsUnfilled in
                 applyMetalSuzuki_LUT(device: device, commandQueue: queue, texture: texture, pointsFilled: pointsFilled, runsFilled: runsFilled, pointsUnfilled: pointsUnfilled, runsUnfilled: runsUnfilled, patternSize: patternSize)
             }
         }

@@ -7,8 +7,7 @@ import MetalPerformanceShaders
 public struct PieceMetalSuzuki {
     public init(
         imageUrl: URL,
-        coreSize: PixelSize,
-        pointsPerPixel: UInt32,
+        patternSize: PatternSize,
         _ block: (MTLDevice, MTLCommandQueue, MTLTexture, Buffer<PixelPoint>, Buffer<Run>, Buffer<PixelPoint>, Buffer<Run>) -> Void
     ) {
         guard
@@ -63,9 +62,9 @@ public struct PieceMetalSuzuki {
                 return
             }
             
-            let roundedWidth = UInt32(texture.width).roundedUp(toClosest: coreSize.width)
-            let roundedHeight = UInt32(texture.height).roundedUp(toClosest: coreSize.height)
-            let count = Int(roundedWidth * roundedHeight * pointsPerPixel)
+            let roundedWidth = UInt32(texture.width).roundedUp(toClosest: patternSize.coreSize.width)
+            let roundedHeight = UInt32(texture.height).roundedUp(toClosest: patternSize.coreSize.height)
+            let count = Int(roundedWidth * roundedHeight * patternSize.pointsPerPixel)
             
             guard
                 let pointBuffer = Buffer<PixelPoint>(device: device, count: count),
