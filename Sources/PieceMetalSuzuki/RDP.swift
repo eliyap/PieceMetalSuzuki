@@ -14,7 +14,7 @@ public struct RDPParameters {
     
     public static let starter = RDPParameters(
         minPoints: 20,
-        epsilon: 1
+        epsilon: 3
     )
 }
 
@@ -102,12 +102,12 @@ public func approximate(polyline: [DoublePoint], parameters: RDPParameters = .st
 public func checkQuadrangle(
     polyline: [DoublePoint],
     parameters: RDPParameters = .starter
-) -> Bool {
+) -> (DoublePoint, DoublePoint, DoublePoint, DoublePoint)? {
     guard polyline.count > parameters.minPoints else {
         #if SHOW_RDP_WORK
         debugPrint("[RDP] Too few points")
         #endif
-        return false
+        return nil
     }
     
     /// 1. Find the center of the shape.
@@ -166,11 +166,11 @@ public func checkQuadrangle(
         #if SHOW_RDP_WORK
         debugPrint("[RDP] Identical corners")
         #endif
-        return false
+        return nil
     }
 
     /// 6. With these 4 points as corners, check if all points are within threshold of the lines between these points.
-    return polyline.allSatisfy { pt in
+    let withinLines = polyline.allSatisfy { pt in
         if pt == corner1 || pt == corner2 || pt == corner3 || pt == corner4 {
             return true
         }
@@ -183,9 +183,22 @@ public func checkQuadrangle(
         #if SHOW_RDP_WORK
         if !alongLines {
             debugPrint("[RDP] Failed due to point \(pt)")
+            debugPrint("\(distance(to: pt, p0: corner1, p1: corner2))")
+            debugPrint("\(distance(to: pt, p0: corner2, p1: corner3))")
+            debugPrint("\(distance(to: pt, p0: corner3, p1: corner4))")
+            debugPrint("\(distance(to: pt, p0: corner4, p1: corner1))")
         }
         #endif
         
         return alongLines
     }
+
+     guard withinLines else {
+         #if SHOW_RDP_WORK
+         debugPrint("[RDP] Failed due to points not along lines")
+         #endif
+         return nil
+     }
+
+    return (corner1, corner2, corner3, corner4)
 }
