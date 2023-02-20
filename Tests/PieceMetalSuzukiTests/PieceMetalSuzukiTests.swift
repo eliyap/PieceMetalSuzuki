@@ -118,7 +118,7 @@ final class PieceMetalSuzukiTests: XCTestCase {
     func testRDP() throws {
         let patternSize = PatternSize.w2h2
         loadLookupTables(patternSize)
-        _ = PieceMetalSuzuki(imageUrl: url("input"), patternSize: patternSize) { device, queue, texture, pointsFilled, runsFilled, pointsUnfilled, runsUnfilled in
+        _ = PieceMetalSuzuki(imageUrl: url("qr"), patternSize: patternSize) { device, queue, texture, pointsFilled, runsFilled, pointsUnfilled, runsUnfilled in
             let runIndices = applyMetalSuzuki_LUT(device: device, commandQueue: queue, texture: texture, pointsFilled: pointsFilled, runsFilled: runsFilled, pointsUnfilled: pointsUnfilled, runsUnfilled: runsUnfilled, patternSize: patternSize)!
             for runIdx in runIndices {
                 let run = runsFilled.array[runIdx]
@@ -126,7 +126,11 @@ final class PieceMetalSuzukiTests: XCTestCase {
                     let pixelPt = pointsFilled.array[Int(ptIdx)]
                     return DoublePoint(pixelPt)
                 }
-                print("Run \(runIdx) has \(points.count) points, \(approximate(polyline: points))")
+                
+                if approximate(polyline: points) {
+                    print("Run \(runIdx) has \(points.count) points")
+                }
+                
             }
         }
     }
