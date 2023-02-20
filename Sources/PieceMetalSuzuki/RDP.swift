@@ -25,16 +25,25 @@ public struct DoublePoint: Equatable {
         self.x = Double(pt.x)
         self.y = Double(pt.y)
     }
+    public init(x: Double, y: Double) {
+        self.x = x
+        self.y = y
+    }
 }
 
 /// Line defined by p0, p1.
-func distance(to pt: DoublePoint, p0: DoublePoint, p1: DoublePoint) -> Double {
+func displacement(to pt: DoublePoint, p0: DoublePoint, p1: DoublePoint) -> Double {
     assert(p0 != p1)
     let a = (p1.x - p0.x) * (p0.y - pt.y)
     let b = (p1.y - p0.y) * (p0.x - pt.x)
     let dx2 = (p1.x - p0.x) * (p1.x - p0.x)
     let dy2 = (p1.y - p0.y) * (p1.y - p0.y)
-    return abs(a - b) / sqrt(dx2 + dy2)
+    return (a - b) / sqrt(dx2 + dy2)
+}
+
+/// Line defined by p0, p1.
+func distance(to pt: DoublePoint, p0: DoublePoint, p1: DoublePoint) -> Double {
+    return abs(displacement(to: pt, p0: p0, p1: p1))
 }
 
 public func approximate(polyline: [DoublePoint], parameters: RDPParameters = .starter) -> Bool {
@@ -88,4 +97,95 @@ public func approximate(polyline: [DoublePoint], parameters: RDPParameters = .st
     let pointIndices = leftHalf + rightHalf[1..<rightHalf.count]
     
     return pointIndices.count < 6
+}
+
+public func checkQuadrangle(
+    polyline: [DoublePoint],
+    parameters: RDPParameters = .starter
+) -> Bool {
+    guard polyline.count > parameters.minPoints else {
+        #if SHOW_RDP_WORK
+        debugPrint("[RDP] Too few points")
+        #endif
+        return false
+    }
+    
+    /// 1. Find the center of the shape.
+    let center = DoublePoint(
+        x: polyline.map({ $0.x }).reduce(0, +) / Double(polyline.count),
+        y: polyline.map({ $0.y }).reduce(0, +) / Double(polyline.count)
+    )
+
+    /// 2. Find the point furthest from the center, call this A
+    var distFromCenter: OrderedDictionary<Int, Double> = [:]
+    for (idx, pt) in polyline.enumerated() {
+        let x2 = (pt.x - center.x) * (pt.x - center.x)
+        let y2 = (pt.y - center.y) * (pt.y - center.y)
+        let dist = sqrt(x2 + y2)
+        distFromCenter[idx] = dist
+    }
+    let idxFarthestFromCenter = distFromCenter.max(by: { lhs, rhs in lhs.value < rhs.value })!.key
+    
+    /// 3. With the line from center to A, find 2 points along the line perpendicular to this line.
+    let ptFarthestFromCenter = polyline[idxFarthestFromCenter]
+    let dx = ptFarthestFromCenter.x - center.x
+    let dy = ptFarthestFromCenter.y - center.y
+    let p0 = DoublePoint(x: center.x - dy, y: center.y + dx)
+    let p1 = DoublePoint(x: center.x + dy, y: center.y - dx)
+
+    /// 4. Find the point farthest from this line.
+    var distFromLine: OrderedDictionary<Int, Double> = [:]
+    for (idx, pt) in polyline.enumerated() where idx != idxFarthestFromCenter {
+        let dist = distance(to: pt, p0: p0, p1: p1)
+        distFromLine[idx] = dist
+    }
+    let idxFarthestFromLine = distFromLine.max(by: { lhs, rhs in lhs.value < rhs.value })!.key
+
+    /// 5. Find the 2 extrema in distance from this line.
+    let corner1 = polyline[idxFarthestFromLine]
+    let corner3 = polyline[idxFarthestFromCenter]
+    var dispFromDiagonal: OrderedDictionary<Int, Double> = [:]
+    for (idx, pt) in polyline.enumerated() {
+        guard (idx != idxFarthestFromCenter) && (idx != idxFarthestFromLine) else {
+            continue
+        }
+        let disp = displacement(to: pt, p0: corner1, p1: corner3)
+        dispFromDiagonal[idx] = disp
+    }
+
+    let corner2Idx = dispFromDiagonal.min(by: { lhs, rhs in lhs.value < rhs.value })!.key
+    let corner4Idx = dispFromDiagonal.max(by: { lhs, rhs in lhs.value < rhs.value })!.key
+    let corner2 = polyline[corner2Idx]
+    let corner4 = polyline[corner4Idx]
+
+    guard 
+        (corner1 != corner2) && (corner1 != corner3) && (corner1 != corner4),
+        (corner2 != corner3) && (corner2 != corner4),
+        (corner3 != corner4)
+    else {
+        #if SHOW_RDP_WORK
+        debugPrint("[RDP] Identical corners")
+        #endif
+        return false
+    }
+
+    /// 6. With these 4 points as corners, check if all points are within threshold of the lines between these points.
+    return polyline.allSatisfy { pt in
+        if pt == corner1 || pt == corner2 || pt == corner3 || pt == corner4 {
+            return true
+        }
+        let alongLines = false
+            || (distance(to: pt, p0: corner1, p1: corner2) < parameters.epsilon)
+            || (distance(to: pt, p0: corner2, p1: corner3) < parameters.epsilon)
+            || (distance(to: pt, p0: corner3, p1: corner4) < parameters.epsilon)
+            || (distance(to: pt, p0: corner4, p1: corner1) < parameters.epsilon)
+        
+        #if SHOW_RDP_WORK
+        if !alongLines {
+            debugPrint("[RDP] Failed due to point \(pt)")
+        }
+        #endif
+        
+        return alongLines
+    }
 }
