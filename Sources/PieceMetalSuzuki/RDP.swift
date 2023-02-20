@@ -8,20 +8,20 @@
 import Foundation
 import OrderedCollections
 
-struct RDPParameters {
+public struct RDPParameters {
     let minPoints: Int
     let epsilon: Double
     
-    static let starter = RDPParameters(
+    public static let starter = RDPParameters(
         minPoints: 20,
         epsilon: 1
     )
 }
 
-struct DoublePoint: Equatable {
+public struct DoublePoint: Equatable {
     let x: Double
     let y: Double
-    init(_ pt: PixelPoint) {
+    public init(_ pt: PixelPoint) {
         self.x = Double(pt.x)
         self.y = Double(pt.y)
     }
@@ -37,7 +37,7 @@ func distance(to pt: DoublePoint, p0: DoublePoint, p1: DoublePoint) -> Double {
     return abs(a - b) / sqrt(dx2 + dy2)
 }
 
-func approximate(polyline: [DoublePoint], parameters: RDPParameters = .starter) -> Bool {
+public func approximate(polyline: [DoublePoint], parameters: RDPParameters = .starter) -> Bool {
     guard polyline.count > parameters.minPoints else {
         return false
     }
