@@ -40,3 +40,11 @@ public final class Buffer<Element> {
         mtlBuffer.setPurgeableState(.empty)
     }
 }
+
+public extension Buffer where Element == PixelPoint {
+    subscript(_ run: Run) -> [PixelPoint] {
+        return (run.oldTail..<run.oldHead).map { ptIdx in
+            return array[Int(ptIdx)]
+        }
+    }
+}
