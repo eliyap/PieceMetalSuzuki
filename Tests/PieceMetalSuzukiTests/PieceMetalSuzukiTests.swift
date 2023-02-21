@@ -138,14 +138,9 @@ final class PieceMetalSuzukiTests: XCTestCase {
         let context = CIContext()
         context.render(ciImage, to: buffer)
         
-        var (xLeft, xRight, yTop, yBottom) = (0, 0, 0, 0)
-        CVPixelBufferGetExtendedPixels(buffer, &xLeft, &xRight, &yTop, &yBottom)
-        debugPrint("xLeft: \(xLeft), xRight: \(xRight), yTop: \(yTop), yBottom: \(yBottom)")
-
         width += 0
 
         CVPixelBufferLockBaseAddress(buffer, CVPixelBufferLockFlags(rawValue: 0))
-        
         
         _ = PieceMetalSuzuki(imageUrl: imageUrl, patternSize: patternSize) { device, queue, texture, pointsFilled, runsFilled, pointsUnfilled, runsUnfilled in
             let runIndices = applyMetalSuzuki_LUT(device: device, commandQueue: queue, texture: texture, pointsFilled: pointsFilled, runsFilled: runsFilled, pointsUnfilled: pointsUnfilled, runsUnfilled: runsUnfilled, patternSize: patternSize)!
@@ -157,8 +152,8 @@ final class PieceMetalSuzukiTests: XCTestCase {
                 }
                 
                 let corners = checkQuadrangle(polyline: points)
+                
                 guard let corners else{ continue }
-
                 let (c1, c2, c3, c4) = corners
 
                 print("Run \(runIdx) has \(points.count) points")
@@ -175,26 +170,6 @@ final class PieceMetalSuzukiTests: XCTestCase {
                     pixel[2] = 255
                     pixel[3] = 255
                 }
-
-                // Mark c1 blue.
-                let offset = (Int(c1.y) * width + Int(c1.x)) * 4
-                let pixel = addr.advanced(by: offset)
-                (pixel[0], pixel[1], pixel[2], pixel[3]) = (255, 0, 0, 255)
-
-                // Mark c2 green.
-                let offset2 = (Int(c2.y) * width + Int(c2.x)) * 4
-                let pixel2 = addr.advanced(by: offset2)
-                (pixel2[0], pixel2[1], pixel2[2], pixel2[3]) = (0, 255, 0, 255)
-
-                // Mark c3 orange.
-                let offset3 = (Int(c3.y) * width + Int(c3.x)) * 4
-                let pixel3 = addr.advanced(by: offset3)
-                (pixel3[0], pixel3[1], pixel3[2], pixel3[3]) = (0, 165, 255, 255)
-
-                // Mark c4 purple.
-                let offset4 = (Int(c4.y) * width + Int(c4.x)) * 4
-                let pixel4 = addr.advanced(by: offset4)
-                (pixel4[0], pixel4[1], pixel4[2], pixel4[3]) = (128, 0, 128, 255)
             }
         }
         
