@@ -115,6 +115,9 @@ public func checkQuadrangle(
         x: polyline.map({ $0.x }).reduce(0, +) / Double(polyline.count),
         y: polyline.map({ $0.y }).reduce(0, +) / Double(polyline.count)
     )
+    #if SHOW_RDP_WORK
+    debugPrint("[RDP] Center: \(center)")
+    #endif
 
     /// 2. Find the point furthest from the center, call this A
     var distFromCenter: OrderedDictionary<Int, Double> = [:]
@@ -132,6 +135,10 @@ public func checkQuadrangle(
     let dy = ptFarthestFromCenter.y - center.y
     let p0 = DoublePoint(x: center.x - dy, y: center.y + dx)
     let p1 = DoublePoint(x: center.x + dy, y: center.y - dx)
+    #if SHOW_RDP_WORK
+    debugPrint("[RDP] farthest: \(farthest)")
+    debugPrint("[RDP] p0: \(p0), p1: \(p1)")
+    #endif
 
     /// 4. Find the point farthest from this line.
     var distFromLine: OrderedDictionary<Int, Double> = [:]
