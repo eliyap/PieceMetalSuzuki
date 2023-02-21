@@ -130,11 +130,11 @@ public func checkQuadrangle(
     let idxFarthestFromCenter = distFromCenter.max(by: { lhs, rhs in lhs.value < rhs.value })!.key
     
     /// 3. With the line from center to A, find 2 points along the line perpendicular to this line.
-    let ptFarthestFromCenter = polyline[idxFarthestFromCenter]
-    let dx = ptFarthestFromCenter.x - center.x
-    let dy = ptFarthestFromCenter.y - center.y
-    let p0 = DoublePoint(x: center.x - dy, y: center.y + dx)
-    let p1 = DoublePoint(x: center.x + dy, y: center.y - dx)
+    let farthest = polyline[idxFarthestFromCenter]
+    let dx = farthest.x - center.x
+    let dy = farthest.y - center.y
+    let p0 = DoublePoint(x: farthest.x - dy, y: farthest.y + dx)
+    let p1 = DoublePoint(x: farthest.x + dy, y: farthest.y - dx)
     #if SHOW_RDP_WORK
     debugPrint("[RDP] farthest: \(farthest)")
     debugPrint("[RDP] p0: \(p0), p1: \(p1)")
