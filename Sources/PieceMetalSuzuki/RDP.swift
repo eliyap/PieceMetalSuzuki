@@ -13,11 +13,15 @@ public struct RDPParameters {
     
     /// Maximum allowed deviation of points, relative to the length of the diagonal.
     /// For a quadrangle with straight sides, that distance would be zero.
-    public let epsilon: Double
+    public let sideErrorLimit: Double
+    
+    /// Maximum allowed deviation from a square aspect ratio of `1.0`.
+    public let aspectRatioErrorLimit: Double
     
     public static let starter = RDPParameters(
         minPoints: 20,
-        epsilon: 0.10
+        sideErrorLimit: 0.10,
+        aspectRatioErrorLimit: 0.5
     )
 }
 
@@ -102,7 +106,7 @@ public func checkQuadrangle(
     }
 
     /// 6. With these 4 points as corners, check if all points are within threshold of the lines between these points.
-    let threshold = corner1.distance(to: corner3) * parameters.epsilon
+    let threshold = corner1.distance(to: corner3) * parameters.sideErrorLimit
     let withinLines = polyline.allSatisfy { pt in
         if pt == corner1 || pt == corner2 || pt == corner3 || pt == corner4 {
             return true
@@ -126,12 +130,23 @@ public func checkQuadrangle(
         return alongLines
     }
 
-     guard withinLines else {
-         #if SHOW_RDP_WORK
-         debugPrint("[RDP] Failed due to points not along lines")
-         #endif
-         return nil
-     }
-
+    guard withinLines else {
+        #if SHOW_RDP_WORK
+        debugPrint("[RDP] Failed due to points not along lines")
+        #endif
+        return nil
+    }
+    
+    /// Check aspect ratio is reasonable.
+    let aspRatio = corner1.distance(to: corner2) / corner2.distance(to: corner3)
+    let aspRatioError = abs(1.0 - aspRatio)
+    guard aspRatioError < parameters.aspectRatioErrorLimit else {
+        #if SHOW_RDP_WORK
+        debugPrint("[RDP] Failed due to aspect ratio error \(aspRatioError)")
+        print("aspRatio \(aspRatio) \(parameters.aspectRatioErrorLimit)")
+        #endif
+        return nil   
+    }
+    
     return (corner1, corner2, corner3, corner4)
 }
