@@ -9,69 +9,16 @@ import Foundation
 import OrderedCollections
 
 public struct RDPParameters {
-    let minPoints: Int
+    public let minPoints: Int
     
     /// Maximum allowed deviation of points, relative to the length of the diagonal.
     /// For a quadrangle with straight sides, that distance would be zero.
-    let epsilon: Double
+    public let epsilon: Double
     
     public static let starter = RDPParameters(
         minPoints: 20,
         epsilon: 0.10
     )
-}
-
-public func approximate(polyline: [DoublePoint], parameters: RDPParameters = .starter) -> Bool {
-    guard polyline.count > parameters.minPoints else {
-        return false
-    }
-    
-    /// Pick 2 extreme points to start.
-    let ranking: (Int, Int) -> Bool = { lhs, rhs in
-        return polyline[lhs].y == polyline[rhs].y
-            ? polyline[lhs].y < polyline[rhs].y
-            : polyline[lhs].x < polyline[rhs].x
-    }
-    
-    let smallest: Int = polyline.indices.min(by: ranking)!
-    let largest: Int = polyline.indices.max(by: ranking)!
-    let start = min(smallest, largest)
-    let end = max(smallest, largest)
-    
-    /// Recursive polyline reduction step.
-    func rdp<Coll>(indices: Coll) -> [Int] where Coll: RandomAccessCollection, Coll.Element == Int, Coll.Index == Int {
-        var distances: [Coll.Element: Double] = [:]
-        let p0 = polyline[indices.first!]
-        let p1 = polyline[indices.last!]
-        
-        /// Calculate perpendicular distances for all middle points.
-        for idx in indices[(indices.indices.startIndex+1)..<(indices.indices.endIndex-1)] {
-            let pt = polyline[idx]
-            distances[idx] = pt.distance(p0: p0, p1: p1)
-        }
-        
-        if distances.values.allSatisfy({ dist in dist < parameters.epsilon }) {
-            /// Base case: disregard all middle points.
-            return [indices.first!, indices.last!]
-        } else {
-            /// Split the line at the farthest point.
-            let maxIdx = distances.max(by: { lhs, rhs in lhs.value < rhs.value })!.key
-            let maxIdxIdx = indices.firstIndex(of: maxIdx)!
-            
-            /// Recurse on both halves.
-            let leftHalf = rdp(indices: indices[indices.indices.startIndex...maxIdxIdx])
-            let rightHalf = rdp(indices: indices[maxIdxIdx..<indices.indices.endIndex])
-            
-            /// Drop duplicated center value.
-            return leftHalf + rightHalf[1..<rightHalf.count]
-        }
-    }
-    
-    let leftHalf = rdp(indices: Array(start...end))
-    let rightHalf = rdp(indices: Array(end..<polyline.count) + Array(0...start))
-    let pointIndices = leftHalf + rightHalf[1..<rightHalf.count]
-    
-    return pointIndices.count < 6
 }
 
 public func checkQuadrangle(
