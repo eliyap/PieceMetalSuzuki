@@ -32,31 +32,33 @@ public struct DoublePoint: Equatable {
         self.x = x
         self.y = y
     }
+    
+    /// Source: https://en.wikipedia.org/wiki/Distance_from_a_point_to_a_line
+    /// Signed distance above or below a line.
+    /// Line defined by p0, p1.
+    internal func displacement(p0: DoublePoint, p1: DoublePoint) -> Double {
+        assert(p0 != p1)
+        let a = (p1.x - p0.x) * (p0.y - self.y)
+        let b = (p1.y - p0.y) * (p0.x - self.x)
+        let dx2 = (p1.x - p0.x) * (p1.x - p0.x)
+        let dy2 = (p1.y - p0.y) * (p1.y - p0.y)
+        return (a - b) / sqrt(dx2 + dy2)
+    }
+
+    /// Absolute distance from a line.
+    /// Line defined by p0, p1.
+    internal func distance(p0: DoublePoint, p1: DoublePoint) -> Double {
+        return abs(displacement(p0: p0, p1: p1))
+    }
+
+    internal func distance(to other: DoublePoint) -> Double {
+        let dx = self.x - other.x
+        let dy = self.y - other.y
+        return sqrt((dx * dx) + (dy * dy))
+    }
 }
 
-/// Source: https://en.wikipedia.org/wiki/Distance_from_a_point_to_a_line
-/// Signed distance above or below a line.
-/// Line defined by p0, p1.
-fileprivate func displacement(to pt: DoublePoint, p0: DoublePoint, p1: DoublePoint) -> Double {
-    assert(p0 != p1)
-    let a = (p1.x - p0.x) * (p0.y - pt.y)
-    let b = (p1.y - p0.y) * (p0.x - pt.x)
-    let dx2 = (p1.x - p0.x) * (p1.x - p0.x)
-    let dy2 = (p1.y - p0.y) * (p1.y - p0.y)
-    return (a - b) / sqrt(dx2 + dy2)
-}
 
-/// Absolute distance from a line.
-/// Line defined by p0, p1.
-fileprivate func distance(to pt: DoublePoint, p0: DoublePoint, p1: DoublePoint) -> Double {
-    return abs(displacement(to: pt, p0: p0, p1: p1))
-}
-
-fileprivate func distance(from pt: DoublePoint, to other: DoublePoint) -> Double {
-    let dx = pt.x - other.x
-    let dy = pt.y - other.y
-    return sqrt((dx * dx) + (dy * dy))
-}
 
 public func approximate(polyline: [DoublePoint], parameters: RDPParameters = .starter) -> Bool {
     guard polyline.count > parameters.minPoints else {
@@ -84,7 +86,7 @@ public func approximate(polyline: [DoublePoint], parameters: RDPParameters = .st
         /// Calculate perpendicular distances for all middle points.
         for idx in indices[(indices.indices.startIndex+1)..<(indices.indices.endIndex-1)] {
             let pt = polyline[idx]
-            distances[idx] = distance(to: pt, p0: p0, p1: p1)
+            distances[idx] = pt.distance(p0: p0, p1: p1)
         }
         
         if distances.values.allSatisfy({ dist in dist < parameters.epsilon }) {
@@ -156,7 +158,7 @@ public func checkQuadrangle(
     /// That should be the quadrangle's opposite corner.
     var distFromLine: OrderedDictionary<Int, Double> = [:]
     for (idx, pt) in polyline.enumerated() where idx != idxFarthestFromCenter {
-        let dist = distance(to: pt, p0: p0, p1: p1)
+        let dist = pt.distance(p0: p0, p1: p1)
         distFromLine[idx] = dist
     }
     let idxFarthestFromLine = distFromLine.max(by: { lhs, rhs in lhs.value < rhs.value })!.key
@@ -171,7 +173,7 @@ public func checkQuadrangle(
         guard (idx != idxFarthestFromCenter) && (idx != idxFarthestFromLine) else {
             continue
         }
-        let disp = displacement(to: pt, p0: corner1, p1: corner3)
+        let disp = pt.displacement(p0: corner1, p1: corner3)
         dispFromDiagonal[idx] = disp
     }
 
@@ -192,24 +194,24 @@ public func checkQuadrangle(
     }
 
     /// 6. With these 4 points as corners, check if all points are within threshold of the lines between these points.
-    let threshold = distance(from: corner1, to: corner3) * parameters.epsilon
+    let threshold = corner1.distance(to: corner3) * parameters.epsilon
     let withinLines = polyline.allSatisfy { pt in
         if pt == corner1 || pt == corner2 || pt == corner3 || pt == corner4 {
             return true
         }
         let alongLines = false
-            || (distance(to: pt, p0: corner1, p1: corner2) < threshold)
-            || (distance(to: pt, p0: corner2, p1: corner3) < threshold)
-            || (distance(to: pt, p0: corner3, p1: corner4) < threshold)
-            || (distance(to: pt, p0: corner4, p1: corner1) < threshold)
+            || (pt.distance(p0: corner1, p1: corner2) < threshold)
+            || (pt.distance(p0: corner2, p1: corner3) < threshold)
+            || (pt.distance(p0: corner3, p1: corner4) < threshold)
+            || (pt.distance(p0: corner4, p1: corner1) < threshold)
         
         #if SHOW_RDP_WORK
         if !alongLines {
             debugPrint("[RDP] Failed due to point \(pt)")
-            debugPrint("\(distance(to: pt, p0: corner1, p1: corner2))")
-            debugPrint("\(distance(to: pt, p0: corner2, p1: corner3))")
-            debugPrint("\(distance(to: pt, p0: corner3, p1: corner4))")
-            debugPrint("\(distance(to: pt, p0: corner4, p1: corner1))")
+            debugPrint("\(pt.distance(p0: corner1, p1: corner2))")
+            debugPrint("\(pt.distance(p0: corner2, p1: corner3))")
+            debugPrint("\(pt.distance(p0: corner3, p1: corner4))")
+            debugPrint("\(pt.distance(p0: corner4, p1: corner1))")
         }
         #endif
         
