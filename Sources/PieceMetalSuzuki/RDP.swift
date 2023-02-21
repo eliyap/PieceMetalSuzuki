@@ -10,11 +10,14 @@ import OrderedCollections
 
 public struct RDPParameters {
     let minPoints: Int
+    
+    /// Maximum allowed deviation of points, relative to the length of the diagonal.
+    /// For a quadrangle with straight sides, that distance would be zero.
     let epsilon: Double
     
     public static let starter = RDPParameters(
         minPoints: 20,
-        epsilon: 3
+        epsilon: 0.10
     )
 }
 
@@ -32,7 +35,7 @@ public struct DoublePoint: Equatable {
 }
 
 /// Line defined by p0, p1.
-func displacement(to pt: DoublePoint, p0: DoublePoint, p1: DoublePoint) -> Double {
+fileprivate func displacement(to pt: DoublePoint, p0: DoublePoint, p1: DoublePoint) -> Double {
     assert(p0 != p1)
     let a = (p1.x - p0.x) * (p0.y - pt.y)
     let b = (p1.y - p0.y) * (p0.x - pt.x)
@@ -42,8 +45,14 @@ func displacement(to pt: DoublePoint, p0: DoublePoint, p1: DoublePoint) -> Doubl
 }
 
 /// Line defined by p0, p1.
-func distance(to pt: DoublePoint, p0: DoublePoint, p1: DoublePoint) -> Double {
+fileprivate func distance(to pt: DoublePoint, p0: DoublePoint, p1: DoublePoint) -> Double {
     return abs(displacement(to: pt, p0: p0, p1: p1))
+}
+
+fileprivate func distance(from pt: DoublePoint, to other: DoublePoint) -> Double {
+    let dx = pt.x - other.x
+    let dy = pt.y - other.y
+    return sqrt((dx * dx) + (dy * dy))
 }
 
 public func approximate(polyline: [DoublePoint], parameters: RDPParameters = .starter) -> Bool {
@@ -141,6 +150,7 @@ public func checkQuadrangle(
     #endif
 
     /// 4. Find the point farthest from this line.
+    /// That should be the quadrangle's opposite corner.
     var distFromLine: OrderedDictionary<Int, Double> = [:]
     for (idx, pt) in polyline.enumerated() where idx != idxFarthestFromCenter {
         let dist = distance(to: pt, p0: p0, p1: p1)
@@ -149,6 +159,8 @@ public func checkQuadrangle(
     let idxFarthestFromLine = distFromLine.max(by: { lhs, rhs in lhs.value < rhs.value })!.key
 
     /// 5. Find the 2 extrema in distance from this line.
+    /// i.e. treating the line as horizontal, find the points farthest above and below this line.
+    /// These should be the remaining 2 corners.
     let corner1 = polyline[idxFarthestFromCenter]
     let corner3 = polyline[idxFarthestFromLine]
     var dispFromDiagonal: OrderedDictionary<Int, Double> = [:]
@@ -177,15 +189,16 @@ public func checkQuadrangle(
     }
 
     /// 6. With these 4 points as corners, check if all points are within threshold of the lines between these points.
+    let threshold = distance(from: corner1, to: corner3) * parameters.epsilon
     let withinLines = polyline.allSatisfy { pt in
         if pt == corner1 || pt == corner2 || pt == corner3 || pt == corner4 {
             return true
         }
         let alongLines = false
-            || (distance(to: pt, p0: corner1, p1: corner2) < parameters.epsilon)
-            || (distance(to: pt, p0: corner2, p1: corner3) < parameters.epsilon)
-            || (distance(to: pt, p0: corner3, p1: corner4) < parameters.epsilon)
-            || (distance(to: pt, p0: corner4, p1: corner1) < parameters.epsilon)
+            || (distance(to: pt, p0: corner1, p1: corner2) < threshold)
+            || (distance(to: pt, p0: corner2, p1: corner3) < threshold)
+            || (distance(to: pt, p0: corner3, p1: corner4) < threshold)
+            || (distance(to: pt, p0: corner4, p1: corner1) < threshold)
         
         #if SHOW_RDP_WORK
         if !alongLines {
