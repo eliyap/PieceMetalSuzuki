@@ -37,8 +37,10 @@ let package = Package(
                 .unsafeFlags([
 //                    "-DSHOW_GRID_WORK",
 //                    "-DPROFILER_ON",
-//                    "-Ounchecked",
-//                    "-O",
+                    "-Ounchecked",
+                    "-O",
+                    
+                    "-DSHOW_RDP_WORK"
                 ], nil)
             ]),
         .testTarget(

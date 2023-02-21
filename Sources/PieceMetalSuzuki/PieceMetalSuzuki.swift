@@ -190,6 +190,10 @@ public func applyMetalSuzuki(
     return
 }
 
+/**
+ By convention, this loads the final set of runs and points into the "filled" buffers,
+ and retuns the array offsets for the run buffer.
+ */
 public func applyMetalSuzuki_LUT(
     device: MTLDevice,
     commandQueue: MTLCommandQueue,
@@ -199,11 +203,11 @@ public func applyMetalSuzuki_LUT(
     pointsUnfilled: Buffer<PixelPoint>,
     runsUnfilled: Buffer<Run>,
     patternSize: PatternSize
-) -> Void {
+) -> Range<Int>? {
     /// Apply Metal filter to pixel buffer.
     guard matchPatterns(device: device, commandQueue: commandQueue, texture: texture, runBuffer: runsFilled, pointBuffer: pointsFilled, patternSize: patternSize) else {
         assert(false, "Failed to run chain start kernel.")
-        return
+        return nil
     }
     
     var grid = Grid(
@@ -225,7 +229,7 @@ public func applyMetalSuzuki_LUT(
         )
     }
     
-    return
+    return grid.regions[0][0].runIndices(imageSize: grid.imageSize, gridSize: grid.gridSize)
 }
 
 func saveBufferToPng(buffer: CVPixelBuffer, format: CIFormat) -> Void {

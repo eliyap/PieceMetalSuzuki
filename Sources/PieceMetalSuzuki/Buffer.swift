@@ -12,9 +12,10 @@ public final class Buffer<Element> {
     public let count: Int
     public let array: UnsafeMutablePointer<Element>
     public let mtlBuffer: MTLBuffer
+    public let size: Int
     
     public init?(device: MTLDevice, count: Int) {
-        let size = MemoryLayout<Element>.stride * count
+        self.size = MemoryLayout<Element>.stride * count
         guard let buffer = device.makeBuffer(length: size) else {
             assert(false, "Failed to create buffer.")
             return nil
@@ -37,5 +38,13 @@ public final class Buffer<Element> {
     
     deinit {
         mtlBuffer.setPurgeableState(.empty)
+    }
+}
+
+public extension Buffer where Element == PixelPoint {
+    subscript(_ run: Run) -> [PixelPoint] {
+        return (run.oldTail..<run.oldHead).map { ptIdx in
+            return array[Int(ptIdx)]
+        }
     }
 }

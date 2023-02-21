@@ -175,11 +175,15 @@ struct Grid {
             dxn.flip()
             
             let end = CFAbsoluteTimeGetCurrent()
-            if iteration == 0 {
-                debugPrint("Iter 0: \(end - start)")
-            }
             Profiler.add(end - start, iteration: iteration)
             iteration += 1
+        }
+        
+        if dxn == .horizontal {
+            /// Last iteration was vertical, then flipped.
+            /// Move data back to "filled" buffers.
+            memcpy(pointsVertical.array, pointsHorizontal.array, pointsVertical.count)
+            memcpy(runsVertical.array, runsHorizontal.array, runsVertical.count)
         }
         
         /// Return final results.
@@ -206,7 +210,7 @@ struct Grid {
         print("Found \(regions[0][0].runsCount) contours.")
         #endif
         
-        // return regions[0][0]
+        return
     }
     
     #if SHOW_GRID_WORK
