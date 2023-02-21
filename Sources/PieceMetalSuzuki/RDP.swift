@@ -34,6 +34,8 @@ public struct DoublePoint: Equatable {
     }
 }
 
+/// Source: https://en.wikipedia.org/wiki/Distance_from_a_point_to_a_line
+/// Signed distance above or below a line.
 /// Line defined by p0, p1.
 fileprivate func displacement(to pt: DoublePoint, p0: DoublePoint, p1: DoublePoint) -> Double {
     assert(p0 != p1)
@@ -44,6 +46,7 @@ fileprivate func displacement(to pt: DoublePoint, p0: DoublePoint, p1: DoublePoi
     return (a - b) / sqrt(dx2 + dy2)
 }
 
+/// Absolute distance from a line.
 /// Line defined by p0, p1.
 fileprivate func distance(to pt: DoublePoint, p0: DoublePoint, p1: DoublePoint) -> Double {
     return abs(displacement(to: pt, p0: p0, p1: p1))
