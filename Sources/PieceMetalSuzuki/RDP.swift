@@ -149,8 +149,8 @@ public func checkQuadrangle(
     let idxFarthestFromLine = distFromLine.max(by: { lhs, rhs in lhs.value < rhs.value })!.key
 
     /// 5. Find the 2 extrema in distance from this line.
-    let corner1 = polyline[idxFarthestFromLine]
-    let corner3 = polyline[idxFarthestFromCenter]
+    let corner1 = polyline[idxFarthestFromCenter]
+    let corner3 = polyline[idxFarthestFromLine]
     var dispFromDiagonal: OrderedDictionary<Int, Double> = [:]
     for (idx, pt) in polyline.enumerated() {
         guard (idx != idxFarthestFromCenter) && (idx != idxFarthestFromLine) else {
