@@ -119,7 +119,7 @@ final class PieceMetalSuzukiTests: XCTestCase {
         let patternSize = PatternSize.w2h2
         loadLookupTables(patternSize)
         
-        let imageUrl = url("qrTilt")
+        let imageUrl = url("aruco")
         
         let ciImage = CIImage(contentsOf: imageUrl)!
         
@@ -142,7 +142,7 @@ final class PieceMetalSuzukiTests: XCTestCase {
         CVPixelBufferGetExtendedPixels(buffer, &xLeft, &xRight, &yTop, &yBottom)
         debugPrint("xLeft: \(xLeft), xRight: \(xRight), yTop: \(yTop), yBottom: \(yBottom)")
 
-        width += 14
+        width += 0
 
         CVPixelBufferLockBaseAddress(buffer, CVPixelBufferLockFlags(rawValue: 0))
         
