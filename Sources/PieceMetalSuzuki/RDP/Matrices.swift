@@ -66,11 +66,46 @@ struct Matrix {
     }
 }
 
-struct PerspectiveTransformMatrix {
+struct PerspectiveTransformMatrix: CustomStringConvertible {
     let (a, b, c): (Double, Double, Double)
     let (d, e, f): (Double, Double, Double)
     let (g, h   ): (Double, Double        )
     let i = 1.0
+
+    var description: String {
+        let format = "%.2f"
+        let sep = ", "
+        return [
+            [
+                String(format: format, a),
+                String(format: format, b),
+                String(format: format, c),
+            
+            ].joined(separator: sep),
+            [
+                String(format: format, d),
+                String(format: format, e),
+                String(format: format, f),
+            
+            ].joined(separator: sep),
+            [
+                String(format: format, g),
+                String(format: format, h),
+                String(format: format, i),
+            ].joined(separator: sep),
+        ].joined(separator: "\n")
+    }
+}
+
+extension DoublePoint { 
+    func transformedBy(_ matrix: PerspectiveTransformMatrix) -> DoublePoint { 
+        let (a, b, c) = (matrix.a, matrix.b, matrix.c)
+        let (d, e, f) = (matrix.d, matrix.e, matrix.f)
+        return DoublePoint(
+            x: ((a * self.x) + (b * self.y) + c),
+            y: ((d * self.x) + (e * self.y) + f)
+        )
+    }
 }
 
 func matrixFor(
