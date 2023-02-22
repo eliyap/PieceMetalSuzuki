@@ -111,7 +111,10 @@ func matrixFor(
     ])
 
     let det = matrix.determinant()
-    guard det != 0 else { return nil }
+    guard det != 0, det.isNaN == false else {
+        debugPrint("Matrix inversion failed, det is \(det)")
+        return nil
+    }
 
     /// Apply Cramer's rule: https://en.wikipedia.org/wiki/Cramer%27s_rule
     let vecOut = [u1, u2, u3, u4, v1, v2, v3, v4]
