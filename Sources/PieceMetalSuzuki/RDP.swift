@@ -8,6 +8,9 @@
 import Foundation
 import OrderedCollections
 
+/// Based on a version of Ramer-Douglas-Peucker
+/// https://en.wikipedia.org/wiki/Ramer%E2%80%93Douglas%E2%80%93Peucker_algorithm
+/// Adapted from OpenCV's implementation.
 public struct RDPParameters {
     public let minPoints: Int
     
