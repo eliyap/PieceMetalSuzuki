@@ -119,31 +119,13 @@ final class PieceMetalSuzukiTests: XCTestCase {
         let patternSize = PatternSize.w2h2
         loadLookupTables(patternSize)
         
-        let imageUrl = url("aruco")
-        
-        let ciImage = CIImage(contentsOf: imageUrl)!
-        
-        /// Make a pixel buffer.
-        let width = Int(ciImage.extent.width)
-        let height = Int(ciImage.extent.height)
-        let format = kCVPixelFormatType_32BGRA
-        let options: NSDictionary = [
-            kCVPixelBufferCGImageCompatibilityKey: true,
-            kCVPixelBufferMetalCompatibilityKey: true,
-        ]
-        var buffer: CVPixelBuffer!
-        CVPixelBufferCreate(kCFAllocatorDefault, width, height, format, options, &buffer)
-
-        /// Copy image to pixel buffer.
-        let context = CIContext()
-        context.render(ciImage, to: buffer)
-        
-        let bytesPerRow = CVPixelBufferGetBytesPerRow(buffer)
-        
-        CVPixelBufferLockBaseAddress(buffer, CVPixelBufferLockFlags(rawValue: 0))
-        
+        let imageUrl = url("qrTilt")
         _ = PieceMetalSuzuki(imageUrl: imageUrl, patternSize: patternSize) { device, queue, texture, pixelBuffer, pointsFilled, runsFilled, pointsUnfilled, runsUnfilled in
             let runIndices = applyMetalSuzuki_LUT(device: device, commandQueue: queue, texture: texture, pointsFilled: pointsFilled, runsFilled: runsFilled, pointsUnfilled: pointsUnfilled, runsUnfilled: runsUnfilled, patternSize: patternSize)!
+            
+            CVPixelBufferLockBaseAddress(pixelBuffer, CVPixelBufferLockFlags(rawValue: 0))
+            let bytesPerRow = CVPixelBufferGetBytesPerRow(pixelBuffer)
+            
             for runIdx in runIndices {
                 let run = runsFilled.array[runIdx]
                 let points = (run.oldTail..<run.oldHead).map { ptIdx in
@@ -158,7 +140,7 @@ final class PieceMetalSuzukiTests: XCTestCase {
 
                 print("Run \(runIdx) has \(points.count) points")
                 
-                let addr = CVPixelBufferGetBaseAddress(buffer)!
+                let addr = CVPixelBufferGetBaseAddress(pixelBuffer)!
                     .assumingMemoryBound(to: UInt8.self)
                 (run.oldTail..<run.oldHead).forEach { ptIdx in
                     let pixelPt = pointsFilled.array[Int(ptIdx)]
@@ -171,9 +153,8 @@ final class PieceMetalSuzukiTests: XCTestCase {
                     pixel[3] = 255
                 }
             }
+            CVPixelBufferUnlockBaseAddress(pixelBuffer, CVPixelBufferLockFlags(rawValue: 0))
+            saveBufferToPng(buffer: pixelBuffer, format: .RGBA8)
         }
-        
-        CVPixelBufferUnlockBaseAddress(buffer, CVPixelBufferLockFlags(rawValue: 0))
-        saveBufferToPng(buffer: buffer, format: .RGBA8)
     }
 }
