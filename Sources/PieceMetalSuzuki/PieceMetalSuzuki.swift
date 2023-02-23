@@ -88,7 +88,11 @@ public final class MarkerDetector {
         }
         
         /// Run core algorithms.
-        let runIndices = applyMetalSuzuki_LUT(device: device, commandQueue: queue, texture: texture, pointsFilled: pointsFilled, runsFilled: runsFilled, pointsUnfilled: pointsUnfilled, runsUnfilled: runsUnfilled, patternSize: patternSize)!
+        let runIndices = applyMetalSuzuki_LUT(device: device, commandQueue: queue, texture: texture, pointsFilled: pointsFilled, runsFilled: runsFilled, pointsUnfilled: pointsUnfilled, runsUnfilled: runsUnfilled, patternSize: patternSize)
+        guard let runIndices else {
+            assertionFailure("Failed to get image contours")
+            return
+        }
         decodeMarkers(pixelBuffer: pixelBuffer, pointBuffer: pointsFilled, runBuffer: runsFilled, runIndices: runIndices)
     }
     
