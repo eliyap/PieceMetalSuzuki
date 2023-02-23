@@ -35,7 +35,7 @@ public struct RDPParameters {
     )
 }
 
-public func checkQuadrilateral(
+internal func checkQuadrilateral(
     polyline: [DoublePoint],
     parameters: RDPParameters = .starter
 ) -> (DoublePoint, DoublePoint, DoublePoint, DoublePoint)? {
