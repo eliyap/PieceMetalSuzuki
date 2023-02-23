@@ -70,10 +70,10 @@ func samples(
             }
 
             /// Extract pixel data.
-            let pixel = (row * bytesPerRow) + (col * bgraWidth)
-            let b = Double(baseAddress[pixel + 0]) / bgraMax
-            let g = Double(baseAddress[pixel + 1]) / bgraMax
-            let r = Double(baseAddress[pixel + 2]) / bgraMax
+            let pixel = baseAddress.advanced(by: (row * bytesPerRow) + (col * bgraWidth))
+            let b = Double(pixel[0]) / bgraMax
+            let g = Double(pixel[1]) / bgraMax
+            let r = Double(pixel[2]) / bgraMax
             
             /// https://en.wikipedia.org/wiki/Grayscale
             let luminosity = Double(r) * 0.2126 + Double(g) * 0.7152 + Double(b) * 0.0722
