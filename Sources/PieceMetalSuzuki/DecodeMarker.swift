@@ -8,7 +8,7 @@
 import Foundation
 import CoreVideo
 
-public func decodeMarkers(
+internal func decodeMarkers(
     pixelBuffer: CVPixelBuffer,
     pointBuffer: Buffer<PixelPoint>,
     runBuffer: Buffer<Run>,

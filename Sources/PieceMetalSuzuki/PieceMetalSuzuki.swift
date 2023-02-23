@@ -111,7 +111,7 @@ public final class MarkerDetector {
     }
 }
 
-public struct PieceMetalSuzuki {
+internal struct PieceMetalSuzuki {
     public init(
         imageUrl: URL,
         patternSize: PatternSize,
@@ -209,7 +209,7 @@ public struct PieceMetalSuzuki {
     }
 }
 
-public func applyMetalFilter(
+internal func applyMetalFilter(
     to buffer: CVPixelBuffer,
     device: MTLDevice,
     commandQueue: MTLCommandQueue,
@@ -258,7 +258,7 @@ public func applyMetalFilter(
     return result
 }
 
-public func applyMetalSuzuki(
+internal func applyMetalSuzuki(
     device: MTLDevice,
     commandQueue: MTLCommandQueue,
     texture: MTLTexture,
@@ -301,7 +301,7 @@ public func applyMetalSuzuki(
  By convention, this loads the final set of runs and points into the "filled" buffers,
  and retuns the array offsets for the run buffer.
  */
-public func applyMetalSuzuki_LUT(
+internal func applyMetalSuzuki_LUT(
     device: MTLDevice,
     commandQueue: MTLCommandQueue,
     texture: MTLTexture,
@@ -339,7 +339,7 @@ public func applyMetalSuzuki_LUT(
     return grid.regions[0][0].runIndices(imageSize: grid.imageSize, gridSize: grid.gridSize)
 }
 
-func saveBufferToPng(buffer: CVPixelBuffer, format: CIFormat) -> Void {
+internal func saveBufferToPng(buffer: CVPixelBuffer, format: CIFormat) -> Void {
     let docUrls = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)
     guard let documentsUrl = docUrls.first else {
         assert(false, "Couldn't get documents directory.")
@@ -361,7 +361,7 @@ func saveBufferToPng(buffer: CVPixelBuffer, format: CIFormat) -> Void {
     }
 }
 
-func loadChainStarterFunction(device: MTLDevice) -> MTLFunction? {
+internal func loadChainStarterFunction(device: MTLDevice) -> MTLFunction? {
     do {
         guard let libUrl = Bundle.module.url(forResource: "PieceSuzukiKernel", withExtension: "metal", subdirectory: "Metal") else {
             assert(false, "Failed to get library.")
@@ -380,7 +380,7 @@ func loadChainStarterFunction(device: MTLDevice) -> MTLFunction? {
     }
 }
 
-func createChainStarters(
+internal func createChainStarters(
     device: MTLDevice,
     commandQueue: MTLCommandQueue,
     texture: MTLTexture,

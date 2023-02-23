@@ -8,7 +8,7 @@
 import Foundation
 
 // @metal-type
-public struct PixelPoint: Equatable, CustomStringConvertible {
+internal struct PixelPoint: Equatable, CustomStringConvertible {
     /// Corresponds to `thread_position_in_grid` with type `uint2`.
     /// https://developer.apple.com/documentation/metal/mtlattributeformat/uint2
     /// > Two unsigned 32-bit values.

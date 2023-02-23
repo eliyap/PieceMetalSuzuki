@@ -42,7 +42,7 @@ public final class Buffer<Element> {
     }
 }
 
-public extension Buffer where Element == PixelPoint {
+internal extension Buffer where Element == PixelPoint {
     subscript(_ run: Run) -> [PixelPoint] {
         return (run.oldTail..<run.oldHead).map { ptIdx in
             return array[Int(ptIdx)]

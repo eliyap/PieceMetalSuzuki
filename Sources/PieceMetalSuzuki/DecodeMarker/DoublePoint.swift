@@ -7,7 +7,7 @@
 
 import Foundation
 
-public struct DoublePoint: Equatable, CustomStringConvertible {
+internal struct DoublePoint: Equatable, CustomStringConvertible {
     
     public let x: Double
     public let y: Double
