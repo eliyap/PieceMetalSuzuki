@@ -24,25 +24,30 @@ struct CellSample {
     
     /// Total number of pixels sampled.
     public var sampleCount: Int = 0
+    
+    public var meanLuminosity: Double {
+        guard sampleCount > 0 else { return .zero }
+        return totalLuminosity / Double(sampleCount)
+    }
 }
 
-func samples(
+func sampleSkewedGrid(
     pixelBuffer: CVPixelBuffer,
     baseAddress: UnsafeMutablePointer<UInt8>,
     quadrilateral: Quadrilateral,
     parameters: SkewedSampleParameters
-) -> Void {
+) -> [[CellSample]]? {
     /// Assumed BGRA format.
     guard CVPixelBufferGetPixelFormatType(pixelBuffer) == kCVPixelFormatType_32BGRA else {
         assertionFailure("Unsupported pixel format")
-        return
+        return nil
     }
     let bgraWidth = 4
     let bgraMax = 255.0
     
     guard let matrix = matrixFor(quadrilateral: quadrilateral) else {
         debugPrint("Singular matrix")
-        return
+        return nil
     }
 
     var result: [[CellSample]] = Array(repeating: Array(repeating: CellSample(), count: parameters.gridSize), count: parameters.gridSize)
@@ -81,4 +86,6 @@ func samples(
             result[gridRow][gridCol].sampleCount += 1
         }
     }
+    
+    return result
 }

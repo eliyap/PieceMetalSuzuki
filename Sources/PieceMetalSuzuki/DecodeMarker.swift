@@ -16,6 +16,8 @@ public func decodeMarkers(
     rdpParameters: RDPParameters = .starter
 ) -> Void {
     CVPixelBufferLockBaseAddress(pixelBuffer, CVPixelBufferLockFlags(rawValue: 0))
+    let addr = CVPixelBufferGetBaseAddress(pixelBuffer)!
+        .assumingMemoryBound(to: UInt8.self)
     let bytesPerRow = CVPixelBufferGetBytesPerRow(pixelBuffer)
     
     for runIdx in runIndices {
@@ -25,14 +27,10 @@ public func decodeMarkers(
             return DoublePoint(pixelPt)
         }
         
-        let quad = checkQuadrilateral(polyline: points)
+        guard let quad = checkQuadrilateral(polyline: points) else {
+            continue
+        }
         
-        guard let quad else{ continue }
-        
-        print("Run \(runIdx) has \(points.count) points")
-        
-        let addr = CVPixelBufferGetBaseAddress(pixelBuffer)!
-            .assumingMemoryBound(to: UInt8.self)
         (run.oldTail..<run.oldHead).forEach { ptIdx in
             let pixelPt = pointBuffer.array[Int(ptIdx)]
             // Mark pixel.
@@ -54,12 +52,16 @@ public func decodeMarkers(
         print("c3", quad.corner3.transformed(by: m))
         print("c4", quad.corner4.transformed(by: m))
         
-        samples(
+        let samples = sampleSkewedGrid(
             pixelBuffer: pixelBuffer,
             baseAddress: addr,
             quadrilateral: quad,
             parameters: SkewedSampleParameters(marginSize: 0.1, gridSize: 3)
         )
+        guard let samples else {
+            debugPrint("Failed to sample regions")
+            continue
+        }
     }
     CVPixelBufferUnlockBaseAddress(pixelBuffer, CVPixelBufferLockFlags(rawValue: 0))
     saveBufferToPng(buffer: pixelBuffer, format: .RGBA8)
