@@ -124,7 +124,7 @@ final class PieceMetalSuzukiTests: XCTestCase {
         let ciImage = CIImage(contentsOf: imageUrl)!
         
         /// Make a pixel buffer.
-        var width = Int(ciImage.extent.width)
+        let width = Int(ciImage.extent.width)
         let height = Int(ciImage.extent.height)
         let format = kCVPixelFormatType_32BGRA
         let options: NSDictionary = [
@@ -138,8 +138,8 @@ final class PieceMetalSuzukiTests: XCTestCase {
         let context = CIContext()
         context.render(ciImage, to: buffer)
         
-        width += 0
-
+        let bytesPerRow = CVPixelBufferGetBytesPerRow(buffer)
+        
         CVPixelBufferLockBaseAddress(buffer, CVPixelBufferLockFlags(rawValue: 0))
         
         _ = PieceMetalSuzuki(imageUrl: imageUrl, patternSize: patternSize) { device, queue, texture, pointsFilled, runsFilled, pointsUnfilled, runsUnfilled in
@@ -163,7 +163,7 @@ final class PieceMetalSuzukiTests: XCTestCase {
                 (run.oldTail..<run.oldHead).forEach { ptIdx in
                     let pixelPt = pointsFilled.array[Int(ptIdx)]
                     // Mark pixel.
-                    let offset = (Int(pixelPt.y) * width + Int(pixelPt.x)) * 4
+                    let offset = (Int(pixelPt.y) * bytesPerRow) + (Int(pixelPt.x) * 4)
                     let pixel = addr.advanced(by: offset)
                     pixel[0] = 0
                     pixel[1] = 0
