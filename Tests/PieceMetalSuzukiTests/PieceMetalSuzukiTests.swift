@@ -122,39 +122,7 @@ final class PieceMetalSuzukiTests: XCTestCase {
         let imageUrl = url("qrTilt")
         _ = PieceMetalSuzuki(imageUrl: imageUrl, patternSize: patternSize) { device, queue, texture, pixelBuffer, pointsFilled, runsFilled, pointsUnfilled, runsUnfilled in
             let runIndices = applyMetalSuzuki_LUT(device: device, commandQueue: queue, texture: texture, pointsFilled: pointsFilled, runsFilled: runsFilled, pointsUnfilled: pointsUnfilled, runsUnfilled: runsUnfilled, patternSize: patternSize)!
-            
-            CVPixelBufferLockBaseAddress(pixelBuffer, CVPixelBufferLockFlags(rawValue: 0))
-            let bytesPerRow = CVPixelBufferGetBytesPerRow(pixelBuffer)
-            
-            for runIdx in runIndices {
-                let run = runsFilled.array[runIdx]
-                let points = (run.oldTail..<run.oldHead).map { ptIdx in
-                    let pixelPt = pointsFilled.array[Int(ptIdx)]
-                    return DoublePoint(pixelPt)
-                }
-                
-                let corners = checkQuadrilateral(polyline: points)
-                
-                guard let corners else{ continue }
-                let (c1, c2, c3, c4) = corners
-
-                print("Run \(runIdx) has \(points.count) points")
-                
-                let addr = CVPixelBufferGetBaseAddress(pixelBuffer)!
-                    .assumingMemoryBound(to: UInt8.self)
-                (run.oldTail..<run.oldHead).forEach { ptIdx in
-                    let pixelPt = pointsFilled.array[Int(ptIdx)]
-                    // Mark pixel.
-                    let offset = (Int(pixelPt.y) * bytesPerRow) + (Int(pixelPt.x) * 4)
-                    let pixel = addr.advanced(by: offset)
-                    pixel[0] = 0
-                    pixel[1] = 0
-                    pixel[2] = 255
-                    pixel[3] = 255
-                }
-            }
-            CVPixelBufferUnlockBaseAddress(pixelBuffer, CVPixelBufferLockFlags(rawValue: 0))
-            saveBufferToPng(buffer: pixelBuffer, format: .RGBA8)
+            decodeMarkers(pixelBuffer: pixelBuffer, pointBuffer: pointsFilled, runBuffer: runsFilled, runIndices: runIndices)
         }
     }
 }
