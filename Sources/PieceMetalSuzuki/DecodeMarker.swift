@@ -49,10 +49,10 @@ public func decodeMarkers(
             continue
         }
         
-        print("c1", quad.corner1.transformedBy(m))
-        print("c2", quad.corner2.transformedBy(m))
-        print("c3", quad.corner3.transformedBy(m))
-        print("c4", quad.corner4.transformedBy(m))
+        print("c1", quad.corner1.transformed(by: m))
+        print("c2", quad.corner2.transformed(by: m))
+        print("c3", quad.corner3.transformed(by: m))
+        print("c4", quad.corner4.transformed(by: m))
     }
     CVPixelBufferUnlockBaseAddress(pixelBuffer, CVPixelBufferLockFlags(rawValue: 0))
     saveBufferToPng(buffer: pixelBuffer, format: .RGBA8)

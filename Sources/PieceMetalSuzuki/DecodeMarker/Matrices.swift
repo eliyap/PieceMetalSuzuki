@@ -98,7 +98,7 @@ struct PerspectiveTransformMatrix: CustomStringConvertible {
 }
 
 extension DoublePoint { 
-    func transformedBy(_ matrix: PerspectiveTransformMatrix) -> DoublePoint {
+    func transformed(by matrix: PerspectiveTransformMatrix) -> DoublePoint {
         /// Via https://en.wikipedia.org/wiki/Transformation_matrix#/media/File:Perspective_transformation_matrix_2D.svg
         let (a, b, c) = (matrix.a, matrix.b, matrix.c)
         let (d, e, f) = (matrix.d, matrix.e, matrix.f)
