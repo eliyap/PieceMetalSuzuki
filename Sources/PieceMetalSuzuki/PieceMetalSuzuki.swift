@@ -8,7 +8,7 @@ public struct PieceMetalSuzuki {
     public init(
         imageUrl: URL,
         patternSize: PatternSize,
-        _ block: (MTLDevice, MTLCommandQueue, MTLTexture, Buffer<PixelPoint>, Buffer<Run>, Buffer<PixelPoint>, Buffer<Run>) -> Void
+        _ block: (MTLDevice, MTLCommandQueue, MTLTexture, CVPixelBuffer, Buffer<PixelPoint>, Buffer<Run>, Buffer<PixelPoint>, Buffer<Run>) -> Void
     ) {
         guard
             let device = MTLCreateSystemDefaultDevice(),
@@ -76,7 +76,7 @@ public struct PieceMetalSuzuki {
                 return
             }
 
-            block(device, commandQueue, texture, pointBuffer, runBuffer, pointsUnfilled, runsUnfilled)
+            block(device, commandQueue, texture, pixelBuffer, pointBuffer, runBuffer, pointsUnfilled, runsUnfilled)
         }
         
         //        bufferA = filteredBuffer
