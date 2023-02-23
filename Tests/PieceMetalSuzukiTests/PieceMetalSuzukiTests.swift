@@ -151,7 +151,7 @@ final class PieceMetalSuzukiTests: XCTestCase {
                     return DoublePoint(pixelPt)
                 }
                 
-                let corners = checkQuadrangle(polyline: points)
+                let corners = checkQuadrilateral(polyline: points)
                 
                 guard let corners else{ continue }
                 let (c1, c2, c3, c4) = corners

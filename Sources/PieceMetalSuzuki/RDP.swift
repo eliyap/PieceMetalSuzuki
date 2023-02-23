@@ -25,7 +25,7 @@ public struct RDPParameters {
     )
 }
 
-public func checkQuadrangle(
+public func checkQuadrilateral(
     polyline: [DoublePoint],
     parameters: RDPParameters = .starter
 ) -> (DoublePoint, DoublePoint, DoublePoint, DoublePoint)? {
