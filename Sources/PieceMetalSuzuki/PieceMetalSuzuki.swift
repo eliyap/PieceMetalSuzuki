@@ -31,15 +31,15 @@ public struct PieceMetalSuzuki {
             kCVPixelBufferCGImageCompatibilityKey: true,
             kCVPixelBufferMetalCompatibilityKey: true,
         ]
-        var bufferA: CVPixelBuffer!
-        guard CVPixelBufferCreate(kCFAllocatorDefault, width, height, format, options, &bufferA) == kCVReturnSuccess else {
+        var pixelBuffer: CVPixelBuffer!
+        guard CVPixelBufferCreate(kCFAllocatorDefault, width, height, format, options, &pixelBuffer) == kCVReturnSuccess else {
             assert(false, "Failed to create pixel buffer.")
             return
         }
 
         /// Copy image to pixel buffer.
         let context = CIContext()
-        context.render(ciImage, to: bufferA)
+        context.render(ciImage, to: pixelBuffer)
         
         var metalTextureCache: CVMetalTextureCache!
         guard CVMetalTextureCacheCreate(kCFAllocatorDefault, nil, device, nil, &metalTextureCache) == kCVReturnSuccess else {
@@ -49,7 +49,7 @@ public struct PieceMetalSuzuki {
         
         Profiler.time(.overall) {
             guard let filteredBuffer = Profiler.time(.binarize, {
-                applyMetalFilter(to: bufferA, device: device, commandQueue: commandQueue, metalTextureCache: metalTextureCache)
+                applyMetalFilter(to: pixelBuffer, device: device, commandQueue: commandQueue, metalTextureCache: metalTextureCache)
             }) else {
                 assert(false, "Failed to create pixel buffer.")
                 return
