@@ -50,8 +50,8 @@ func samples(
     let bytesPerRow = CVPixelBufferGetBytesPerRow(pixelBuffer)
     let width = CVPixelBufferGetWidth(pixelBuffer)
     let height = CVPixelBufferGetHeight(pixelBuffer)
-    for row in quadrilateral.xPixelBounds where (0..<height).contains(row) {
-        for col in quadrilateral.yPixelBounds where (0..<width).contains(col) {
+    for row in quadrilateral.yPixelBounds where (0..<height).contains(row) {
+        for col in quadrilateral.xPixelBounds where (0..<width).contains(col) {
             /// Map point to the unit square.
             let point = DoublePoint(x: Double(col), y: Double(row))
             let transformed = point.transformed(by: matrix)
