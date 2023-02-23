@@ -57,8 +57,14 @@ func samples(
             let transformed = point.transformed(by: matrix)
 
             /// Map unit point to region grid.
-            let gridRow = Int(Double(parameters.gridSize) * (transformed.x - parameters.marginSize) / (1 - 2 * parameters.marginSize))
-            let gridCol = Int(Double(parameters.gridSize) * (transformed.y - parameters.marginSize) / (1 - 2 * parameters.marginSize))
+            /// Suppose a point is at `(1, 1)` in the grid. We want to fill all pixels from `1.0..<2.0` in the unit square, so
+            /// `x = marginSize + ((1.1 or something) / gridSize) * (1 - 2*marginSize)`
+            /// To recover the row value from `x`, we should round values in `1.0..<2.0` with `.down` to `1`.
+            let gridX = Double(parameters.gridSize) * (transformed.x - parameters.marginSize) / (1 - 2 * parameters.marginSize)
+            let gridY = Double(parameters.gridSize) * (transformed.y - parameters.marginSize) / (1 - 2 * parameters.marginSize)
+            let gridRow = Int(gridX.rounded(.down))
+            let gridCol = Int(gridY.rounded(.down))
+
             guard (0..<parameters.gridSize) ~= gridRow, (0..<parameters.gridSize) ~= gridCol else {
                 continue
             }
