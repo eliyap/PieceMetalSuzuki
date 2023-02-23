@@ -13,6 +13,22 @@ struct Quadrilateral {
     public let corner2: DoublePoint
     public let corner3: DoublePoint
     public let corner4: DoublePoint
+    
+    var xPixelBounds: Range<Int> {
+        let xMin = min(corner1.x, corner2.x, corner3.x, corner4.x)
+        let xPixelMin = Int(xMin.rounded(.down))
+        let xMax = max(corner1.x, corner2.x, corner3.x, corner4.x)
+        let xPixelMax = Int(xMax.rounded(.up))
+        return xPixelMin..<xPixelMax
+    }
+
+    var yPixelBounds: Range<Int> {
+        let yMin = min(corner1.y, corner2.y, corner3.y, corner4.y)
+        let yPixelMin = Int(yMin.rounded(.down))
+        let yMax = max(corner1.y, corner2.y, corner3.y, corner4.y)
+        let yPixelMax = Int(yMax.rounded(.up))
+        return yPixelMin..<yPixelMax
+    }
 }
 
 /// Based on a version of Ramer-Douglas-Peucker

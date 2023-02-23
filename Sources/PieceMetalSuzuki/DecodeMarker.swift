@@ -53,6 +53,13 @@ public func decodeMarkers(
         print("c2", quad.corner2.transformed(by: m))
         print("c3", quad.corner3.transformed(by: m))
         print("c4", quad.corner4.transformed(by: m))
+        
+        samples(
+            pixelBuffer: pixelBuffer,
+            baseAddress: addr,
+            quadrilateral: quad,
+            parameters: SkewedSampleParameters(marginSize: 0.1, gridSize: 3)
+        )
     }
     CVPixelBufferUnlockBaseAddress(pixelBuffer, CVPixelBufferLockFlags(rawValue: 0))
     saveBufferToPng(buffer: pixelBuffer, format: .RGBA8)
