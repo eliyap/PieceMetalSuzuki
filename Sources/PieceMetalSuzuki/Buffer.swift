@@ -7,6 +7,7 @@
 
 import Metal
 
+/// An typed wrapper around an array which is shared between the CPU and GPU.
 public final class Buffer<Element> {
     
     public let count: Int
@@ -41,7 +42,7 @@ public final class Buffer<Element> {
     }
 }
 
-public extension Buffer where Element == PixelPoint {
+internal extension Buffer where Element == PixelPoint {
     subscript(_ run: Run) -> [PixelPoint] {
         return (run.oldTail..<run.oldHead).map { ptIdx in
             return array[Int(ptIdx)]

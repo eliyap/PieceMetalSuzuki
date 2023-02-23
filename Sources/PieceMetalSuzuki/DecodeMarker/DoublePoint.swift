@@ -7,7 +7,7 @@
 
 import Foundation
 
-public struct DoublePoint: Equatable {
+internal struct DoublePoint: Equatable, CustomStringConvertible {
     
     public let x: Double
     public let y: Double
@@ -44,5 +44,11 @@ public struct DoublePoint: Equatable {
         let dx = self.x - other.x
         let dy = self.y - other.y
         return sqrt((dx * dx) + (dy * dy))
+    }
+    
+    public var description: String {
+        /// Print to 3dp.
+        let format = "%.3f"
+        return "(\(String(format: format, x)), \(String(format: format, y)))"
     }
 }

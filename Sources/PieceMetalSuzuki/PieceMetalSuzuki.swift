@@ -4,11 +4,122 @@ import CoreVideo
 import Metal
 import MetalPerformanceShaders
 
-public struct PieceMetalSuzuki {
+public final class MarkerDetector {
+    
+    private let device: any MTLDevice
+    private let queue: any MTLCommandQueue
+    private let textureCache: CVMetalTextureCache
+    
+    /// The type of Lookup Table used to kickstart contour detection.
+    private let patternSize: PatternSize
+    
+    /// Determines the `Buffer` sizes. Dictated by
+    /// - the size of `CVPixelBuffer` we are asked to process.
+    /// - size of Lookup Table being used.
+    private static let initialTriadCount = 0
+    private var triadCount: Int = MarkerDetector.initialTriadCount
+    
+    /// Retained between calls, due to memory leak issue. See `Buffer`.
+    private var pointsFilled: Buffer<PixelPoint>! = nil
+    private var runsFilled: Buffer<Run>! = nil
+    private var pointsUnfilled: Buffer<PixelPoint>! = nil
+    private var runsUnfilled: Buffer<Run>! = nil
+    
+    public init?(device: any MTLDevice, patternSize: PatternSize) {
+        self.device = device
+        self.patternSize = patternSize
+        
+        guard let commandQueue = device.makeCommandQueue() else {
+            assert(false, "Failed to get metal queue.")
+            return nil
+        }
+        self.queue = commandQueue
+        
+        var metalTextureCache: CVMetalTextureCache!
+        guard CVMetalTextureCacheCreate(kCFAllocatorDefault, nil, device, nil, &metalTextureCache) == kCVReturnSuccess else {
+            assert(false, "Unable to allocate texture cache")
+            return nil
+        }
+        self.textureCache = metalTextureCache
+        
+        guard loadLookupTables(patternSize) else {
+            assertionFailure("Failed to load lookup tables for pattern")
+            return nil
+        }
+    }
+    
+    public convenience init?(patternSize: PatternSize) {
+        guard let device = MTLCreateSystemDefaultDevice() else {
+            return nil
+        }
+        self.init(device: device, patternSize: patternSize)
+    }
+    
+    public func detect(pixelBuffer: CVPixelBuffer) -> Void {
+        /// Apply a binary filter to make the image black & white.
+        guard let filteredBuffer = Profiler.time(.binarize, {
+            applyMetalFilter(to: pixelBuffer, device: device, commandQueue: queue, metalTextureCache: textureCache)
+        }) else {
+            assert(false, "Failed to create pixel buffer.")
+            return
+        }
+        
+        /// Obtain a Metal Texture from the image.
+        guard let texture = Profiler.time(.makeTexture, {
+            makeTextureFromCVPixelBuffer(pixelBuffer: filteredBuffer, textureFormat: .bgra8Unorm, textureCache: textureCache)
+        }) else {
+            assert(false, "Failed to create texture.")
+            return
+        }
+        
+        let roundedWidth = UInt32(texture.width).roundedUp(toClosest: patternSize.coreSize.width)
+        let roundedHeight = UInt32(texture.height).roundedUp(toClosest: patternSize.coreSize.height)
+        let count = Int(roundedWidth * roundedHeight * patternSize.pointsPerPixel)
+        if count != self.triadCount {
+            /// Warn myself about possible memory leak.
+            if count != MarkerDetector.initialTriadCount {
+                debugPrint("[Warning] triadCount changed. This may cause a Buffer memory leak.")
+            }
+            self.triadCount = count
+            guard self.allocateBuffers(ofSize: count) else {
+                assertionFailure("Failed to allocate buffers.")
+                return
+            }
+        }
+        
+        /// Run core algorithms.
+        let runIndices = applyMetalSuzuki_LUT(device: device, commandQueue: queue, texture: texture, pointsFilled: pointsFilled, runsFilled: runsFilled, pointsUnfilled: pointsUnfilled, runsUnfilled: runsUnfilled, patternSize: patternSize)
+        guard let runIndices else {
+            assertionFailure("Failed to get image contours")
+            return
+        }
+        decodeMarkers(pixelBuffer: pixelBuffer, pointBuffer: pointsFilled, runBuffer: runsFilled, runIndices: runIndices)
+    }
+    
+    private func allocateBuffers(ofSize count: Int) -> Bool {
+        guard
+            let pointsFilled = Buffer<PixelPoint>(device: device, count: count),
+            let runsFilled = Buffer<Run>(device: device, count: count),
+            let pointsUnfilled = Buffer<PixelPoint>(device: device, count: count),
+            let runsUnfilled = Buffer<Run>(device: device, count: count)
+        else {
+            assert(false, "Failed to create buffers.")
+            return false
+        }
+        
+        self.pointsFilled = pointsFilled
+        self.runsFilled = runsFilled
+        self.pointsUnfilled = pointsUnfilled
+        self.runsUnfilled = runsUnfilled
+        return true
+    }
+}
+
+internal struct PieceMetalSuzuki {
     public init(
         imageUrl: URL,
         patternSize: PatternSize,
-        _ block: (MTLDevice, MTLCommandQueue, MTLTexture, Buffer<PixelPoint>, Buffer<Run>, Buffer<PixelPoint>, Buffer<Run>) -> Void
+        _ block: (MTLDevice, MTLCommandQueue, MTLTexture, CVPixelBuffer, Buffer<PixelPoint>, Buffer<Run>, Buffer<PixelPoint>, Buffer<Run>) -> Void
     ) {
         guard
             let device = MTLCreateSystemDefaultDevice(),
@@ -31,15 +142,15 @@ public struct PieceMetalSuzuki {
             kCVPixelBufferCGImageCompatibilityKey: true,
             kCVPixelBufferMetalCompatibilityKey: true,
         ]
-        var bufferA: CVPixelBuffer!
-        guard CVPixelBufferCreate(kCFAllocatorDefault, width, height, format, options, &bufferA) == kCVReturnSuccess else {
+        var pixelBuffer: CVPixelBuffer!
+        guard CVPixelBufferCreate(kCFAllocatorDefault, width, height, format, options, &pixelBuffer) == kCVReturnSuccess else {
             assert(false, "Failed to create pixel buffer.")
             return
         }
 
         /// Copy image to pixel buffer.
         let context = CIContext()
-        context.render(ciImage, to: bufferA)
+        context.render(ciImage, to: pixelBuffer)
         
         var metalTextureCache: CVMetalTextureCache!
         guard CVMetalTextureCacheCreate(kCFAllocatorDefault, nil, device, nil, &metalTextureCache) == kCVReturnSuccess else {
@@ -49,7 +160,7 @@ public struct PieceMetalSuzuki {
         
         Profiler.time(.overall) {
             guard let filteredBuffer = Profiler.time(.binarize, {
-                applyMetalFilter(to: bufferA, device: device, commandQueue: commandQueue, metalTextureCache: metalTextureCache)
+                applyMetalFilter(to: pixelBuffer, device: device, commandQueue: commandQueue, metalTextureCache: metalTextureCache)
             }) else {
                 assert(false, "Failed to create pixel buffer.")
                 return
@@ -76,7 +187,7 @@ public struct PieceMetalSuzuki {
                 return
             }
 
-            block(device, commandQueue, texture, pointBuffer, runBuffer, pointsUnfilled, runsUnfilled)
+            block(device, commandQueue, texture, pixelBuffer, pointBuffer, runBuffer, pointsUnfilled, runsUnfilled)
         }
         
         //        bufferA = filteredBuffer
@@ -102,7 +213,7 @@ public struct PieceMetalSuzuki {
     }
 }
 
-public func applyMetalFilter(
+internal func applyMetalFilter(
     to buffer: CVPixelBuffer,
     device: MTLDevice,
     commandQueue: MTLCommandQueue,
@@ -151,7 +262,7 @@ public func applyMetalFilter(
     return result
 }
 
-public func applyMetalSuzuki(
+internal func applyMetalSuzuki(
     device: MTLDevice,
     commandQueue: MTLCommandQueue,
     texture: MTLTexture,
@@ -194,7 +305,7 @@ public func applyMetalSuzuki(
  By convention, this loads the final set of runs and points into the "filled" buffers,
  and retuns the array offsets for the run buffer.
  */
-public func applyMetalSuzuki_LUT(
+internal func applyMetalSuzuki_LUT(
     device: MTLDevice,
     commandQueue: MTLCommandQueue,
     texture: MTLTexture,
@@ -232,7 +343,7 @@ public func applyMetalSuzuki_LUT(
     return grid.regions[0][0].runIndices(imageSize: grid.imageSize, gridSize: grid.gridSize)
 }
 
-func saveBufferToPng(buffer: CVPixelBuffer, format: CIFormat) -> Void {
+internal func saveBufferToPng(buffer: CVPixelBuffer, format: CIFormat) -> Void {
     let docUrls = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)
     guard let documentsUrl = docUrls.first else {
         assert(false, "Couldn't get documents directory.")
@@ -254,32 +365,7 @@ func saveBufferToPng(buffer: CVPixelBuffer, format: CIFormat) -> Void {
     }
 }
 
-public func makeTextureFromCVPixelBuffer(
-    pixelBuffer: CVPixelBuffer, 
-    textureFormat: MTLPixelFormat,
-    textureCache: CVMetalTextureCache
-) -> MTLTexture? {
-    let width = CVPixelBufferGetWidth(pixelBuffer)
-    let height = CVPixelBufferGetHeight(pixelBuffer)
-    
-    // Create a Metal texture from the image buffer.
-    var cvTextureOut: CVMetalTexture?
-    let status = CVMetalTextureCacheCreateTextureFromImage(kCFAllocatorDefault, textureCache, pixelBuffer, nil, textureFormat, width, height, 0, &cvTextureOut)
-    guard status == kCVReturnSuccess else {
-        debugPrint("Error at CVMetalTextureCacheCreateTextureFromImage \(status)")
-        CVMetalTextureCacheFlush(textureCache, 0)
-        return nil
-    }
-    
-    guard let cvTexture = cvTextureOut, let texture = CVMetalTextureGetTexture(cvTexture) else {
-        CVMetalTextureCacheFlush(textureCache, 0)
-        return nil
-    }
-    
-    return texture
-}
-
-func loadChainStarterFunction(device: MTLDevice) -> MTLFunction? {
+internal func loadChainStarterFunction(device: MTLDevice) -> MTLFunction? {
     do {
         guard let libUrl = Bundle.module.url(forResource: "PieceSuzukiKernel", withExtension: "metal", subdirectory: "Metal") else {
             assert(false, "Failed to get library.")
@@ -298,7 +384,7 @@ func loadChainStarterFunction(device: MTLDevice) -> MTLFunction? {
     }
 }
 
-func createChainStarters(
+internal func createChainStarters(
     device: MTLDevice,
     commandQueue: MTLCommandQueue,
     texture: MTLTexture,
@@ -344,25 +430,4 @@ func createChainStarters(
     Profiler.add(end - start, to: .startChains)
     
     return true
-}
-
-extension MTLComputePipelineState {
-    func threadgroupParameters(texture: MTLTexture) -> (threadgroupsPerGrid: MTLSize, threadsPerThreadgroup: MTLSize) {
-        let threadHeight = maxTotalThreadsPerThreadgroup / threadExecutionWidth
-        return (
-            /// Subdivide grid as far as possible.
-            MTLSizeMake(threadExecutionWidth, threadHeight, 1),
-            /// Via https://developer.apple.com/documentation/metal/mtlcomputecommandencoder/1443138-dispatchthreadgroups
-            /// Also seen in https://developer.apple.com/documentation/avfoundation/additional_data_capture/avcamfilter_applying_filters_to_a_capture_stream
-            ///
-            /// The weird math is a form of rounding up using integer division.
-            /// If thread `width` or `height` evenly divides the texture `width` or `height`, that factor is returned.
-            /// Otherwise, the value is increased enough to push division to the next number, effectively rounding up.
-            MTLSizeMake(
-                (texture.width  + threadExecutionWidth - 1) / threadExecutionWidth,
-                (texture.height + threadHeight         - 1) / threadHeight,
-                1
-            )
-        )
-    }
 }

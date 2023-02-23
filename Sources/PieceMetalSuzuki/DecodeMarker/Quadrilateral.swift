@@ -1,13 +1,39 @@
 //
-//  File.swift
-//  
+//  Quadrilateral.swift
+//  Aruco
 //
-//  Created by Secret Asian Man Dev on 19/2/23.
+//  Created by Secret Asian Man Dev on 22/2/23.
 //
 
 import Foundation
 import OrderedCollections
 
+struct Quadrilateral { 
+    public let corner1: DoublePoint
+    public let corner2: DoublePoint
+    public let corner3: DoublePoint
+    public let corner4: DoublePoint
+    
+    var xPixelBounds: Range<Int> {
+        let xMin = min(corner1.x, corner2.x, corner3.x, corner4.x)
+        let xPixelMin = Int(xMin.rounded(.down))
+        let xMax = max(corner1.x, corner2.x, corner3.x, corner4.x)
+        let xPixelMax = Int(xMax.rounded(.up))
+        return xPixelMin..<xPixelMax
+    }
+
+    var yPixelBounds: Range<Int> {
+        let yMin = min(corner1.y, corner2.y, corner3.y, corner4.y)
+        let yPixelMin = Int(yMin.rounded(.down))
+        let yMax = max(corner1.y, corner2.y, corner3.y, corner4.y)
+        let yPixelMax = Int(yMax.rounded(.up))
+        return yPixelMin..<yPixelMax
+    }
+}
+
+/// Based on a version of Ramer-Douglas-Peucker
+/// https://en.wikipedia.org/wiki/Ramer%E2%80%93Douglas%E2%80%93Peucker_algorithm
+/// Adapted from OpenCV's implementation.
 public struct RDPParameters {
     public let minPoints: Int
     
@@ -25,10 +51,10 @@ public struct RDPParameters {
     )
 }
 
-public func checkQuadrangle(
+internal func checkQuadrilateral(
     polyline: [DoublePoint],
     parameters: RDPParameters = .starter
-) -> (DoublePoint, DoublePoint, DoublePoint, DoublePoint)? {
+) -> Quadrilateral? {
     guard polyline.count > parameters.minPoints else {
         #if SHOW_RDP_WORK
         debugPrint("[RDP] Too few points")
@@ -94,7 +120,7 @@ public func checkQuadrangle(
     let corner2 = polyline[corner2Idx]
     let corner4 = polyline[corner4Idx]
 
-    guard 
+    guard
         (corner1 != corner2) && (corner1 != corner3) && (corner1 != corner4),
         (corner2 != corner3) && (corner2 != corner4),
         (corner3 != corner4)
@@ -145,8 +171,13 @@ public func checkQuadrangle(
         debugPrint("[RDP] Failed due to aspect ratio error \(aspRatioError)")
         print("aspRatio \(aspRatio) \(parameters.aspectRatioErrorLimit)")
         #endif
-        return nil   
+        return nil
     }
     
-    return (corner1, corner2, corner3, corner4)
+    return Quadrilateral(
+        corner1: corner1,
+        corner2: corner2,
+        corner3: corner3,
+        corner4: corner4
+    )
 }

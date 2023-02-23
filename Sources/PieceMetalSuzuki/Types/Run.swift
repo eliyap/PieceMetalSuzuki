@@ -15,7 +15,7 @@ import Foundation
 //  tail        head (past the end)
 ///
 // @metal-type
-public struct Run: CustomStringConvertible {
+internal struct Run: CustomStringConvertible {
     /// The indices in `[start, end)` format, relative to the global buffer base.
     var oldTail: Int32
     var oldHead: Int32

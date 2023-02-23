@@ -35,12 +35,17 @@ let package = Package(
             ],
             swiftSettings: [
                 .unsafeFlags([
-//                    "-DSHOW_GRID_WORK",
+                    /// Disabling this flag turns of time profiling and the associated overhead.
 //                    "-DPROFILER_ON",
+
+                    /// Optimization settings.
                     "-Ounchecked",
                     "-O",
                     
-                    "-DSHOW_RDP_WORK"
+                    /// Debugging flags, useful when extremely verbose logging is needed.
+                    /// Best used with single images when running test cases.
+//                    "-DSHOW_RDP_WORK",
+//                    "-DSHOW_GRID_WORK",
                 ], nil)
             ]),
         .testTarget(
