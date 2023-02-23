@@ -25,11 +25,10 @@ public func decodeMarkers(
             return DoublePoint(pixelPt)
         }
         
-        let corners = checkQuadrilateral(polyline: points)
+        let quad = checkQuadrilateral(polyline: points)
         
-        guard let corners else{ continue }
-        let (c1, c2, c3, c4) = corners
-
+        guard let quad else{ continue }
+        
         print("Run \(runIdx) has \(points.count) points")
         
         let addr = CVPixelBufferGetBaseAddress(pixelBuffer)!
@@ -45,15 +44,15 @@ public func decodeMarkers(
             pixel[3] = 255
         }
         
-        guard let m = matrixFor(c1, c2, c3, c4) else {
+        guard let m = matrixFor(quadrilateral: quad) else {
             debugPrint("Singular matrix")
             continue
         }
         
-        print("c1", c1.transformedBy(m))
-        print("c2", c2.transformedBy(m))
-        print("c3", c3.transformedBy(m))
-        print("c4", c4.transformedBy(m))
+        print("c1", quad.corner1.transformedBy(m))
+        print("c2", quad.corner2.transformedBy(m))
+        print("c3", quad.corner3.transformedBy(m))
+        print("c4", quad.corner4.transformedBy(m))
     }
     CVPixelBufferUnlockBaseAddress(pixelBuffer, CVPixelBufferLockFlags(rawValue: 0))
     saveBufferToPng(buffer: pixelBuffer, format: .RGBA8)

@@ -110,12 +110,12 @@ extension DoublePoint {
     }
 }
 
-func matrixFor(
-    _ corner1: DoublePoint,
-    _ corner2: DoublePoint,
-    _ corner3: DoublePoint,
-    _ corner4: DoublePoint
-) -> PerspectiveTransformMatrix? { 
+internal func matrixFor(quadrilateral: Quadrilateral) -> PerspectiveTransformMatrix? {
+    let corner1 = quadrilateral.corner1
+    let corner2 = quadrilateral.corner2
+    let corner3 = quadrilateral.corner3
+    let corner4 = quadrilateral.corner4
+    
     /* Adapted from https://github.com/opencv/opencv/blob/11b020b9f9e111bddd40bffe3b1759aa02d966f0/modules/imgproc/src/imgwarp.cpp#L3001
      * Coefficients are calculated by solving linear system:
      * / x1 y1  1  0  0  0 -x1*u1 -y1*u1 \ /a\ /u1\
