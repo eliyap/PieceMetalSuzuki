@@ -7,6 +7,7 @@
 
 import Metal
 
+/// An typed wrapper around an array which is shared between the CPU and GPU.
 public final class Buffer<Element> {
     
     public let count: Int
