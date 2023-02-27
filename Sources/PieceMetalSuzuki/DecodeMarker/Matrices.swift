@@ -12,7 +12,6 @@ internal struct Matrix: CustomStringConvertible {
         }.joined(separator: "\n")
     }
 
-
     /// Diagonal is used as denominator, must not be too small, otherwise floating point math is whack.
     public static let minDiagonalSize: Double = 0.0000001
     

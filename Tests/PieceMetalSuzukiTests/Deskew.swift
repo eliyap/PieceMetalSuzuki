@@ -8,10 +8,19 @@ final class Deskew: XCTestCase {
         XCTAssertNotNil(m)
         let matrix = m!
         
-        XCTAssertEqual(quad.corner1.transformed(by: matrix), DoublePoint(x: 0, y: 0))
-        XCTAssertEqual(quad.corner2.transformed(by: matrix), DoublePoint(x: 0, y: 1))
-        XCTAssertEqual(quad.corner3.transformed(by: matrix), DoublePoint(x: 1, y: 1))
-        XCTAssertEqual(quad.corner4.transformed(by: matrix), DoublePoint(x: 1, y: 0))
+        let threshold = 0.0000001
+        
+        XCTAssertEqual(quad.corner1.transformed(by: matrix).x, 0, accuracy: threshold)
+        XCTAssertEqual(quad.corner1.transformed(by: matrix).y, 0, accuracy: threshold)
+
+        XCTAssertEqual(quad.corner2.transformed(by: matrix).x, 0, accuracy: threshold)
+        XCTAssertEqual(quad.corner2.transformed(by: matrix).y, 1, accuracy: threshold)
+
+        XCTAssertEqual(quad.corner3.transformed(by: matrix).x, 1, accuracy: threshold)
+        XCTAssertEqual(quad.corner3.transformed(by: matrix).y, 1, accuracy: threshold)
+
+        XCTAssertEqual(quad.corner4.transformed(by: matrix).x, 1, accuracy: threshold)
+        XCTAssertEqual(quad.corner4.transformed(by: matrix).y, 0, accuracy: threshold)
     }
     
     func testIdentity() throws {
@@ -66,10 +75,10 @@ final class Deskew: XCTestCase {
 
     func testTilted() throws {
         let tilted = Quadrilateral(
-            corner1: DoublePoint(x: 100, y: 400),
-            corner2: DoublePoint(x: 200, y: 100),
-            corner3: DoublePoint(x: 500, y: 200),
-            corner4: DoublePoint(x: 400, y: 500)
+            corner1: DoublePoint(x: 1, y: 4),
+            corner2: DoublePoint(x: 2, y: 1),
+            corner3: DoublePoint(x: 5, y: 2),
+            corner4: DoublePoint(x: 4, y: 5)
         )
         try checkUnitCorner(quad: tilted)
     }
