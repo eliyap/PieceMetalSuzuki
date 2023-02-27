@@ -7,18 +7,6 @@ final class PieceMetalSuzukiTests: XCTestCase {
         Bundle.module.url(forResource: name, withExtension: ".png", subdirectory: "Images")!
     }
     
-    @available(iOS 16.0, *)
-    @available(macOS 13.0, *)
-    func testEmitLUT2x1() async throws {
-        LookupTableBuilder(patternSize: .w2h1).emit()
-    }
-    
-    @available(iOS 16.0, *)
-    @available(macOS 13.0, *)
-    func testEmitLUT2x2() async throws {
-        LookupTableBuilder(patternSize: .w2h2).emit()
-    }
-    
     func testRDP() throws {
         let patternSize = PatternSize.w2h2
         loadLookupTables(patternSize)
