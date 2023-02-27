@@ -3,8 +3,19 @@
 
 import Foundation
 
-struct Matrix {
+internal struct Matrix: CustomStringConvertible {
     public let values: [[Double]]
+
+    public var description: String {
+        values.map { row in
+            row.map { String(format: "%.2f", $0) }.joined(separator: ", ")
+        }.joined(separator: "\n")
+    }
+
+
+    /// Diagonal is used as denominator, must not be too small, otherwise floating point math is whack.
+    public static let minDiagonalSize: Double = 0.0000001
+    
     public func determinant() -> Double {
         var rows = self.values
 
@@ -16,7 +27,7 @@ struct Matrix {
         /// Use Gaussian elimination to form an upper triangular matrix.
         for rowIdx in 0..<(rows.count-1) {
             var zeroOut = false
-            if rows[rowIdx][rowIdx].isZero == false {
+            if abs(rows[rowIdx][rowIdx]) > Matrix.minDiagonalSize {
                 zeroOut = true
             } else { 
                 /// Find the first non-zero element below the diagonal.
