@@ -15,7 +15,7 @@ internal func decodeMarkers(
     runIndices: Range<Int>,
     rdpParameters: RDPParameters = .starter
 ) -> Void {
-    pixelBuffer.withLockedBaseAddress { addr, token in
+    pixelBuffer.withLockedBaseAddress { token in
         var candidateQuads = 0
         
         for runIdx in runIndices {
@@ -32,7 +32,7 @@ internal func decodeMarkers(
             
             let samples = sampleSkewedGrid(
                 pixelBuffer: pixelBuffer,
-                baseAddress: addr,
+                token: token,
                 quadrilateral: quad,
                 parameters: SkewedSampleParameters(marginSize: 0.1, gridSize: 3)
             )

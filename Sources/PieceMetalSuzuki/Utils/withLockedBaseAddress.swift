@@ -11,15 +11,12 @@ internal struct PixelBufferBaseAddressLockToken {
 }
 
 extension CVPixelBuffer {
-    func withLockedBaseAddress(_ block: (UnsafeMutableRawPointer, PixelBufferBaseAddressLockToken) throws -> Void) rethrows -> Void {
+    func withLockedBaseAddress(_ block: (PixelBufferBaseAddressLockToken) throws -> Void) rethrows -> Void {
+        /// Necessary before both
+        /// - `CVPixelBufferGetBaseAddress`
+        /// - `CVPixelBufferGetBaseAddressOfPlane`
         CVPixelBufferLockBaseAddress(self, [])
-        
-        /// - Warning: assumes that we want to use `baseAddr`, as opposed to `CVPixelBufferGetBaseAddressOfPlane`.
-        ///            May need future revision.
-        let addr = CVPixelBufferGetBaseAddress(self)!
-        let token = PixelBufferBaseAddressLockToken()
-        try block(addr, token)
-        
+        try block(PixelBufferBaseAddressLockToken())
         CVPixelBufferUnlockBaseAddress(self, [])
     }
 }

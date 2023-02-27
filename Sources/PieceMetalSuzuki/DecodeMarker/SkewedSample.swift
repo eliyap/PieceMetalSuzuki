@@ -33,18 +33,16 @@ struct CellSample {
 
 func sampleSkewedGrid(
     pixelBuffer: CVPixelBuffer,
-    baseAddress: UnsafeMutablePointer<UInt8>,
+    token: PixelBufferBaseAddressLockToken,
     quadrilateral: Quadrilateral,
     parameters: SkewedSampleParameters
 ) -> [[CellSample]]? {
     /// Assumed BGRA format.
-    guard CVPixelBufferGetPixelFormatType(pixelBuffer) == kCVPixelFormatType_32BGRA else {
+    guard supportedFormats.contains(CVPixelBufferGetPixelFormatType(pixelBuffer)) else {
         assertionFailure("Unsupported pixel format")
         debugPrint("Unsupported pixel format \(CVPixelBufferGetPixelFormatName(pixelBuffer))")
         return nil
     }
-    let bgraWidth = 4
-    let bgraMax = 255.0
     
     guard let matrix = matrixFor(quadrilateral: quadrilateral) else {
         debugPrint("Singular matrix")
@@ -53,13 +51,13 @@ func sampleSkewedGrid(
 
     var result: [[CellSample]] = Array(repeating: Array(repeating: CellSample(), count: parameters.gridSize), count: parameters.gridSize)
     
-    let bytesPerRow = CVPixelBufferGetBytesPerRow(pixelBuffer)
     let width = CVPixelBufferGetWidth(pixelBuffer)
     let height = CVPixelBufferGetHeight(pixelBuffer)
     for row in quadrilateral.yPixelBounds where (0..<height).contains(row) {
         for col in quadrilateral.xPixelBounds where (0..<width).contains(col) {
             /// Map point to the unit square.
             let point = DoublePoint(x: Double(col), y: Double(row))
+            #error("point can have NaN values")
             let transformed = point.transformed(by: matrix)
 
             /// Map unit point to region grid.
@@ -68,7 +66,7 @@ func sampleSkewedGrid(
             /// To recover the row value from `x`, we should round values in `1.0..<2.0` with `.down` to `1`.
             let gridX = Double(parameters.gridSize) * (transformed.x - parameters.marginSize) / (1 - 2 * parameters.marginSize)
             let gridY = Double(parameters.gridSize) * (transformed.y - parameters.marginSize) / (1 - 2 * parameters.marginSize)
-            let gridRow = Int(gridX.rounded(.down))
+            let gridRow = Int(gridX.rounded(.down)) 
             let gridCol = Int(gridY.rounded(.down))
 
             guard (0..<parameters.gridSize) ~= gridRow, (0..<parameters.gridSize) ~= gridCol else {
@@ -76,17 +74,49 @@ func sampleSkewedGrid(
             }
 
             /// Extract pixel data.
-            let pixel = baseAddress.advanced(by: (row * bytesPerRow) + (col * bgraWidth))
-            let b = Double(pixel[0]) / bgraMax
-            let g = Double(pixel[1]) / bgraMax
-            let r = Double(pixel[2]) / bgraMax
-            
-            /// https://en.wikipedia.org/wiki/Grayscale
-            let luminosity = Double(r) * 0.2126 + Double(g) * 0.7152 + Double(b) * 0.0722
-            result[gridRow][gridCol].totalLuminosity += luminosity
+            result[gridRow][gridCol].totalLuminosity += luminosity(row: row, col: col, in: pixelBuffer, token: token)
             result[gridRow][gridCol].sampleCount += 1
+            
         }
     }
     
     return result
+}
+
+public let supportedFormats: [OSType] = [
+    kCVPixelFormatType_32BGRA,
+    kCVPixelFormatType_420YpCbCr8BiPlanarFullRange,
+]
+
+/// https://developer.apple.com/documentation/technotes/tn3121-selecting-a-pixel-format-for-an-avcapturevideodataoutput
+func luminosity(row: Int, col: Int, in pixelBuffer: CVPixelBuffer, token: PixelBufferBaseAddressLockToken) -> Double {
+    switch CVPixelBufferGetPixelFormatType(pixelBuffer) {
+    case kCVPixelFormatType_32BGRA:
+        let baseAddress = CVPixelBufferGetBaseAddress(pixelBuffer)!.assumingMemoryBound(to: UInt8.self)
+        let bytesPerRow = CVPixelBufferGetBytesPerRow(pixelBuffer)
+        let bgraMax = 255.0
+        let bgraWidth = 4
+        
+        let pixel = baseAddress.advanced(by: (row * bytesPerRow) + (col * bgraWidth))
+        let b = Double(pixel[0]) / bgraMax
+        let g = Double(pixel[1]) / bgraMax
+        let r = Double(pixel[2]) / bgraMax
+
+        /// https://en.wikipedia.org/wiki/Grayscale
+        let luminosity = Double(r) * 0.2126 + Double(g) * 0.7152 + Double(b) * 0.0722
+        return luminosity
+    
+    case kCVPixelFormatType_420YpCbCr8BiPlanarFullRange:
+        let yPlaneIndex = 0
+        let lumaMax = 255.0
+        let baseAddress = CVPixelBufferGetBaseAddressOfPlane(pixelBuffer, yPlaneIndex)!.assumingMemoryBound(to: UInt8.self)
+        let bytesPerRow = CVPixelBufferGetBytesPerRowOfPlane(pixelBuffer, yPlaneIndex)
+        let luminosity = baseAddress[(row * bytesPerRow) + col]
+        return Double(luminosity) / lumaMax
+    
+    default:
+        assertionFailure("Unsupported pixel format")
+        debugPrint("Unsupported pixel format \(CVPixelBufferGetPixelFormatName(pixelBuffer))")
+        return 0
+    }
 }
