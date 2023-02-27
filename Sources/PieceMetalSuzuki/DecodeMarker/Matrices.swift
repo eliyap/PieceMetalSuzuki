@@ -16,22 +16,21 @@ struct Matrix {
         /// Use Gaussian elimination to form an upper triangular matrix.
         for rowIdx in 0..<(rows.count-1) {
             var zeroOut = false
-            let diagonal = rows[rowIdx][rowIdx]
-            if diagonal.isZero == false { 
+            if rows[rowIdx][rowIdx].isZero == false {
                 zeroOut = true
             } else { 
-                // Find the first non-zero element below the diagonal.
+                /// Find the first non-zero element below the diagonal.
                 let nonZeroRowIdx = ((rowIdx+1)..<rows.count).first(where: { lowerIdx in 
                     rows[lowerIdx][rowIdx].isZero == false 
                 })  
                 if let nonZeroRowIdx { 
-                    // Add that row to the current row to make the diagonal element non-zero.
+                    /// Add that row to the current row to make the diagonal element non-zero.
                     for colIdx in 0..<rows.count {
                         rows[rowIdx][colIdx] += rows[nonZeroRowIdx][colIdx]
                     }
                     zeroOut = true
                 } else { 
-                    // No need to zero out elements below this diagonal element.
+                    /// No need to zero out elements below this diagonal element.
                 }
             } 
             
