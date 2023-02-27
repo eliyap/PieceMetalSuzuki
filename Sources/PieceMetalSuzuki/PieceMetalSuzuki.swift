@@ -270,13 +270,13 @@ internal func applyMetalSuzuki(
     runsFilled: Buffer<Run>,
     pointsUnfilled: Buffer<PixelPoint>,
     runsUnfilled: Buffer<Run>
-) -> Void {
+) -> Range<Int>? {
     let patternSize = PatternSize.w1h1
     
     /// Apply Metal filter to pixel buffer.
     guard createChainStarters(device: device, commandQueue: commandQueue, texture: texture, runBuffer: runsFilled, pointBuffer: pointsFilled) else {
         assert(false, "Failed to run chain start kernel.")
-        return
+        return nil
     }
     
     var grid = Grid(
@@ -298,7 +298,7 @@ internal func applyMetalSuzuki(
         )
     }
     
-    return
+    return grid.regions[0][0].runIndices(imageSize: grid.imageSize, gridSize: grid.gridSize)
 }
 
 /**
