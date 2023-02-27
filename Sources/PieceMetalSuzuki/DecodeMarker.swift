@@ -19,6 +19,8 @@ internal func decodeMarkers(
     let addr = CVPixelBufferGetBaseAddress(pixelBuffer)!
         .assumingMemoryBound(to: UInt8.self)
     
+    var candidateQuads = 0
+    
     for runIdx in runIndices {
         let run = runBuffer.array[runIdx]
         let points = (run.oldTail..<run.oldHead).map { ptIdx in
@@ -29,6 +31,7 @@ internal func decodeMarkers(
         guard let quad = checkQuadrilateral(polyline: points) else {
             continue
         }
+        candidateQuads += 1
         
         let samples = sampleSkewedGrid(
             pixelBuffer: pixelBuffer,
@@ -41,5 +44,7 @@ internal func decodeMarkers(
             continue
         }
     }
+    
+    debugPrint("\(candidateQuads) candidate quadrilaterals.")
     CVPixelBufferUnlockBaseAddress(pixelBuffer, CVPixelBufferLockFlags(rawValue: 0))
 }
