@@ -40,6 +40,7 @@ func sampleSkewedGrid(
     /// Assumed BGRA format.
     guard CVPixelBufferGetPixelFormatType(pixelBuffer) == kCVPixelFormatType_32BGRA else {
         assertionFailure("Unsupported pixel format")
+        debugPrint("Unsupported pixel format \(CVPixelBufferGetPixelFormatName(pixelBuffer))")
         return nil
     }
     let bgraWidth = 4
