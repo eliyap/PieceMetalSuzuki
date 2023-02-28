@@ -8,32 +8,39 @@
 import Foundation
 import CoreVideo
 
-internal func decodeMarkers(
-    pixelBuffer: CVPixelBuffer,
+internal func findCandidateQuadrilaterals(
     pointBuffer: Buffer<PixelPoint>,
     runBuffer: Buffer<Run>,
-    runIndices: Range<Int>,
+    runIndices: Range<Int>
+) -> [Quadrilateral] {
+    return runIndices.compactMap { runIndex in
+        /// Extract points from buffers.
+        let run = runBuffer.array[runIndex]
+        let points = (run.oldTail..<run.oldHead).map { ptIdx in
+            let pixelPt = pointBuffer.array[Int(ptIdx)]
+            return DoublePoint(pixelPt)
+        }
+        
+        /// Check if the contour can be reduced to a nice quadrilateral.
+        return checkQuadrilateral(polyline: points)
+    }
+}
+
+internal func decodeMarkers(
+    pixelBuffer: CVPixelBuffer,
+    quadrilaterals: [Quadrilateral],
     rdpParameters: RDPParameters = .starter
 ) -> Void {
     pixelBuffer.withLockedBaseAddress { token in
         var candidateQuads = 0
         
-        for runIdx in runIndices {
-            let run = runBuffer.array[runIdx]
-            let points = (run.oldTail..<run.oldHead).map { ptIdx in
-                let pixelPt = pointBuffer.array[Int(ptIdx)]
-                return DoublePoint(pixelPt)
-            }
-            
-            guard let quad = checkQuadrilateral(polyline: points) else {
-                continue
-            }
+        for quadrilateral in quadrilaterals {
             candidateQuads += 1
             
             let samples = sampleSkewedGrid(
                 pixelBuffer: pixelBuffer,
                 token: token,
-                quadrilateral: quad,
+                quadrilateral: quadrilateral,
                 parameters: SkewedSampleParameters(marginSize: 0.1, gridSize: 3)
             )
             guard let samples else {

@@ -93,7 +93,8 @@ public final class MarkerDetector {
             assertionFailure("Failed to get image contours")
             return
         }
-        decodeMarkers(pixelBuffer: pixelBuffer, pointBuffer: pointsFilled, runBuffer: runsFilled, runIndices: runIndices)
+        let quads = findCandidateQuadrilaterals(pointBuffer: pointsFilled, runBuffer: runsFilled, runIndices: runIndices)
+        decodeMarkers(pixelBuffer: pixelBuffer, quadrilaterals: quads)
     }
     
     private func allocateBuffers(ofSize count: Int) -> Bool {

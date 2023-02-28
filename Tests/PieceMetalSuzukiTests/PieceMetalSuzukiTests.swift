@@ -14,7 +14,8 @@ final class PieceMetalSuzukiTests: XCTestCase {
         let imageUrl = url("ticTacToe")
         _ = PieceMetalSuzuki(imageUrl: imageUrl, patternSize: patternSize) { device, queue, texture, pixelBuffer, pointsFilled, runsFilled, pointsUnfilled, runsUnfilled in
             let runIndices = applyMetalSuzuki_LUT(device: device, commandQueue: queue, texture: texture, pointsFilled: pointsFilled, runsFilled: runsFilled, pointsUnfilled: pointsUnfilled, runsUnfilled: runsUnfilled, patternSize: patternSize)!
-            decodeMarkers(pixelBuffer: pixelBuffer, pointBuffer: pointsFilled, runBuffer: runsFilled, runIndices: runIndices)
+            let quads = findCandidateQuadrilaterals(pointBuffer: pointsFilled, runBuffer: runsFilled, runIndices: runIndices)
+            decodeMarkers(pixelBuffer: pixelBuffer, quadrilaterals: quads)
             saveBufferToPng(buffer: pixelBuffer, format: .BGRA8)
         }
     }
