@@ -8,7 +8,7 @@
 import Foundation
 import OrderedCollections
 
-struct Quadrilateral { 
+public struct Quadrilateral { 
     public let corner1: DoublePoint
     public let corner2: DoublePoint
     public let corner3: DoublePoint

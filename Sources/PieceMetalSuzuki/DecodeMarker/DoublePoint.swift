@@ -7,7 +7,7 @@
 
 import Foundation
 
-internal struct DoublePoint: Equatable, CustomStringConvertible {
+public struct DoublePoint: Equatable, CustomStringConvertible {
     
     public let x: Double
     public let y: Double
@@ -17,7 +17,7 @@ internal struct DoublePoint: Equatable, CustomStringConvertible {
         self.y = y
     }
     
-    public init(_ pt: PixelPoint) {
+    internal init(_ pt: PixelPoint) {
         self.x = Double(pt.x)
         self.y = Double(pt.y)
     }
