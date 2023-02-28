@@ -55,10 +55,11 @@ func sampleSkewedGrid(
     let height = CVPixelBufferGetHeight(pixelBuffer)
     for row in quadrilateral.yPixelBounds where (0..<height).contains(row) {
         for col in quadrilateral.xPixelBounds where (0..<width).contains(col) {
-            /// Map point to the unit square.
+            /// Map point to the unit square, if possible
             let point = DoublePoint(x: Double(col), y: Double(row))
-            #error("point can have NaN values")
-            let transformed = point.transformed(by: matrix)
+            guard let transformed = point.transformed(by: matrix) else {
+                continue
+            }
 
             /// Map unit point to region grid.
             /// Suppose a point is at `(1, 1)` in the grid. We want to fill all pixels from `1.0..<2.0` in the unit square, so

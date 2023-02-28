@@ -10,17 +10,17 @@ final class Deskew: XCTestCase {
         
         let threshold = 0.0000001
         
-        XCTAssertEqual(quad.corner1.transformed(by: matrix).x, 0, accuracy: threshold)
-        XCTAssertEqual(quad.corner1.transformed(by: matrix).y, 0, accuracy: threshold)
+        XCTAssertEqual(quad.corner1.transformed(by: matrix)!.x, 0, accuracy: threshold)
+        XCTAssertEqual(quad.corner1.transformed(by: matrix)!.y, 0, accuracy: threshold)
 
-        XCTAssertEqual(quad.corner2.transformed(by: matrix).x, 0, accuracy: threshold)
-        XCTAssertEqual(quad.corner2.transformed(by: matrix).y, 1, accuracy: threshold)
+        XCTAssertEqual(quad.corner2.transformed(by: matrix)!.x, 0, accuracy: threshold)
+        XCTAssertEqual(quad.corner2.transformed(by: matrix)!.y, 1, accuracy: threshold)
 
-        XCTAssertEqual(quad.corner3.transformed(by: matrix).x, 1, accuracy: threshold)
-        XCTAssertEqual(quad.corner3.transformed(by: matrix).y, 1, accuracy: threshold)
+        XCTAssertEqual(quad.corner3.transformed(by: matrix)!.x, 1, accuracy: threshold)
+        XCTAssertEqual(quad.corner3.transformed(by: matrix)!.y, 1, accuracy: threshold)
 
-        XCTAssertEqual(quad.corner4.transformed(by: matrix).x, 1, accuracy: threshold)
-        XCTAssertEqual(quad.corner4.transformed(by: matrix).y, 0, accuracy: threshold)
+        XCTAssertEqual(quad.corner4.transformed(by: matrix)!.x, 1, accuracy: threshold)
+        XCTAssertEqual(quad.corner4.transformed(by: matrix)!.y, 0, accuracy: threshold)
     }
     
     func testIdentity() throws {
