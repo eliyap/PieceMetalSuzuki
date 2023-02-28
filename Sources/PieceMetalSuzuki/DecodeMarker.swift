@@ -32,11 +32,7 @@ internal func decodeMarkers(
     rdpParameters: RDPParameters = .starter
 ) -> Void {
     pixelBuffer.withLockedBaseAddress { token in
-        var candidateQuads = 0
-        
         for quadrilateral in quadrilaterals {
-            candidateQuads += 1
-            
             let samples = sampleSkewedGrid(
                 pixelBuffer: pixelBuffer,
                 token: token,
@@ -48,7 +44,5 @@ internal func decodeMarkers(
                 continue
             }
         }
-        
-        debugPrint("\(candidateQuads) candidate quadrilaterals.")
     }
 }

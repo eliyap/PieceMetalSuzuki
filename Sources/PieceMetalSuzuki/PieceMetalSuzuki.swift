@@ -25,6 +25,8 @@ public final class MarkerDetector {
     private var pointsUnfilled: Buffer<PixelPoint>! = nil
     private var runsUnfilled: Buffer<Run>! = nil
     
+    public weak var delegate: (any MarkerDetectorDelegate)? = nil
+    
     public init?(device: any MTLDevice, patternSize: PatternSize) {
         self.device = device
         self.patternSize = patternSize
@@ -93,7 +95,9 @@ public final class MarkerDetector {
             assertionFailure("Failed to get image contours")
             return
         }
+        let imageSize = CGSize(width: CVPixelBufferGetWidth(pixelBuffer), height: CVPixelBufferGetHeight(pixelBuffer))
         let quads = findCandidateQuadrilaterals(pointBuffer: pointsFilled, runBuffer: runsFilled, runIndices: runIndices)
+        delegate?.didFind(quadrilaterals: quads, imageSize: imageSize)
         decodeMarkers(pixelBuffer: pixelBuffer, quadrilaterals: quads)
     }
     
@@ -114,6 +118,10 @@ public final class MarkerDetector {
         self.runsUnfilled = runsUnfilled
         return true
     }
+}
+
+public protocol MarkerDetectorDelegate: AnyObject {
+    func didFind(quadrilaterals: [Quadrilateral], imageSize: CGSize) -> Void
 }
 
 internal struct PieceMetalSuzuki {
