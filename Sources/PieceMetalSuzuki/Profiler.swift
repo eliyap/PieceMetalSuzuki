@@ -127,3 +127,11 @@ public actor Profiler {
         #endif
     }
 }
+
+internal func printTime<Result>(_ block: () -> Result) -> Result {
+    let start = CFAbsoluteTimeGetCurrent()
+    let result = block()
+    let end = CFAbsoluteTimeGetCurrent()
+    debugPrint(String(format: "Time: %.2f s", end - start))
+    return result
+}
