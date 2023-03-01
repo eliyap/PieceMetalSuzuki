@@ -49,7 +49,7 @@ public actor Profiler<Region: CodeRegion> {
         self.timing[region] = (count + 1, total + duration)
     }
     nonisolated func add(_ duration: TimeInterval, to region: Region) {
-        #if PROFILER_ON
+        #if PROFILE_SUZUKI
         Task(priority: .high) {
             await addIsolated(duration, to: region)
         }
@@ -61,7 +61,7 @@ public actor Profiler<Region: CodeRegion> {
         self.iterationTiming[iteration] = (count + 1, total + duration)
     }
     nonisolated func add(_ duration: TimeInterval, iteration: Int) -> Void {
-        #if PROFILER_ON
+        #if PROFILE_SUZUKI
         Task(priority: .high) {
             await addIsolated(duration, iteration: iteration)
         }
@@ -69,39 +69,39 @@ public actor Profiler<Region: CodeRegion> {
     }
 
     nonisolated func time(_ region: Region, _ block: () -> Void) {
-        #if PROFILER_ON
+        #if PROFILE_SUZUKI
         let start = CFAbsoluteTimeGetCurrent()
         #endif
         
         block()
         
-        #if PROFILER_ON
+        #if PROFILE_SUZUKI
         let end = CFAbsoluteTimeGetCurrent()
         self.add(end - start, to: region)
         #endif
     }
     
     nonisolated func time(_ iteration: Int, _ block: () -> Void) {
-        #if PROFILER_ON
+        #if PROFILE_SUZUKI
         let start = CFAbsoluteTimeGetCurrent()
         #endif
         
         block()
         
-        #if PROFILER_ON
+        #if PROFILE_SUZUKI
         let end = CFAbsoluteTimeGetCurrent()
         self.add(end - start, iteration: iteration)
         #endif
     }
     
     nonisolated func time<Result>(_ region: Region, _ block: () -> Result) -> Result {
-        #if PROFILER_ON
+        #if PROFILE_SUZUKI
         let start = CFAbsoluteTimeGetCurrent()
         #endif
         
         let result = block()
         
-        #if PROFILER_ON
+        #if PROFILE_SUZUKI
         let end = CFAbsoluteTimeGetCurrent()
         self.add(end - start, to: region)
         #endif
@@ -110,7 +110,7 @@ public actor Profiler<Region: CodeRegion> {
     }
 
     public func report() async {
-        #if PROFILER_ON
+        #if PROFILE_SUZUKI
         /// Wait for everything to finish.
         try! await Task.sleep(nanoseconds: UInt64(1_000_000_000 * 2))
         
