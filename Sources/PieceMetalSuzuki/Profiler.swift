@@ -24,8 +24,11 @@ enum SuzukiRegion: Hashable, CaseIterable, CodeRegion {
     case lutCopy
 }
 
-internal let SuzukiProfiler = Profiler<SuzukiRegion>()
-
+#if PROFILE_SUZUKI
+internal let SuzukiProfiler = Profiler<SuzukiRegion>(enabled: true)
+#else
+internal let SuzukiProfiler = Profiler<SuzukiRegion>(enabled: false)
+#endif
 
 public actor Profiler<Region: CodeRegion> {
 
@@ -42,18 +45,20 @@ public actor Profiler<Region: CodeRegion> {
         return dict
     }()
 
-    public init() { }
+    private let ENABLED: Bool
+    public init(enabled: Bool) {
+        self.ENABLED = enabled
+    }
     
     private func addIsolated(_ duration: TimeInterval, to region: Region) {
         let (count, total) = timing[region]!
         self.timing[region] = (count + 1, total + duration)
     }
     nonisolated func add(_ duration: TimeInterval, to region: Region) {
-        #if PROFILE_SUZUKI
+        guard ENABLED else { return }
         Task(priority: .high) {
             await addIsolated(duration, to: region)
         }
-        #endif
     }
     
     private func addIsolated(_ duration: TimeInterval, iteration: Int) -> Void {
@@ -61,51 +66,47 @@ public actor Profiler<Region: CodeRegion> {
         self.iterationTiming[iteration] = (count + 1, total + duration)
     }
     nonisolated func add(_ duration: TimeInterval, iteration: Int) -> Void {
-        #if PROFILE_SUZUKI
+        guard ENABLED else { return }
         Task(priority: .high) {
             await addIsolated(duration, iteration: iteration)
         }
-        #endif
     }
 
     nonisolated func time(_ region: Region, _ block: () -> Void) {
-        #if PROFILE_SUZUKI
         let start = CFAbsoluteTimeGetCurrent()
-        #endif
         
         block()
         
-        #if PROFILE_SUZUKI
         let end = CFAbsoluteTimeGetCurrent()
-        self.add(end - start, to: region)
-        #endif
+        let duration = end - start
+        if ENABLED {
+            self.add(duration, to: region)
+        }
     }
     
     nonisolated func time(_ iteration: Int, _ block: () -> Void) {
-        #if PROFILE_SUZUKI
         let start = CFAbsoluteTimeGetCurrent()
-        #endif
         
         block()
         
-        #if PROFILE_SUZUKI
         let end = CFAbsoluteTimeGetCurrent()
-        self.add(end - start, iteration: iteration)
-        #endif
+        let duration = end - start
+        if ENABLED {
+            self.add(duration, iteration: iteration)
+        }
     }
+        
     
     nonisolated func time<Result>(_ region: Region, _ block: () -> Result) -> Result {
-        #if PROFILE_SUZUKI
         let start = CFAbsoluteTimeGetCurrent()
-        #endif
         
         let result = block()
         
-        #if PROFILE_SUZUKI
         let end = CFAbsoluteTimeGetCurrent()
-        self.add(end - start, to: region)
-        #endif
-
+        let duration = end - start
+        if ENABLED {
+            self.add(duration, to: region)
+        }
         return result
     }
 
