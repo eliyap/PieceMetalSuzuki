@@ -6,7 +6,6 @@
 //
 
 import Foundation
-import OrderedCollections
 
 public struct Quadrilateral { 
     public let corner1: DoublePoint
@@ -97,12 +96,11 @@ internal func checkQuadrilateral(
     /// 4. Find the point farthest from this line.
     /// That should be the quadrangle's opposite corner.
     let __start4 = CFAbsoluteTimeGetCurrent()
-    var distFromLine: OrderedDictionary<Int, Double> = [:]
-    for (idx, pt) in polyline.enumerated() where idx != idxFarthestFromCenter {
-        let dist = pt.distance(p0: p0, p1: p1)
-        distFromLine[idx] = dist
+    var distFromLine: [Double] = []
+    for pt in polyline {
+        distFromLine.append(pt.distance(p0: p0, p1: p1))
     }
-    let idxFarthestFromLine = distFromLine.max(by: { lhs, rhs in lhs.value < rhs.value })!.key
+    let idxFarthestFromLine = distFromLine.firstIndex(of: distFromLine.max()!)!
     let __end4 = CFAbsoluteTimeGetCurrent()
     QuadProfiler.add(__end4 - __start4, to: .findOpposite)
 
