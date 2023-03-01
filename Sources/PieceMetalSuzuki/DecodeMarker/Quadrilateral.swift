@@ -96,12 +96,15 @@ internal func checkQuadrilateral(
 
     /// 4. Find the point farthest from this line.
     /// That should be the quadrangle's opposite corner.
+    let __start4 = CFAbsoluteTimeGetCurrent()
     var distFromLine: OrderedDictionary<Int, Double> = [:]
     for (idx, pt) in polyline.enumerated() where idx != idxFarthestFromCenter {
         let dist = pt.distance(p0: p0, p1: p1)
         distFromLine[idx] = dist
     }
     let idxFarthestFromLine = distFromLine.max(by: { lhs, rhs in lhs.value < rhs.value })!.key
+    let __end4 = CFAbsoluteTimeGetCurrent()
+    QuadProfiler.add(__end4 - __start4, to: .findOpposite)
 
     /// 5. Find the 2 extrema in distance from this line.
     /// i.e. treating the line as horizontal, find the points farthest above and below this line.

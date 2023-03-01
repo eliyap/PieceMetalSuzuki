@@ -27,7 +27,7 @@ enum SuzukiRegion: Hashable, CaseIterable, CodeRegion {
 
 enum QuadRegion: Hashable, CaseIterable, CodeRegion {
     case overall, overallSerial
-    case findFurthest, findExtrema
+    case findFurthest, findOpposite, findExtrema
 }
 
 #if PROFILE_SUZUKI
