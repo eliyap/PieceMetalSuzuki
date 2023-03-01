@@ -106,21 +106,20 @@ internal func checkQuadrilateral(
     /// 5. Find the 2 extrema in distance from this line.
     /// i.e. treating the line as horizontal, find the points farthest above and below this line.
     /// These should be the remaining 2 corners.
+    let __start5 = CFAbsoluteTimeGetCurrent()
     let corner1 = polyline[idxFarthestFromCenter]
     let corner3 = polyline[idxFarthestFromLine]
-    var dispFromDiagonal: OrderedDictionary<Int, Double> = [:]
-    for (idx, pt) in polyline.enumerated() {
-        guard (idx != idxFarthestFromCenter) && (idx != idxFarthestFromLine) else {
-            continue
-        }
-        let disp = pt.displacement(p0: corner1, p1: corner3)
-        dispFromDiagonal[idx] = disp
+    var dispFromDiagonal: [Double] = []
+    for pt in polyline {
+        dispFromDiagonal.append(pt.displacement(p0: corner1, p1: corner3))
     }
 
-    let corner2Idx = dispFromDiagonal.min(by: { lhs, rhs in lhs.value < rhs.value })!.key
-    let corner4Idx = dispFromDiagonal.max(by: { lhs, rhs in lhs.value < rhs.value })!.key
+    let corner2Idx = dispFromDiagonal.firstIndex(of: dispFromDiagonal.min()!)!
+    let corner4Idx = dispFromDiagonal.firstIndex(of: dispFromDiagonal.max()!)!
     let corner2 = polyline[corner2Idx]
     let corner4 = polyline[corner4Idx]
+    let __end5 = CFAbsoluteTimeGetCurrent()
+    QuadProfiler.add(__end5 - __start5, to: .findExtrema)
 
     guard
         (corner1 != corner2) && (corner1 != corner3) && (corner1 != corner4),
