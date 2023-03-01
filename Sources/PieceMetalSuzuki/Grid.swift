@@ -60,7 +60,7 @@ struct Grid {
                 (srcPts, dstPts) = (pointsVertical.array, pointsHorizontal.array)
 
                 if numCols.isMultiple(of: 2) == false {
-                    Profiler.time(.trailingCopy) {
+                    SuzukiProfiler.time(.trailingCopy) {
                         /// Request last column blit.
                         for row in regions {
                             let region = row.last!
@@ -71,7 +71,7 @@ struct Grid {
                             }
                             
                             let runIndices = Array(region.runIndices(imageSize: imageSize, gridSize: gridSize))
-                            Profiler.time(.blit) {
+                            SuzukiProfiler.time(.blit) {
                                 cpuBlit(runIndices: runIndices, srcPts: srcPts, srcRuns: srcRuns, dstPts: dstPts)
                             }
                         }
@@ -79,7 +79,7 @@ struct Grid {
                 }
                 
                 let newGridSize = PixelSize(width: gridSize.width * 2, height: gridSize.height)
-                Profiler.time(.combine) {
+                SuzukiProfiler.time(.combine) {
                     var indices: [(Int, Int)] = []
                     for col in stride(from: 0, to: numCols - 1, by: 2).reversed() {
                         for row in 0..<numRows {
@@ -117,7 +117,7 @@ struct Grid {
                 (srcPts, dstPts) = (pointsHorizontal.array, pointsVertical.array)
 
                 if numRows.isMultiple(of: 2) == false {
-                    Profiler.time(.trailingCopy) {
+                    SuzukiProfiler.time(.trailingCopy) {
                         /// Request last column blit.
                         for region in regions.last! {
                             for runIdx in region.runIndices(imageSize: imageSize, gridSize: gridSize) {
@@ -127,7 +127,7 @@ struct Grid {
                             }
                             
                             let runIndices = Array(region.runIndices(imageSize: imageSize, gridSize: gridSize))
-                            Profiler.time(.blit) {
+                            SuzukiProfiler.time(.blit) {
                                 cpuBlit(runIndices: runIndices, srcPts: srcPts, srcRuns: srcRuns, dstPts: dstPts)
                             }
                         }
@@ -135,7 +135,7 @@ struct Grid {
                 }
                 
                 let newGridSize = PixelSize(width: gridSize.width, height: gridSize.height * 2)
-                Profiler.time(.combine) {
+                SuzukiProfiler.time(.combine) {
                     var indices: [(Int, Int)] = []
                     for col in 0..<numCols {
                         for row in stride(from: 0, to: numRows - 1, by: 2).reversed() {
@@ -175,7 +175,7 @@ struct Grid {
             dxn.flip()
             
             let end = CFAbsoluteTimeGetCurrent()
-            Profiler.add(end - start, iteration: iteration)
+            SuzukiProfiler.add(end - start, iteration: iteration)
             iteration += 1
         }
         

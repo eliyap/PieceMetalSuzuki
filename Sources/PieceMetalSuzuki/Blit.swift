@@ -37,7 +37,7 @@ func blit(
         }
         cmdBuffer.commit()
         
-        Profiler.time(.blitWait) {
+        SuzukiProfiler.time(.blitWait) {
             cmdBuffer.waitUntilCompleted()
         }
         

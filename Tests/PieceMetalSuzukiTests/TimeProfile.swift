@@ -13,7 +13,7 @@ final class SuzukiTimeProfile: XCTestCase {
             }
         }
         
-        await Profiler.report()
+        await SuzukiProfiler.report()
     }
     
     func timeLUT(patternSize: PatternSize) async throws {
@@ -25,7 +25,7 @@ final class SuzukiTimeProfile: XCTestCase {
             }
         }
         
-        await Profiler.report()
+        await SuzukiProfiler.report()
     }
     
     func testLUT1x1() async throws {

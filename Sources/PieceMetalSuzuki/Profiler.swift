@@ -17,16 +17,21 @@ extension Dictionary where Key: Comparable {
     }
 }
 
-public actor Profiler {
-    enum CodeRegion: CaseIterable {
-        case blit, trailingCopy, binarize, startChains, overall, makeTexture, initRegions, bufferInit, blitWait, runIndices
-        case combineAll, combine, combineFindPartner, combineJoin
-        case lutCopy
-    }
+public protocol CodeRegion: Hashable, CaseIterable { }
+enum SuzukiRegion: Hashable, CaseIterable, CodeRegion {
+    case blit, trailingCopy, binarize, startChains, overall, makeTexture, initRegions, bufferInit, blitWait, runIndices
+    case combineAll, combine, combineFindPartner, combineJoin
+    case lutCopy
+}
 
-    private var timing: [CodeRegion: (Int, TimeInterval)] = {
-        var dict = [CodeRegion: (Int, TimeInterval)]()
-        for region in CodeRegion.allCases {
+internal let SuzukiProfiler = Profiler<SuzukiRegion>()
+
+
+public actor Profiler<Region: CodeRegion> {
+
+    private var timing: [Region: (Int, TimeInterval)] = {
+        var dict = [Region: (Int, TimeInterval)]()
+        for region in Region.allCases {
             dict[region] = (0, 0)
         }
         return dict
@@ -37,34 +42,33 @@ public actor Profiler {
         return dict
     }()
 
-    private init() { }
-    public static let shared = Profiler()
-
-    private func add(_ duration: TimeInterval, to region: CodeRegion) -> Void {
+    public init() { }
+    
+    private func addIsolated(_ duration: TimeInterval, to region: Region) {
         let (count, total) = timing[region]!
-        timing[region] = (count + 1, total + duration)
+        self.timing[region] = (count + 1, total + duration)
     }
-    static func add(_ duration: TimeInterval, to region: CodeRegion) {
+    nonisolated func add(_ duration: TimeInterval, to region: Region) {
         #if PROFILER_ON
         Task(priority: .high) {
-            await Profiler.shared.add(duration, to: region)
+            await addIsolated(duration, to: region)
         }
         #endif
     }
     
-    private func add(_ duration: TimeInterval, iteration: Int) -> Void {
+    private func addIsolated(_ duration: TimeInterval, iteration: Int) -> Void {
         let (count, total) = iterationTiming[iteration] ?? (0, 0)
-        iterationTiming[iteration] = (count + 1, total + duration)
+        self.iterationTiming[iteration] = (count + 1, total + duration)
     }
-    static func add(_ duration: TimeInterval, iteration: Int) -> Void {
+    nonisolated func add(_ duration: TimeInterval, iteration: Int) -> Void {
         #if PROFILER_ON
         Task(priority: .high) {
-            await Profiler.shared.add(duration, iteration: iteration)
+            await addIsolated(duration, iteration: iteration)
         }
         #endif
     }
 
-    static func time(_ region: CodeRegion, _ block: () -> Void) {
+    nonisolated func time(_ region: Region, _ block: () -> Void) {
         #if PROFILER_ON
         let start = CFAbsoluteTimeGetCurrent()
         #endif
@@ -73,11 +77,11 @@ public actor Profiler {
         
         #if PROFILER_ON
         let end = CFAbsoluteTimeGetCurrent()
-        Profiler.add(end - start, to: region)
+        self.add(end - start, to: region)
         #endif
     }
     
-    static func time(_ iteration: Int, _ block: () -> Void) {
+    nonisolated func time(_ iteration: Int, _ block: () -> Void) {
         #if PROFILER_ON
         let start = CFAbsoluteTimeGetCurrent()
         #endif
@@ -86,13 +90,11 @@ public actor Profiler {
         
         #if PROFILER_ON
         let end = CFAbsoluteTimeGetCurrent()
-        Task(priority: .high) {
-            await Profiler.shared.add(end - start, iteration: iteration)
-        }
+        self.add(end - start, iteration: iteration)
         #endif
     }
     
-    static func time<Result>(_ region: CodeRegion, _ block: () -> Result) -> Result {
+    nonisolated func time<Result>(_ region: Region, _ block: () -> Result) -> Result {
         #if PROFILER_ON
         let start = CFAbsoluteTimeGetCurrent()
         #endif
@@ -101,25 +103,25 @@ public actor Profiler {
         
         #if PROFILER_ON
         let end = CFAbsoluteTimeGetCurrent()
-        Profiler.add(end - start, to: region)
+        self.add(end - start, to: region)
         #endif
 
         return result
     }
 
-    static func report() async {
+    public func report() async {
         #if PROFILER_ON
         /// Wait for everything to finish.
         try! await Task.sleep(nanoseconds: UInt64(1_000_000_000 * 2))
         
-        let dict = await Profiler.shared.timing
+        let dict = await self.timing
 //        for (region, results) in dict where [.overall, .combineAll, .combine].contains(region) {
             for (region, results) in dict where results.0 > 0 {
             let (count, time) = results
             print("\(region): \(time)s, \(count) (avg \(time / Double(count))s)")
         }
         
-        let timingDict = await Profiler.shared.iterationTiming
+        let timingDict = await self.iterationTiming
         for (iteration, results) in timingDict.sortedByKey() {
             let (count, time) = results
             print("\(iteration): \(time)s, \(count) (avg \(time / Double(count))s)")
