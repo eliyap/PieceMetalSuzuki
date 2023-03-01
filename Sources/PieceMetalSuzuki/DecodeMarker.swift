@@ -14,17 +14,21 @@ internal func findCandidateQuadrilaterals(
     runIndices: Range<Int>,
     parameters: RDPParameters
 ) -> [Quadrilateral] {
-    return runIndices.compactMap { runIndex in
-        /// Extract points from buffers.
-        let run = runBuffer.array[runIndex]
-        let points = (run.oldTail..<run.oldHead).map { ptIdx in
-            let pixelPt = pointBuffer.array[Int(ptIdx)]
-            return DoublePoint(pixelPt)
+    let candidates = [Quadrilateral?].init(unsafeUninitializedCapacity: runIndices.count) { buffer, count in
+        for (idx, runIndex) in runIndices.enumerated() {
+            /// Extract points from buffers.
+            let run = runBuffer.array[runIndex]
+            let points = (run.oldTail..<run.oldHead).map { ptIdx in
+                let pixelPt = pointBuffer.array[Int(ptIdx)]
+                return DoublePoint(pixelPt)
+            }
+            
+            /// Check if the contour can be reduced to a nice quadrilateral.
+            buffer[idx] = checkQuadrilateral(polyline: points, parameters: parameters)
         }
-        
-        /// Check if the contour can be reduced to a nice quadrilateral.
-        return checkQuadrilateral(polyline: points, parameters: parameters)
+        count = runIndices.count
     }
+    return candidates.compactMap { $0 }
 }
 
 internal func decodeMarkers(
