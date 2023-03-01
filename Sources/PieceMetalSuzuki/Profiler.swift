@@ -18,16 +18,27 @@ extension Dictionary where Key: Comparable {
 }
 
 public protocol CodeRegion: Hashable, CaseIterable { }
+
 enum SuzukiRegion: Hashable, CaseIterable, CodeRegion {
     case blit, trailingCopy, binarize, startChains, overall, makeTexture, initRegions, bufferInit, blitWait, runIndices
     case combineAll, combine, combineFindPartner, combineJoin
     case lutCopy
 }
 
+enum QuadRegion: Hashable, CaseIterable, CodeRegion {
+    case overall
+}
+
 #if PROFILE_SUZUKI
 internal let SuzukiProfiler = Profiler<SuzukiRegion>(enabled: true)
 #else
 internal let SuzukiProfiler = Profiler<SuzukiRegion>(enabled: false)
+#endif
+
+#if PROFILE_QUAD
+internal let QuadProfiler = Profiler<QuadRegion>(enabled: true)
+#else
+internal let QuadProfiler = Profiler<QuadRegion>(enabled: false)
 #endif
 
 public actor Profiler<Region: CodeRegion> {
@@ -111,23 +122,22 @@ public actor Profiler<Region: CodeRegion> {
     }
 
     public func report() async {
-        #if PROFILE_SUZUKI
+        guard ENABLED else { return }
         /// Wait for everything to finish.
         try! await Task.sleep(nanoseconds: UInt64(1_000_000_000 * 2))
         
-        let dict = await self.timing
+        let dict = self.timing
 //        for (region, results) in dict where [.overall, .combineAll, .combine].contains(region) {
             for (region, results) in dict where results.0 > 0 {
             let (count, time) = results
             print("\(region): \(time)s, \(count) (avg \(time / Double(count))s)")
         }
         
-        let timingDict = await self.iterationTiming
+        let timingDict = self.iterationTiming
         for (iteration, results) in timingDict.sortedByKey() {
             let (count, time) = results
             print("\(iteration): \(time)s, \(count) (avg \(time / Double(count))s)")
         }
-        #endif
     }
 }
 

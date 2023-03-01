@@ -7,19 +7,26 @@ final class PieceMetalSuzukiTests: XCTestCase {
         Bundle.module.url(forResource: name, withExtension: ".png", subdirectory: "Images")!
     }
     
-    func testDetection() throws {
+    func testDetection() async throws {
         let patternSize = PatternSize.w2h2
-//        let format = kCVPixelFormatType_32BGRA
-        let format = kCVPixelFormatType_420YpCbCr8BiPlanarFullRange
+        let format = kCVPixelFormatType_32BGRA
         assert(loadLookupTables(patternSize))
         
         let imageUrl = url("qrTilt")
         _ = PieceMetalSuzuki(imageUrl: imageUrl, patternSize: patternSize, format: format) { device, queue, texture, pixelBuffer, pointsFilled, runsFilled, pointsUnfilled, runsUnfilled in
             let runIndices = applyMetalSuzuki_LUT(device: device, commandQueue: queue, texture: texture, pointsFilled: pointsFilled, runsFilled: runsFilled, pointsUnfilled: pointsUnfilled, runsUnfilled: runsUnfilled, patternSize: patternSize)!
-            let quads = findCandidateQuadrilaterals(pointBuffer: pointsFilled, runBuffer: runsFilled, runIndices: runIndices, parameters: .starter)
+            let quads = findCandidateQuadrilaterals(pointBuffer: pointsFilled, runBuffer: runsFilled, runIndices: runIndices, parameters: RDPParameters(
+                minPoints: 10,
+                sideErrorLimit: 0.1,
+                aspectRatioErrorLimit: 0.5
+            ))
+            
+            debugPrint("\(quads.count) quads")
             decodeMarkers(pixelBuffer: pixelBuffer, quadrilaterals: quads)
             saveBufferToPng(buffer: pixelBuffer, format: .BGRA8)
         }
+        
+        await QuadProfiler.report()
     }
     
     func testBgraImageManipulation() throws {
