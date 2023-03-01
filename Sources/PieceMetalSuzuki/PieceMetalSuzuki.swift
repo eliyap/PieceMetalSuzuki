@@ -136,6 +136,7 @@ internal struct PieceMetalSuzuki {
     public init(
         imageUrl: URL,
         patternSize: PatternSize,
+        format: OSType,
         _ block: (MTLDevice, MTLCommandQueue, MTLTexture, CVPixelBuffer, Buffer<PixelPoint>, Buffer<Run>, Buffer<PixelPoint>, Buffer<Run>) -> Void
     ) {
         guard
@@ -154,7 +155,6 @@ internal struct PieceMetalSuzuki {
         /// Make a pixel buffer.
         let width = Int(ciImage.extent.width)
         let height = Int(ciImage.extent.height)
-        let format = kCVPixelFormatType_32BGRA
         let options: NSDictionary = [
             kCVPixelBufferCGImageCompatibilityKey: true,
             kCVPixelBufferMetalCompatibilityKey: true,

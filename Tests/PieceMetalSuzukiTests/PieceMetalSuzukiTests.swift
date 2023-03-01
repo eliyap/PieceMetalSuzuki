@@ -9,10 +9,12 @@ final class PieceMetalSuzukiTests: XCTestCase {
     
     func testDetection() throws {
         let patternSize = PatternSize.w2h2
+//        let format = kCVPixelFormatType_32BGRA
+        let format = kCVPixelFormatType_420YpCbCr8BiPlanarFullRange
         assert(loadLookupTables(patternSize))
         
-        let imageUrl = url("ticTacToe")
-        _ = PieceMetalSuzuki(imageUrl: imageUrl, patternSize: patternSize) { device, queue, texture, pixelBuffer, pointsFilled, runsFilled, pointsUnfilled, runsUnfilled in
+        let imageUrl = url("qrTilt")
+        _ = PieceMetalSuzuki(imageUrl: imageUrl, patternSize: patternSize, format: format) { device, queue, texture, pixelBuffer, pointsFilled, runsFilled, pointsUnfilled, runsUnfilled in
             let runIndices = applyMetalSuzuki_LUT(device: device, commandQueue: queue, texture: texture, pointsFilled: pointsFilled, runsFilled: runsFilled, pointsUnfilled: pointsUnfilled, runsUnfilled: runsUnfilled, patternSize: patternSize)!
             let quads = findCandidateQuadrilaterals(pointBuffer: pointsFilled, runBuffer: runsFilled, runIndices: runIndices, parameters: .starter)
             decodeMarkers(pixelBuffer: pixelBuffer, quadrilaterals: quads)

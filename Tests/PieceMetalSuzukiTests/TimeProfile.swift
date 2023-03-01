@@ -8,7 +8,7 @@ final class SuzukiTimeProfile: XCTestCase {
     
     func testNoLUT() async throws {
         measure {
-            _ = PieceMetalSuzuki(imageUrl: url("input"), patternSize: .w1h1) { device, queue, texture, pixelBuffer, pointsFilled, runsFilled, pointsUnfilled, runsUnfilled in
+            _ = PieceMetalSuzuki(imageUrl: url("input"), patternSize: .w1h1, format: kCVPixelFormatType_32BGRA) { device, queue, texture, pixelBuffer, pointsFilled, runsFilled, pointsUnfilled, runsUnfilled in
                 applyMetalSuzuki(device: device, commandQueue: queue, texture: texture, pointsFilled: pointsFilled, runsFilled: runsFilled, pointsUnfilled: pointsUnfilled, runsUnfilled: runsUnfilled)
             }
         }
@@ -20,7 +20,7 @@ final class SuzukiTimeProfile: XCTestCase {
         assert(loadLookupTables(patternSize))
         
         measure {
-            _ = PieceMetalSuzuki(imageUrl: url("input"), patternSize: patternSize) { device, queue, texture, pixelBuffer, pointsFilled, runsFilled, pointsUnfilled, runsUnfilled in
+            _ = PieceMetalSuzuki(imageUrl: url("input"), patternSize: patternSize, format: kCVPixelFormatType_32BGRA) { device, queue, texture, pixelBuffer, pointsFilled, runsFilled, pointsUnfilled, runsUnfilled in
                 _ = applyMetalSuzuki_LUT(device: device, commandQueue: queue, texture: texture, pointsFilled: pointsFilled, runsFilled: runsFilled, pointsUnfilled: pointsUnfilled, runsUnfilled: runsUnfilled, patternSize: patternSize)
             }
         }

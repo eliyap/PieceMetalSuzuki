@@ -8,7 +8,7 @@ final class SmallPatternTests: XCTestCase {
     }
     
     func checkPatternCountNoLUT(name: String, expectedCount: Int) throws {
-        _ = PieceMetalSuzuki(imageUrl: url(name), patternSize: .w1h1) { device, queue, texture, pixelBuffer, pointsFilled, runsFilled, pointsUnfilled, runsUnfilled in
+        _ = PieceMetalSuzuki(imageUrl: url(name), patternSize: .w1h1, format: kCVPixelFormatType_32BGRA) { device, queue, texture, pixelBuffer, pointsFilled, runsFilled, pointsUnfilled, runsUnfilled in
             let ranges = applyMetalSuzuki(device: device, commandQueue: queue, texture: texture, pointsFilled: pointsFilled, runsFilled: runsFilled, pointsUnfilled: pointsUnfilled, runsUnfilled: runsUnfilled)
             XCTAssertNotNil(ranges)
             XCTAssertEqual(ranges!.count, expectedCount)
@@ -17,7 +17,7 @@ final class SmallPatternTests: XCTestCase {
     
     func checkPatternCountLUT(name: String, expectedCount: Int, patternSize: PatternSize) throws {
         assert(loadLookupTables(patternSize))
-        _ = PieceMetalSuzuki(imageUrl: url(name), patternSize: patternSize) { device, queue, texture, pixelBuffer, pointsFilled, runsFilled, pointsUnfilled, runsUnfilled in
+        _ = PieceMetalSuzuki(imageUrl: url(name), patternSize: patternSize, format: kCVPixelFormatType_32BGRA) { device, queue, texture, pixelBuffer, pointsFilled, runsFilled, pointsUnfilled, runsUnfilled in
             let ranges = applyMetalSuzuki_LUT(device: device, commandQueue: queue, texture: texture, pointsFilled: pointsFilled, runsFilled: runsFilled, pointsUnfilled: pointsUnfilled, runsUnfilled: runsUnfilled, patternSize: patternSize)
             XCTAssertNotNil(ranges)
             XCTAssertEqual(ranges!.count, expectedCount)
