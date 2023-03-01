@@ -73,13 +73,13 @@ internal func checkQuadrilateral(
     
     /// 2. Find the point furthest from the center, call this A
     let __start2 = CFAbsoluteTimeGetCurrent()
-    var distSquaredFromCenter: OrderedDictionary<Int, Double> = [:]
-    for (idx, pt) in polyline.enumerated() {
+    var distSquaredFromCenter: [Double] = []
+    for pt in polyline {
         let x2 = (pt.x - center.x) * (pt.x - center.x)
         let y2 = (pt.y - center.y) * (pt.y - center.y)
-        distSquaredFromCenter[idx] = x2 + y2
+        distSquaredFromCenter.append(x2 + y2)
     }
-    let idxFarthestFromCenter = distSquaredFromCenter.max(by: { lhs, rhs in lhs.value < rhs.value })!.key
+    let idxFarthestFromCenter = distSquaredFromCenter.firstIndex(of: distSquaredFromCenter.max()!)! 
     let __end2 = CFAbsoluteTimeGetCurrent()
     QuadProfiler.add(__end2 - __start2, to: .findFurthest)
     
