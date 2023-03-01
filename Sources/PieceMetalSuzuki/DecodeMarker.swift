@@ -15,16 +15,16 @@ internal func findCandidateQuadrilaterals(
     parameters: RDPParameters
 ) -> [Quadrilateral] {
     let candidates = [Quadrilateral?].init(unsafeUninitializedCapacity: runIndices.count) { buffer, count in
-        for (idx, runIndex) in runIndices.enumerated() {
+        DispatchQueue.concurrentPerform(iterations: runIndices.count) { iteration in
             /// Extract points from buffers.
-            let run = runBuffer.array[runIndex]
+            let run = runBuffer.array[runIndices.startIndex + iteration]
             let points = (run.oldTail..<run.oldHead).map { ptIdx in
                 let pixelPt = pointBuffer.array[Int(ptIdx)]
                 return DoublePoint(pixelPt)
             }
             
             /// Check if the contour can be reduced to a nice quadrilateral.
-            buffer[idx] = checkQuadrilateral(polyline: points, parameters: parameters)
+            buffer[iteration] = checkQuadrilateral(polyline: points, parameters: parameters)
         }
         count = runIndices.count
     }
