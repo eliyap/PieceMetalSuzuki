@@ -10,6 +10,8 @@ public final class MarkerDetector {
     private let queue: any MTLCommandQueue
     private let textureCache: CVMetalTextureCache
     
+    public var rdpParameters: RDPParameters = .starter
+    
     /// The type of Lookup Table used to kickstart contour detection.
     private let patternSize: PatternSize
     
@@ -96,7 +98,7 @@ public final class MarkerDetector {
             return
         }
         let imageSize = CGSize(width: CVPixelBufferGetWidth(pixelBuffer), height: CVPixelBufferGetHeight(pixelBuffer))
-        let quads = findCandidateQuadrilaterals(pointBuffer: pointsFilled, runBuffer: runsFilled, runIndices: runIndices)
+        let quads = findCandidateQuadrilaterals(pointBuffer: pointsFilled, runBuffer: runsFilled, runIndices: runIndices, parameters: self.rdpParameters)
         delegate?.didFind(quadrilaterals: quads, imageSize: imageSize)
         decodeMarkers(pixelBuffer: pixelBuffer, quadrilaterals: quads)
     }

@@ -11,7 +11,8 @@ import CoreVideo
 internal func findCandidateQuadrilaterals(
     pointBuffer: Buffer<PixelPoint>,
     runBuffer: Buffer<Run>,
-    runIndices: Range<Int>
+    runIndices: Range<Int>,
+    parameters: RDPParameters
 ) -> [Quadrilateral] {
     return runIndices.compactMap { runIndex in
         /// Extract points from buffers.
@@ -22,7 +23,7 @@ internal func findCandidateQuadrilaterals(
         }
         
         /// Check if the contour can be reduced to a nice quadrilateral.
-        return checkQuadrilateral(polyline: points)
+        return checkQuadrilateral(polyline: points, parameters: parameters)
     }
 }
 

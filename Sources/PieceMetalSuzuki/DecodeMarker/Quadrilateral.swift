@@ -53,7 +53,7 @@ public struct RDPParameters {
 
 internal func checkQuadrilateral(
     polyline: [DoublePoint],
-    parameters: RDPParameters = .starter
+    parameters: RDPParameters
 ) -> Quadrilateral? {
     guard polyline.count > parameters.minPoints else {
         #if SHOW_RDP_WORK
