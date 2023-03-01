@@ -70,8 +70,9 @@ internal func checkQuadrilateral(
     #if SHOW_RDP_WORK
     debugPrint("[RDP] Center: \(center)")
     #endif
-
+    
     /// 2. Find the point furthest from the center, call this A
+    let __start2 = CFAbsoluteTimeGetCurrent()
     var distFromCenter: OrderedDictionary<Int, Double> = [:]
     for (idx, pt) in polyline.enumerated() {
         let x2 = (pt.x - center.x) * (pt.x - center.x)
@@ -80,6 +81,8 @@ internal func checkQuadrilateral(
         distFromCenter[idx] = dist
     }
     let idxFarthestFromCenter = distFromCenter.max(by: { lhs, rhs in lhs.value < rhs.value })!.key
+    let __end2 = CFAbsoluteTimeGetCurrent()
+    QuadProfiler.add(__end2 - __start2, to: .findFurthest)
     
     /// 3. With the line from center to A, find 2 points along the line perpendicular to this line.
     let farthest = polyline[idxFarthestFromCenter]

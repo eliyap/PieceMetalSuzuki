@@ -17,15 +17,17 @@ internal func findCandidateQuadrilaterals(
     return QuadProfiler.time(.overall) {
         let candidates = [Quadrilateral?].init(unsafeUninitializedCapacity: runIndices.count) { buffer, count in
             DispatchQueue.concurrentPerform(iterations: runIndices.count) { iteration in
-                /// Extract points from buffers.
-                let run = runBuffer.array[runIndices.startIndex + iteration]
-                let points = (run.oldTail..<run.oldHead).map { ptIdx in
-                    let pixelPt = pointBuffer.array[Int(ptIdx)]
-                    return DoublePoint(pixelPt)
+                QuadProfiler.time(.overallSerial) {
+                    /// Extract points from buffers.
+                    let run = runBuffer.array[runIndices.startIndex + iteration]
+                    let points = (run.oldTail..<run.oldHead).map { ptIdx in
+                        let pixelPt = pointBuffer.array[Int(ptIdx)]
+                        return DoublePoint(pixelPt)
+                    }
+                    
+                    /// Check if the contour can be reduced to a nice quadrilateral.
+                    buffer[iteration] = checkQuadrilateral(polyline: points, parameters: parameters)
                 }
-                
-                /// Check if the contour can be reduced to a nice quadrilateral.
-                buffer[iteration] = checkQuadrilateral(polyline: points, parameters: parameters)
             }
             count = runIndices.count
         }
