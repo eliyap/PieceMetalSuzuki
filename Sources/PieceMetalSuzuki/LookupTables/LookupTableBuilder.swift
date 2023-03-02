@@ -55,9 +55,10 @@ internal final class LookupTableBuilder {
         let iterations = 0..<patternSize.lutHeight
         for iteration in iterations {
             buffer.setPattern(coreSize: patternSize.coreSize, iteration: iteration)
+            CVMetalTextureCacheFlush(metalTextureCache, 0)
             let texture = makeTextureFromCVPixelBuffer(pixelBuffer: buffer.buffer, textureFormat: .bgra8Unorm, textureCache: metalTextureCache)!
-            
-                createChainStarters(device: device, function: kernelFunction, commandQueue: commandQueue, texture: texture, runBuffer: runBuffer, pointBuffer: pointBuffer)
+
+            createChainStarters(device: device, function: kernelFunction, commandQueue: commandQueue, texture: texture, runBuffer: runBuffer, pointBuffer: pointBuffer)
             var grid = Grid(
                 imageSize: PixelSize(width: UInt32(texture.width), height: UInt32(texture.height)),
                 regions: SuzukiProfiler.time(.initRegions) {
@@ -65,7 +66,7 @@ internal final class LookupTableBuilder {
                 },
                 patternSize: starterSize
             )
-            
+
             let (region, runs, points) = grid.combineAllForLUT(
                 coreSize: patternSize.coreSize,
                 device: device,
@@ -75,7 +76,7 @@ internal final class LookupTableBuilder {
                 runsUnfilled: runsUnfilled,
                 commandQueue: commandQueue
             )
-            
+
             assert(runs.count <= patternSize.tableWidth)
             let startRuns = (0..<patternSize.tableWidth).map { runIdx in
                 if runs.indices.contains(runIdx) {
@@ -97,7 +98,7 @@ internal final class LookupTableBuilder {
                 runIndices.append(TableIndex(runTable.count))
                 runTable.append(startRuns)
             }
-            
+
             assert(points.count <= patternSize.tableWidth)
             let startPoints = (0..<patternSize.tableWidth).map { pointIdx in
                 if points.indices.contains(pointIdx) {
@@ -116,7 +117,7 @@ internal final class LookupTableBuilder {
                 pointIndices.append(TableIndex(pointTable.count))
                 pointTable.append(startPoints)
             }
-            
+
             if (iteration.isMultiple(of: 10000)) {
                 print(iteration)
             }

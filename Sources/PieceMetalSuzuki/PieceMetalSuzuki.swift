@@ -421,43 +421,41 @@ internal func createChainStarters(
     runBuffer: Buffer<Run>,
     pointBuffer: Buffer<PixelPoint>
 ) -> Bool {
-    let start = CFAbsoluteTimeGetCurrent()
-    
-    guard
-        let kernelFunction = loadChainStarterFunction(device: device),
-        let pipelineState = try? device.makeComputePipelineState(function: kernelFunction),
-        let cmdBuffer = commandQueue.makeCommandBuffer(),
-        let cmdEncoder = cmdBuffer.makeComputeCommandEncoder()
-    else {
-        assert(false, "Failed to setup pipeline.")
-        return false
+    SuzukiProfiler.time(.startChains) {
+        autoreleasepool {
+            guard
+                let pipelineState = try? device.makeComputePipelineState(function: function),
+                let cmdBuffer = commandQueue.makeCommandBuffer(),
+                let cmdEncoder = cmdBuffer.makeComputeCommandEncoder()
+            else {
+                assert(false, "Failed to setup pipeline.")
+                return false
+            }
+
+            cmdEncoder.label = "Custom Kernel Encoder"
+            cmdEncoder.setComputePipelineState(pipelineState)
+            cmdEncoder.setTexture(texture, index: 0)
+
+            cmdEncoder.setBuffer(pointBuffer.mtlBuffer, offset: 0, index: 0)
+            cmdEncoder.setBuffer(runBuffer.mtlBuffer, offset: 0, index: 1)
+            cmdEncoder.setBuffer(Run.LUTBuffer!.mtlBuffer, offset: 0, index: 2)
+            cmdEncoder.setBuffer(PixelPoint.LUTBuffer!.mtlBuffer, offset: 0, index: 3)
+
+            let (tPerTG, tgPerGrid) = pipelineState.threadgroupParameters(texture: texture)
+            cmdEncoder.dispatchThreadgroups(tgPerGrid, threadsPerThreadgroup: tPerTG)
+            cmdEncoder.endEncoding()
+            cmdBuffer.commit()
+            cmdBuffer.waitUntilCompleted()
+
+            #if SHOW_GRID_WORK
+            debugPrint("[Initial Points]")
+            let count = texture.width * texture.height * 4
+            for i in 0..<count where runBuffer.array[i].isValid {
+                print(runBuffer.array[i], pointBuffer.array[i])
+            }
+            #endif
+
+            return true
+        }
     }
-
-    cmdEncoder.label = "Custom Kernel Encoder"
-    cmdEncoder.setComputePipelineState(pipelineState)
-    cmdEncoder.setTexture(texture, index: 0)
-
-    cmdEncoder.setBuffer(pointBuffer.mtlBuffer, offset: 0, index: 0)
-    cmdEncoder.setBuffer(runBuffer.mtlBuffer, offset: 0, index: 1)
-    cmdEncoder.setBuffer(Run.LUTBuffer!.mtlBuffer, offset: 0, index: 2)
-    cmdEncoder.setBuffer(PixelPoint.LUTBuffer!.mtlBuffer, offset: 0, index: 3)
-
-    let (tPerTG, tgPerGrid) = pipelineState.threadgroupParameters(texture: texture)
-    cmdEncoder.dispatchThreadgroups(tgPerGrid, threadsPerThreadgroup: tPerTG)
-    cmdEncoder.endEncoding()
-    cmdBuffer.commit()
-    cmdBuffer.waitUntilCompleted()
-    
-    #if SHOW_GRID_WORK
-    debugPrint("[Initial Points]")
-    let count = texture.width * texture.height * 4
-    for i in 0..<count where runBuffer.array[i].isValid {
-        print(runBuffer.array[i], pointBuffer.array[i])
-    }
-    #endif
-    
-    let end = CFAbsoluteTimeGetCurrent()
-    SuzukiProfiler.add(end - start, to: .startChains)
-    
-    return true
 }
