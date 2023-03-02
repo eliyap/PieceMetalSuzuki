@@ -3,7 +3,7 @@ import XCTest
 
 final class SmallPatternTests: XCTestCase {
     
-    let patternSize = PatternSize.w2h1
+    let patternSize = PatternSize.w2h2
     
     func url(_ name: String) -> URL {
         Bundle.module.url(forResource: name, withExtension: ".png", subdirectory: "Images")!
