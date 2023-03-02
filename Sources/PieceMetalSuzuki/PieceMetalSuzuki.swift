@@ -46,7 +46,7 @@ public final class MarkerDetector {
         }
         self.textureCache = metalTextureCache
         
-        guard loadLookupTablesJSON(patternSize) else {
+        guard loadLookupTablesProtoBuf(patternSize) else {
             assertionFailure("Failed to load lookup tables for pattern")
             return nil
         }

@@ -31,7 +31,6 @@ let package = Package(
             resources: [
                 .copy("Images/"),
                 .copy("Metal/"),
-                .copy("LookupTables/JSON/"),
                 .copy("LookupTables/ProtocolBuffers/"),
             ],
             swiftSettings: [

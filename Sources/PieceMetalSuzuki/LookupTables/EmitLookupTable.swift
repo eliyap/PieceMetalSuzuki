@@ -29,35 +29,6 @@ internal func write(to fileName: String, _ block: (FileHandle) -> Void) -> Void 
 extension LookupTableBuilder {
     @available(iOS 16.0, *)
     @available(macOS 13.0, *)
-    func emitJSON() -> Void {
-        let encoder = JSONEncoder()
-        write(to: "runIndices\(patternSize.patternCode).json") { fileHandle in
-            let data = try! encoder.encode(runIndices)
-            fileHandle.write(data)
-        }
-        
-        write(to: "runTable\(patternSize.patternCode).json") { fileHandle in
-            let table: [StartRun] = runTable.reduce([], +)
-            let data = try! encoder.encode(table)
-            fileHandle.write(data)
-        }
-        
-        write(to: "pointIndices\(patternSize.patternCode).json") { fileHandle in
-            let data = try! encoder.encode(pointIndices)
-            fileHandle.write(data)
-        }
-
-        write(to: "pointTable\(patternSize.patternCode).json") { fileHandle in
-            let table: [StartPoint] = pointTable.reduce([], +)
-            let data = try! encoder.encode(table)
-            fileHandle.write(data)
-        }
-    }
-}
-
-extension LookupTableBuilder {
-    @available(iOS 16.0, *)
-    @available(macOS 13.0, *)
     func emitProtoBuf() -> Void {
         write(to: "runIndices\(patternSize.patternCode).buf") { fileHandle in
             var buf = ArrayIndices()
@@ -105,40 +76,8 @@ extension LookupTableBuilder {
     }
 }
 
-public func loadLookupTablesJSON(_ patternSize: PatternSize) -> Bool {
-    /// - Note: the folder is `./LookupTables/JSON` is copied to `./JSON`. The super-directory is not preserved.
-    let dir = "JSON"
-    let ext = "json"
-    let decoder = JSONDecoder()
-    guard
-        let pointTableURL = Bundle.module.url(forResource: "pointTable\(patternSize.patternCode)", withExtension: ext, subdirectory: dir),
-        let pointIndicesURL = Bundle.module.url(forResource: "pointIndices\(patternSize.patternCode)", withExtension: ext, subdirectory: dir),
-        let runTableURL = Bundle.module.url(forResource: "runTable\(patternSize.patternCode)", withExtension: ext, subdirectory: dir),
-        let runIndicesURL = Bundle.module.url(forResource: "runIndices\(patternSize.patternCode)", withExtension: ext, subdirectory: dir)
-    else {
-        return false
-    }
-    
-    do {
-        let pointTableData   = try Data(contentsOf: pointTableURL)
-        let pointIndicesData = try Data(contentsOf: pointIndicesURL)
-        let runTableData     = try Data(contentsOf: runTableURL)
-        let runIndicesData   = try Data(contentsOf: runIndicesURL)
-        
-        StartPoint.lookupTable        = try decoder.decode([StartPoint].self, from: pointTableData)
-        StartPoint.lookupTableIndices = try decoder.decode([UInt16].self, from: pointIndicesData)
-        StartRun.lookupTable          = try decoder.decode([StartRun].self, from: runTableData)
-        StartRun.lookupTableIndices   = try decoder.decode([UInt16].self, from: runIndicesData)
-    } catch {
-        assertionFailure("\(error)")
-        return false
-    }
-    
-    return true
-}
-
 public func loadLookupTablesProtoBuf(_ patternSize: PatternSize) -> Bool {
-    /// - Note: the folder is `./LookupTables/JSON` is copied to `./JSON`. The super-directory is not preserved.
+    /// - Note: the folder is `./LookupTables/ProtocolBuffers` is copied to `./ProtocolBuffers`. The super-directory is not preserved.
     let dir = "ProtocolBuffers"
     let ext = "buf"
     guard

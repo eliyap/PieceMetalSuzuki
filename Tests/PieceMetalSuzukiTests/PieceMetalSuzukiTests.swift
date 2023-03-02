@@ -10,7 +10,7 @@ final class PieceMetalSuzukiTests: XCTestCase {
     func testDetection() async throws {
         let patternSize = PatternSize.w2h2
         let format = kCVPixelFormatType_32BGRA
-        assert(loadLookupTablesJSON(patternSize))
+        assert(loadLookupTablesProtoBuf(patternSize))
         
         let imageUrl = url("qrTilt")
         _ = PieceMetalSuzuki(imageUrl: imageUrl, patternSize: patternSize, format: format) { device, queue, texture, pixelBuffer, pointsFilled, runsFilled, pointsUnfilled, runsUnfilled in
