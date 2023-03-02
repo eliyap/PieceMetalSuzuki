@@ -56,8 +56,9 @@ extension LookupTableBuilder {
     }
 }
 
-public func loadLookupTables(_ patternSize: PatternSize) -> Bool {
-    let dir = "JSONLookupTables"
+public func loadLookupTablesJSON(_ patternSize: PatternSize) -> Bool {
+    /// - Note: the folder is `./LookupTables/JSON` is copied to `./JSON`. The super-directory is not preserved.
+    let dir = "JSON"
     let ext = "json"
     let patternCode = "\(patternSize.coreSize.width)x\(patternSize.coreSize.height)"
     let decoder = JSONDecoder()

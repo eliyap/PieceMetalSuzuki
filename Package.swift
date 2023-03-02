@@ -33,7 +33,7 @@ let package = Package(
             resources: [
                 .copy("Images/"),
                 .copy("Metal/"),
-                .copy("JSONLookupTables/"),
+                .copy("LookupTables/JSON/"),
             ],
             swiftSettings: [
                 .unsafeFlags([
