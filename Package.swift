@@ -32,6 +32,7 @@ let package = Package(
                 .copy("Images/"),
                 .copy("Metal/"),
                 .copy("LookupTables/JSON/"),
+                .copy("LookupTables/ProtocolBuffers/"),
             ],
             swiftSettings: [
                 .unsafeFlags([

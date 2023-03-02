@@ -136,3 +136,46 @@ public func loadLookupTablesJSON(_ patternSize: PatternSize) -> Bool {
     
     return true
 }
+
+public func loadLookupTablesProtoBuf(_ patternSize: PatternSize) -> Bool {
+    /// - Note: the folder is `./LookupTables/JSON` is copied to `./JSON`. The super-directory is not preserved.
+    let dir = "ProtocolBuffers"
+    let ext = "buf"
+    guard
+        let pointTableURL = Bundle.module.url(forResource: "pointTable\(patternSize.patternCode)", withExtension: ext, subdirectory: dir),
+        let pointIndicesURL = Bundle.module.url(forResource: "pointIndices\(patternSize.patternCode)", withExtension: ext, subdirectory: dir),
+        let runTableURL = Bundle.module.url(forResource: "runTable\(patternSize.patternCode)", withExtension: ext, subdirectory: dir),
+        let runIndicesURL = Bundle.module.url(forResource: "runIndices\(patternSize.patternCode)", withExtension: ext, subdirectory: dir)
+    else {
+        return false
+    }
+    
+    do {
+        let pointTableData   = try Data(contentsOf: pointTableURL)
+        let pointIndicesData = try Data(contentsOf: pointIndicesURL)
+        let runTableData     = try Data(contentsOf: runTableURL)
+        let runIndicesData   = try Data(contentsOf: runIndicesURL)
+        
+        StartPoint.lookupTable        = try StartPointSerialArray(serializedData: pointTableData)
+            .contents
+            .map { serial in
+                StartPoint(x: UInt8(serial.x), y: UInt8(serial.y))
+            }
+        StartPoint.lookupTableIndices = try ArrayIndices(serializedData: pointIndicesData)
+            .indices
+            .map { UInt16($0) }
+        StartRun.lookupTable          = try StartRunSerialArray(serializedData: runTableData)
+            .contents
+            .map { serial in
+                StartRun(tail: Int8(serial.tail), head: Int8(serial.head), from: UInt8(serial.from), to: UInt8(serial.to))
+            }
+        StartRun.lookupTableIndices   = try ArrayIndices(serializedData: runIndicesData)
+            .indices
+            .map { UInt16($0) }
+    } catch {
+        assertionFailure("\(error)")
+        return false
+    }
+    
+    return true
+}
