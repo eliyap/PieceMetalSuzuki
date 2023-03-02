@@ -10,7 +10,7 @@ import Metal
 
 extension StartRun {
     /// Set by `LookupTableBuilder`.
-    static var lookupTableIndices: [UInt16] = []
+    static var lookupTableIndices: [LookupTableBuilder.TableIndex] = []
     
     /// Set by `LookupTableBuilder`.
     static var lookupTable: [Self] = []

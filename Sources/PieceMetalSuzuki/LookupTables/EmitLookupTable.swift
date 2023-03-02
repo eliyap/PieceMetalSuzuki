@@ -102,7 +102,7 @@ public func loadLookupTablesProtoBuf(_ patternSize: PatternSize) -> Bool {
             }
         StartPoint.lookupTableIndices = try ArrayIndices(serializedData: pointIndicesData)
             .indices
-            .map { UInt16($0) }
+            .map { LookupTableBuilder.TableIndex($0) }
         StartRun.lookupTable          = try StartRunSerialArray(serializedData: runTableData)
             .contents
             .map { serial in
@@ -110,7 +110,7 @@ public func loadLookupTablesProtoBuf(_ patternSize: PatternSize) -> Bool {
             }
         StartRun.lookupTableIndices   = try ArrayIndices(serializedData: runIndicesData)
             .indices
-            .map { UInt16($0) }
+            .map { LookupTableBuilder.TableIndex($0) }
     } catch {
         assertionFailure("\(error)")
         return false

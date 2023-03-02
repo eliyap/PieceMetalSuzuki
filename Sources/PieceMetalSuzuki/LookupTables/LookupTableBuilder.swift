@@ -15,13 +15,15 @@ internal final class LookupTableBuilder {
     
     let patternSize: PatternSize
     
+    public typealias TableIndex = UInt32
+    
     /// Contains distinct series of points.
     var pointTable: [[StartPoint]] = []
-    var pointIndices: [UInt16] = []
+    var pointIndices: [TableIndex] = []
     
     /// Contains distinct series of runs.
     var runTable: [[StartRun]] = []
-    var runIndices: [UInt16] = []
+    var runIndices: [TableIndex] = []
     
     public init(patternSize: PatternSize) {
         self.patternSize = patternSize
@@ -85,9 +87,9 @@ internal final class LookupTableBuilder {
                 }
             }
             if let rowIdx = runTable.firstIndex(of: startRuns) {
-                runIndices.append(UInt16(rowIdx))
+                runIndices.append(TableIndex(rowIdx))
             } else {
-                runIndices.append(UInt16(runTable.count))
+                runIndices.append(TableIndex(runTable.count))
                 runTable.append(startRuns)
             }
             
@@ -104,9 +106,9 @@ internal final class LookupTableBuilder {
                 }
             }
             if let rowIdx = pointTable.firstIndex(of: startPoints) {
-                pointIndices.append(UInt16(rowIdx))
+                pointIndices.append(TableIndex(rowIdx))
             } else {
-                pointIndices.append(UInt16(pointTable.count))
+                pointIndices.append(TableIndex(pointTable.count))
                 pointTable.append(startPoints)
             }
             

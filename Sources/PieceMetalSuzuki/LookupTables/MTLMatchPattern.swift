@@ -41,7 +41,7 @@ func matchPatterns(
 
     let runTableIndicesBuffer = device.makeBuffer(
         bytes: &StartRun.lookupTableIndices,
-        length: MemoryLayout<UInt16>.stride * StartRun.lookupTableIndices.count,
+        length: MemoryLayout<LookupTableBuilder.TableIndex>.stride * StartRun.lookupTableIndices.count,
         options: []
     )
     cmdEncoder.setBuffer(runTableIndicesBuffer, offset: 0, index: 3)
@@ -55,7 +55,7 @@ func matchPatterns(
     
     let pointTableIndicesBuffer = device.makeBuffer(
         bytes: &StartPoint.lookupTableIndices,
-        length: MemoryLayout<UInt16>.stride * StartPoint.lookupTableIndices.count,
+        length: MemoryLayout<LookupTableBuilder.TableIndex>.stride * StartPoint.lookupTableIndices.count,
         options: []
     )
     cmdEncoder.setBuffer(pointTableIndicesBuffer, offset: 0, index: 5)
