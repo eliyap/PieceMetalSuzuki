@@ -29,26 +29,25 @@ internal func write(to fileName: String, _ block: (FileHandle) -> Void) -> Void 
 extension LookupTableBuilder {
     @available(iOS 16.0, *)
     @available(macOS 13.0, *)
-    func emit() -> Void {
+    func emitJSON() -> Void {
         let encoder = JSONEncoder()
-        let patternCode = "\(patternSize.coreSize.width)x\(patternSize.coreSize.height)"
-        write(to: "runIndices\(patternCode).json") { fileHandle in
+        write(to: "runIndices\(patternSize.patternCode).json") { fileHandle in
             let data = try! encoder.encode(runIndices)
             fileHandle.write(data)
         }
         
-        write(to: "runTable\(patternCode).json") { fileHandle in
+        write(to: "runTable\(patternSize.patternCode).json") { fileHandle in
             let table: [StartRun] = runTable.reduce([], +)
             let data = try! encoder.encode(table)
             fileHandle.write(data)
         }
         
-        write(to: "pointIndices\(patternCode).json") { fileHandle in
+        write(to: "pointIndices\(patternSize.patternCode).json") { fileHandle in
             let data = try! encoder.encode(pointIndices)
             fileHandle.write(data)
         }
 
-        write(to: "pointTable\(patternCode).json") { fileHandle in
+        write(to: "pointTable\(patternSize.patternCode).json") { fileHandle in
             let table: [StartPoint] = pointTable.reduce([], +)
             let data = try! encoder.encode(table)
             fileHandle.write(data)
@@ -56,16 +55,66 @@ extension LookupTableBuilder {
     }
 }
 
-public func loadLookupTables(_ patternSize: PatternSize) -> Bool {
-    let dir = "JSONLookupTables"
+extension LookupTableBuilder {
+    @available(iOS 16.0, *)
+    @available(macOS 13.0, *)
+    func emitProtoBuf() -> Void {
+        write(to: "runIndices\(patternSize.patternCode).buf") { fileHandle in
+            var buf = ArrayIndices()
+            buf.indices = runIndices.map { UInt32($0) }
+            let data = try! buf.serializedData()
+            fileHandle.write(data)
+        }
+        
+        write(to: "runTable\(patternSize.patternCode).buf") { fileHandle in
+            var buf = StartRunSerialArray()
+            buf.contents = runTable.flatMap{ runRow in
+                return runRow.map { run in
+                    var serial = StartRunSerial()
+                    serial.head = Int32(run.head)
+                    serial.tail = Int32(run.tail)
+                    serial.from = UInt32(run.from)
+                    serial.to = UInt32(run.to)
+                    return serial
+                }
+            }
+            let data = try! buf.serializedData()
+            fileHandle.write(data)
+        }
+
+        write(to: "pointIndices\(patternSize.patternCode).buf") { fileHandle in
+            var buf = ArrayIndices()
+            buf.indices = pointIndices.map { UInt32($0) }
+            let data = try! buf.serializedData()
+            fileHandle.write(data)
+        }
+
+        write(to: "pointTable\(patternSize.patternCode).buf") { fileHandle in
+            var buf = StartPointSerialArray()
+            buf.contents = pointTable.flatMap{ pointRow in
+                return pointRow.map { point in
+                    var serial = StartPointSerial()
+                    serial.x = UInt32(point.x)
+                    serial.y = UInt32(point.y)
+                    return serial
+                }
+            }
+            let data = try! buf.serializedData()
+            fileHandle.write(data)
+        }
+    }
+}
+
+public func loadLookupTablesJSON(_ patternSize: PatternSize) -> Bool {
+    /// - Note: the folder is `./LookupTables/JSON` is copied to `./JSON`. The super-directory is not preserved.
+    let dir = "JSON"
     let ext = "json"
-    let patternCode = "\(patternSize.coreSize.width)x\(patternSize.coreSize.height)"
     let decoder = JSONDecoder()
     guard
-        let pointTableURL = Bundle.module.url(forResource: "pointTable\(patternCode)", withExtension: ext, subdirectory: dir),
-        let pointIndicesURL = Bundle.module.url(forResource: "pointIndices\(patternCode)", withExtension: ext, subdirectory: dir),
-        let runTableURL = Bundle.module.url(forResource: "runTable\(patternCode)", withExtension: ext, subdirectory: dir),
-        let runIndicesURL = Bundle.module.url(forResource: "runIndices\(patternCode)", withExtension: ext, subdirectory: dir)
+        let pointTableURL = Bundle.module.url(forResource: "pointTable\(patternSize.patternCode)", withExtension: ext, subdirectory: dir),
+        let pointIndicesURL = Bundle.module.url(forResource: "pointIndices\(patternSize.patternCode)", withExtension: ext, subdirectory: dir),
+        let runTableURL = Bundle.module.url(forResource: "runTable\(patternSize.patternCode)", withExtension: ext, subdirectory: dir),
+        let runIndicesURL = Bundle.module.url(forResource: "runIndices\(patternSize.patternCode)", withExtension: ext, subdirectory: dir)
     else {
         return false
     }
@@ -80,6 +129,49 @@ public func loadLookupTables(_ patternSize: PatternSize) -> Bool {
         StartPoint.lookupTableIndices = try decoder.decode([UInt16].self, from: pointIndicesData)
         StartRun.lookupTable          = try decoder.decode([StartRun].self, from: runTableData)
         StartRun.lookupTableIndices   = try decoder.decode([UInt16].self, from: runIndicesData)
+    } catch {
+        assertionFailure("\(error)")
+        return false
+    }
+    
+    return true
+}
+
+public func loadLookupTablesProtoBuf(_ patternSize: PatternSize) -> Bool {
+    /// - Note: the folder is `./LookupTables/JSON` is copied to `./JSON`. The super-directory is not preserved.
+    let dir = "ProtocolBuffers"
+    let ext = "buf"
+    guard
+        let pointTableURL = Bundle.module.url(forResource: "pointTable\(patternSize.patternCode)", withExtension: ext, subdirectory: dir),
+        let pointIndicesURL = Bundle.module.url(forResource: "pointIndices\(patternSize.patternCode)", withExtension: ext, subdirectory: dir),
+        let runTableURL = Bundle.module.url(forResource: "runTable\(patternSize.patternCode)", withExtension: ext, subdirectory: dir),
+        let runIndicesURL = Bundle.module.url(forResource: "runIndices\(patternSize.patternCode)", withExtension: ext, subdirectory: dir)
+    else {
+        return false
+    }
+    
+    do {
+        let pointTableData   = try Data(contentsOf: pointTableURL)
+        let pointIndicesData = try Data(contentsOf: pointIndicesURL)
+        let runTableData     = try Data(contentsOf: runTableURL)
+        let runIndicesData   = try Data(contentsOf: runIndicesURL)
+        
+        StartPoint.lookupTable        = try StartPointSerialArray(serializedData: pointTableData)
+            .contents
+            .map { serial in
+                StartPoint(x: UInt8(serial.x), y: UInt8(serial.y))
+            }
+        StartPoint.lookupTableIndices = try ArrayIndices(serializedData: pointIndicesData)
+            .indices
+            .map { UInt16($0) }
+        StartRun.lookupTable          = try StartRunSerialArray(serializedData: runTableData)
+            .contents
+            .map { serial in
+                StartRun(tail: Int8(serial.tail), head: Int8(serial.head), from: UInt8(serial.from), to: UInt8(serial.to))
+            }
+        StartRun.lookupTableIndices   = try ArrayIndices(serializedData: runIndicesData)
+            .indices
+            .map { UInt16($0) }
     } catch {
         assertionFailure("\(error)")
         return false

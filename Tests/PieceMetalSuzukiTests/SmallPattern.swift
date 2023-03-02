@@ -3,6 +3,8 @@ import XCTest
 
 final class SmallPatternTests: XCTestCase {
     
+    let patternSize = PatternSize.w2h2
+    
     func url(_ name: String) -> URL {
         Bundle.module.url(forResource: name, withExtension: ".png", subdirectory: "Images")!
     }
@@ -15,8 +17,17 @@ final class SmallPatternTests: XCTestCase {
         }
     }
     
-    func checkPatternCountLUT(name: String, expectedCount: Int, patternSize: PatternSize) throws {
-        assert(loadLookupTables(patternSize))
+    func checkPatternCountJSON(name: String, expectedCount: Int, patternSize: PatternSize) throws {
+        assert(loadLookupTablesJSON(patternSize))
+        _ = PieceMetalSuzuki(imageUrl: url(name), patternSize: patternSize, format: kCVPixelFormatType_32BGRA) { device, queue, texture, pixelBuffer, pointsFilled, runsFilled, pointsUnfilled, runsUnfilled in
+            let ranges = applyMetalSuzuki_LUT(device: device, commandQueue: queue, texture: texture, pointsFilled: pointsFilled, runsFilled: runsFilled, pointsUnfilled: pointsUnfilled, runsUnfilled: runsUnfilled, patternSize: patternSize)
+            XCTAssertNotNil(ranges)
+            XCTAssertEqual(ranges!.count, expectedCount)
+        }
+    }
+    
+    func checkPatternCountProtoBuf(name: String, expectedCount: Int, patternSize: PatternSize) throws {
+        assert(loadLookupTablesJSON(patternSize))
         _ = PieceMetalSuzuki(imageUrl: url(name), patternSize: patternSize, format: kCVPixelFormatType_32BGRA) { device, queue, texture, pixelBuffer, pointsFilled, runsFilled, pointsUnfilled, runsUnfilled in
             let ranges = applyMetalSuzuki_LUT(device: device, commandQueue: queue, texture: texture, pointsFilled: pointsFilled, runsFilled: runsFilled, pointsUnfilled: pointsUnfilled, runsUnfilled: runsUnfilled, patternSize: patternSize)
             XCTAssertNotNil(ranges)
@@ -26,31 +37,36 @@ final class SmallPatternTests: XCTestCase {
     
     func testWaffle() throws {
         try checkPatternCountNoLUT(name: "waffle", expectedCount: 5)
-        try checkPatternCountLUT(name: "waffle", expectedCount: 5, patternSize: .w2h2)
+        try checkPatternCountJSON(name: "waffle", expectedCount: 5, patternSize: patternSize)
+        try checkPatternCountProtoBuf(name: "waffle", expectedCount: 5, patternSize: patternSize)
     }
     
     func testWhite() throws {
         try checkPatternCountNoLUT(name: "white", expectedCount: 1)
-        try checkPatternCountLUT(name: "white", expectedCount: 1, patternSize: .w2h2)
+        try checkPatternCountJSON(name: "white", expectedCount: 1, patternSize: patternSize)
+        try checkPatternCountProtoBuf(name: "white", expectedCount: 1, patternSize: patternSize)
     }
     
     func testDots() throws {
         try checkPatternCountNoLUT(name: "dots", expectedCount: 0)
-        try checkPatternCountLUT(name: "dots", expectedCount: 0, patternSize: .w2h2)
+        try checkPatternCountJSON(name: "dots", expectedCount: 0, patternSize: patternSize)
     }
     
     func testDiamonds() throws {
         try checkPatternCountNoLUT(name: "diamonds", expectedCount: 5)
-        try checkPatternCountLUT(name: "diamonds", expectedCount: 5, patternSize: .w2h2)
+        try checkPatternCountJSON(name: "diamonds", expectedCount: 5, patternSize: patternSize)
+        try checkPatternCountProtoBuf(name: "diamonds", expectedCount: 5, patternSize: patternSize)
     }
     
     func testSquare() throws {
         try checkPatternCountNoLUT(name: "square", expectedCount: 2)
-        try checkPatternCountLUT(name: "square", expectedCount: 2, patternSize: .w2h2)
+        try checkPatternCountJSON(name: "square", expectedCount: 2, patternSize: patternSize)
+        try checkPatternCountProtoBuf(name: "square", expectedCount: 2, patternSize: patternSize)
     }
     
     func testDonut() throws {
         try checkPatternCountNoLUT(name: "donut", expectedCount: 4)
-        try checkPatternCountLUT(name: "donut", expectedCount: 4, patternSize: .w2h2)
+        try checkPatternCountJSON(name: "donut", expectedCount: 4, patternSize: patternSize)
+        try checkPatternCountProtoBuf(name: "donut", expectedCount: 4, patternSize: patternSize)
     }
 }

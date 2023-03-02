@@ -10,7 +10,7 @@ import Foundation
 /// Represents a point within the pattern's core.
 /// Because patterns are small, we can use narrow integers.
 // @metal-type
-struct StartPoint: Hashable, Codable {
+struct StartPoint: Hashable, Codable, Equatable {
     let x: UInt8
     let y: UInt8
     

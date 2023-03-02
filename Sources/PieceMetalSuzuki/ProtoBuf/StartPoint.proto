@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+message StartPointSerial { 
+    uint32 x = 1;
+    uint32 y = 2;
+}
+
+message StartPointSerialArray { 
+    repeated StartPointSerial contents = 1;
+}
