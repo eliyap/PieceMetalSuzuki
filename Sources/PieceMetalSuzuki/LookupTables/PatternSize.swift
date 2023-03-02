@@ -36,6 +36,10 @@ public struct PatternSize {
     public let coreSize: PixelSize
     public let tableWidth: Int
     public let pointsPerPixel: UInt32
+    
+    public var patternCode: String {
+        return "\(coreSize.width)x\(coreSize.height)"
+    }
 }
 
 extension PatternSize {
