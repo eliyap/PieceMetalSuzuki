@@ -1,0 +1,8 @@
+syntax = "proto3";
+
+message StartRunSerial { 
+    sint32 tail = 1;
+    sint32 head = 2;
+    uint32 from = 3;
+    uint32 to   = 4;
+}
