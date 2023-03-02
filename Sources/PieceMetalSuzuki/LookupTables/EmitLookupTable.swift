@@ -29,7 +29,7 @@ internal func write(to fileName: String, _ block: (FileHandle) -> Void) -> Void 
 extension LookupTableBuilder {
     @available(iOS 16.0, *)
     @available(macOS 13.0, *)
-    func emit() -> Void {
+    func emitJSON() -> Void {
         let encoder = JSONEncoder()
         let patternCode = "\(patternSize.coreSize.width)x\(patternSize.coreSize.height)"
         write(to: "runIndices\(patternCode).json") { fileHandle in

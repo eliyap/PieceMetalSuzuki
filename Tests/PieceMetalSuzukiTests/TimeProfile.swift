@@ -17,7 +17,7 @@ final class SuzukiTimeProfile: XCTestCase {
     }
     
     func timeLUT(patternSize: PatternSize) async throws {
-        assert(loadLookupTables(patternSize))
+        assert(loadLookupTablesJSON(patternSize))
         
         measure {
             _ = PieceMetalSuzuki(imageUrl: url("input"), patternSize: patternSize, format: kCVPixelFormatType_32BGRA) { device, queue, texture, pixelBuffer, pointsFilled, runsFilled, pointsUnfilled, runsUnfilled in

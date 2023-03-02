@@ -16,7 +16,7 @@ final class SmallPatternTests: XCTestCase {
     }
     
     func checkPatternCountLUT(name: String, expectedCount: Int, patternSize: PatternSize) throws {
-        assert(loadLookupTables(patternSize))
+        assert(loadLookupTablesJSON(patternSize))
         _ = PieceMetalSuzuki(imageUrl: url(name), patternSize: patternSize, format: kCVPixelFormatType_32BGRA) { device, queue, texture, pixelBuffer, pointsFilled, runsFilled, pointsUnfilled, runsUnfilled in
             let ranges = applyMetalSuzuki_LUT(device: device, commandQueue: queue, texture: texture, pointsFilled: pointsFilled, runsFilled: runsFilled, pointsUnfilled: pointsUnfilled, runsUnfilled: runsUnfilled, patternSize: patternSize)
             XCTAssertNotNil(ranges)
