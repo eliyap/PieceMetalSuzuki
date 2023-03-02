@@ -6,9 +6,8 @@
 //
 
 import Foundation
-import OrderedCollections
 
-struct Quadrilateral { 
+public struct Quadrilateral { 
     public let corner1: DoublePoint
     public let corner2: DoublePoint
     public let corner3: DoublePoint
@@ -53,7 +52,7 @@ public struct RDPParameters {
 
 internal func checkQuadrilateral(
     polyline: [DoublePoint],
-    parameters: RDPParameters = .starter
+    parameters: RDPParameters
 ) -> Quadrilateral? {
     guard polyline.count > parameters.minPoints else {
         #if SHOW_RDP_WORK
@@ -70,16 +69,18 @@ internal func checkQuadrilateral(
     #if SHOW_RDP_WORK
     debugPrint("[RDP] Center: \(center)")
     #endif
-
+    
     /// 2. Find the point furthest from the center, call this A
-    var distFromCenter: OrderedDictionary<Int, Double> = [:]
-    for (idx, pt) in polyline.enumerated() {
+    let __start2 = CFAbsoluteTimeGetCurrent()
+    var distSquaredFromCenter: [Double] = []
+    for pt in polyline {
         let x2 = (pt.x - center.x) * (pt.x - center.x)
         let y2 = (pt.y - center.y) * (pt.y - center.y)
-        let dist = sqrt(x2 + y2)
-        distFromCenter[idx] = dist
+        distSquaredFromCenter.append(x2 + y2)
     }
-    let idxFarthestFromCenter = distFromCenter.max(by: { lhs, rhs in lhs.value < rhs.value })!.key
+    let idxFarthestFromCenter = distSquaredFromCenter.firstIndex(of: distSquaredFromCenter.max()!)! 
+    let __end2 = CFAbsoluteTimeGetCurrent()
+    QuadProfiler.add(__end2 - __start2, to: .findFurthest)
     
     /// 3. With the line from center to A, find 2 points along the line perpendicular to this line.
     let farthest = polyline[idxFarthestFromCenter]
@@ -94,31 +95,32 @@ internal func checkQuadrilateral(
 
     /// 4. Find the point farthest from this line.
     /// That should be the quadrangle's opposite corner.
-    var distFromLine: OrderedDictionary<Int, Double> = [:]
-    for (idx, pt) in polyline.enumerated() where idx != idxFarthestFromCenter {
-        let dist = pt.distance(p0: p0, p1: p1)
-        distFromLine[idx] = dist
+    let __start4 = CFAbsoluteTimeGetCurrent()
+    var distFromLine: [Double] = []
+    for pt in polyline {
+        distFromLine.append(pt.distance(p0: p0, p1: p1))
     }
-    let idxFarthestFromLine = distFromLine.max(by: { lhs, rhs in lhs.value < rhs.value })!.key
+    let idxFarthestFromLine = distFromLine.firstIndex(of: distFromLine.max()!)!
+    let __end4 = CFAbsoluteTimeGetCurrent()
+    QuadProfiler.add(__end4 - __start4, to: .findOpposite)
 
     /// 5. Find the 2 extrema in distance from this line.
     /// i.e. treating the line as horizontal, find the points farthest above and below this line.
     /// These should be the remaining 2 corners.
+    let __start5 = CFAbsoluteTimeGetCurrent()
     let corner1 = polyline[idxFarthestFromCenter]
     let corner3 = polyline[idxFarthestFromLine]
-    var dispFromDiagonal: OrderedDictionary<Int, Double> = [:]
-    for (idx, pt) in polyline.enumerated() {
-        guard (idx != idxFarthestFromCenter) && (idx != idxFarthestFromLine) else {
-            continue
-        }
-        let disp = pt.displacement(p0: corner1, p1: corner3)
-        dispFromDiagonal[idx] = disp
+    var dispFromDiagonal: [Double] = []
+    for pt in polyline {
+        dispFromDiagonal.append(pt.displacement(p0: corner1, p1: corner3))
     }
 
-    let corner2Idx = dispFromDiagonal.min(by: { lhs, rhs in lhs.value < rhs.value })!.key
-    let corner4Idx = dispFromDiagonal.max(by: { lhs, rhs in lhs.value < rhs.value })!.key
+    let corner2Idx = dispFromDiagonal.firstIndex(of: dispFromDiagonal.min()!)!
+    let corner4Idx = dispFromDiagonal.firstIndex(of: dispFromDiagonal.max()!)!
     let corner2 = polyline[corner2Idx]
     let corner4 = polyline[corner4Idx]
+    let __end5 = CFAbsoluteTimeGetCurrent()
+    QuadProfiler.add(__end5 - __start5, to: .findExtrema)
 
     guard
         (corner1 != corner2) && (corner1 != corner3) && (corner1 != corner4),

@@ -10,6 +10,8 @@ public final class MarkerDetector {
     private let queue: any MTLCommandQueue
     private let textureCache: CVMetalTextureCache
     
+    public var rdpParameters: RDPParameters = .starter
+    
     /// The type of Lookup Table used to kickstart contour detection.
     private let patternSize: PatternSize
     
@@ -24,6 +26,8 @@ public final class MarkerDetector {
     private var runsFilled: Buffer<Run>! = nil
     private var pointsUnfilled: Buffer<PixelPoint>! = nil
     private var runsUnfilled: Buffer<Run>! = nil
+    
+    public weak var delegate: (any MarkerDetectorDelegate)? = nil
     
     public init?(device: any MTLDevice, patternSize: PatternSize) {
         self.device = device
@@ -57,15 +61,17 @@ public final class MarkerDetector {
     
     public func detect(pixelBuffer: CVPixelBuffer) -> Void {
         /// Apply a binary filter to make the image black & white.
-        guard let filteredBuffer = Profiler.time(.binarize, {
+        guard let filteredBuffer = SuzukiProfiler.time(.binarize, {
             applyMetalFilter(to: pixelBuffer, device: device, commandQueue: queue, metalTextureCache: textureCache)
         }) else {
             assert(false, "Failed to create pixel buffer.")
             return
         }
         
+        delegate?.didBinarizeImage(result: filteredBuffer)
+        
         /// Obtain a Metal Texture from the image.
-        guard let texture = Profiler.time(.makeTexture, {
+        guard let texture = SuzukiProfiler.time(.makeTexture, {
             makeTextureFromCVPixelBuffer(pixelBuffer: filteredBuffer, textureFormat: .bgra8Unorm, textureCache: textureCache)
         }) else {
             assert(false, "Failed to create texture.")
@@ -88,12 +94,21 @@ public final class MarkerDetector {
         }
         
         /// Run core algorithms.
-        let runIndices = applyMetalSuzuki_LUT(device: device, commandQueue: queue, texture: texture, pointsFilled: pointsFilled, runsFilled: runsFilled, pointsUnfilled: pointsUnfilled, runsUnfilled: runsUnfilled, patternSize: patternSize)
+        let runIndices = printTime("suzuki") {
+            applyMetalSuzuki_LUT(device: device, commandQueue: queue, texture: texture, pointsFilled: pointsFilled, runsFilled: runsFilled, pointsUnfilled: pointsUnfilled, runsUnfilled: runsUnfilled, patternSize: patternSize)
+        }
         guard let runIndices else {
             assertionFailure("Failed to get image contours")
             return
         }
-        decodeMarkers(pixelBuffer: pixelBuffer, pointBuffer: pointsFilled, runBuffer: runsFilled, runIndices: runIndices)
+        let imageSize = CGSize(width: CVPixelBufferGetWidth(pixelBuffer), height: CVPixelBufferGetHeight(pixelBuffer))
+        let quads = printTime("findQuads") {
+            findCandidateQuadrilaterals(pointBuffer: pointsFilled, runBuffer: runsFilled, runIndices: runIndices, parameters: self.rdpParameters)
+        }
+        delegate?.didFind(quadrilaterals: quads, imageSize: imageSize)
+        printTime("decodeMarkers") {
+            decodeMarkers(pixelBuffer: pixelBuffer, quadrilaterals: quads)
+        }
     }
     
     private func allocateBuffers(ofSize count: Int) -> Bool {
@@ -115,10 +130,19 @@ public final class MarkerDetector {
     }
 }
 
+public protocol MarkerDetectorDelegate: AnyObject {
+    /// Applied the binarization filter to make a black and white image.
+    func didBinarizeImage(result: CVPixelBuffer) -> Void
+    
+    /// Found a set of square-ish shapes among the contours in the image.
+    func didFind(quadrilaterals: [Quadrilateral], imageSize: CGSize) -> Void
+}
+
 internal struct PieceMetalSuzuki {
     public init(
         imageUrl: URL,
         patternSize: PatternSize,
+        format: OSType,
         _ block: (MTLDevice, MTLCommandQueue, MTLTexture, CVPixelBuffer, Buffer<PixelPoint>, Buffer<Run>, Buffer<PixelPoint>, Buffer<Run>) -> Void
     ) {
         guard
@@ -137,7 +161,6 @@ internal struct PieceMetalSuzuki {
         /// Make a pixel buffer.
         let width = Int(ciImage.extent.width)
         let height = Int(ciImage.extent.height)
-        let format = kCVPixelFormatType_32BGRA
         let options: NSDictionary = [
             kCVPixelBufferCGImageCompatibilityKey: true,
             kCVPixelBufferMetalCompatibilityKey: true,
@@ -158,15 +181,15 @@ internal struct PieceMetalSuzuki {
             return
         }
         
-        Profiler.time(.overall) {
-            guard let filteredBuffer = Profiler.time(.binarize, {
+        SuzukiProfiler.time(.overall) {
+            guard let filteredBuffer = SuzukiProfiler.time(.binarize, {
                 applyMetalFilter(to: pixelBuffer, device: device, commandQueue: commandQueue, metalTextureCache: metalTextureCache)
             }) else {
                 assert(false, "Failed to create pixel buffer.")
                 return
             }
             
-            guard let texture = Profiler.time(.makeTexture, {
+            guard let texture = SuzukiProfiler.time(.makeTexture, {
                 makeTextureFromCVPixelBuffer(pixelBuffer: filteredBuffer, textureFormat: .bgra8Unorm, textureCache: metalTextureCache)
             }) else {
                 assert(false, "Failed to create texture.")
@@ -270,24 +293,24 @@ internal func applyMetalSuzuki(
     runsFilled: Buffer<Run>,
     pointsUnfilled: Buffer<PixelPoint>,
     runsUnfilled: Buffer<Run>
-) -> Void {
+) -> Range<Int>? {
     let patternSize = PatternSize.w1h1
     
     /// Apply Metal filter to pixel buffer.
     guard createChainStarters(device: device, commandQueue: commandQueue, texture: texture, runBuffer: runsFilled, pointBuffer: pointsFilled) else {
         assert(false, "Failed to run chain start kernel.")
-        return
+        return nil
     }
     
     var grid = Grid(
         imageSize: PixelSize(width: UInt32(texture.width), height: UInt32(texture.height)),
-        regions: Profiler.time(.initRegions) {
+        regions: SuzukiProfiler.time(.initRegions) {
             return initializeRegions(runBuffer: runsFilled, texture: texture, patternSize: patternSize)
         },
         patternSize: patternSize
     )
     
-    Profiler.time(.combineAll) {
+    SuzukiProfiler.time(.combineAll) {
         grid.combineAll(
             device: device,
             pointsFilled: pointsFilled,
@@ -298,7 +321,7 @@ internal func applyMetalSuzuki(
         )
     }
     
-    return
+    return grid.regions[0][0].runIndices(imageSize: grid.imageSize, gridSize: grid.gridSize)
 }
 
 /**
@@ -323,13 +346,13 @@ internal func applyMetalSuzuki_LUT(
     
     var grid = Grid(
         imageSize: PixelSize(width: UInt32(texture.width), height: UInt32(texture.height)),
-        regions: Profiler.time(.initRegions) {
+        regions: SuzukiProfiler.time(.initRegions) {
             return initializeRegions_LUT(runBuffer: runsFilled, texture: texture, patternSize: patternSize)
         },
         patternSize: patternSize
     )
     
-    Profiler.time(.combineAll) {
+    SuzukiProfiler.time(.combineAll) {
         grid.combineAll(
             device: device,
             pointsFilled: pointsFilled,
@@ -427,7 +450,7 @@ internal func createChainStarters(
     #endif
     
     let end = CFAbsoluteTimeGetCurrent()
-    Profiler.add(end - start, to: .startChains)
+    SuzukiProfiler.add(end - start, to: .startChains)
     
     return true
 }

@@ -36,7 +36,8 @@ let package = Package(
             swiftSettings: [
                 .unsafeFlags([
                     /// Disabling this flag turns of time profiling and the associated overhead.
-//                    "-DPROFILER_ON",
+//                    "-DPROFILE_SUZUKI",
+                    "-DPROFILE_QUAD",
 
                     /// Optimization settings.
                     "-Ounchecked",

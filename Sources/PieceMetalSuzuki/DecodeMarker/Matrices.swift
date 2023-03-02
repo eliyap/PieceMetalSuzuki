@@ -3,8 +3,18 @@
 
 import Foundation
 
-struct Matrix {
+internal struct Matrix: CustomStringConvertible {
     public let values: [[Double]]
+
+    public var description: String {
+        values.map { row in
+            row.map { String(format: "%.2f", $0) }.joined(separator: ", ")
+        }.joined(separator: "\n")
+    }
+
+    /// Diagonal is used as denominator, must not be too small, otherwise floating point math is whack.
+    public static let minDiagonalSize: Double = 0.0000001
+    
     public func determinant() -> Double {
         var rows = self.values
 
@@ -16,22 +26,21 @@ struct Matrix {
         /// Use Gaussian elimination to form an upper triangular matrix.
         for rowIdx in 0..<(rows.count-1) {
             var zeroOut = false
-            let diagonal = rows[rowIdx][rowIdx]
-            if diagonal.isZero == false { 
+            if abs(rows[rowIdx][rowIdx]) > Matrix.minDiagonalSize {
                 zeroOut = true
             } else { 
-                // Find the first non-zero element below the diagonal.
+                /// Find the first non-zero element below the diagonal.
                 let nonZeroRowIdx = ((rowIdx+1)..<rows.count).first(where: { lowerIdx in 
                     rows[lowerIdx][rowIdx].isZero == false 
                 })  
                 if let nonZeroRowIdx { 
-                    // Add that row to the current row to make the diagonal element non-zero.
+                    /// Add that row to the current row to make the diagonal element non-zero.
                     for colIdx in 0..<rows.count {
                         rows[rowIdx][colIdx] += rows[nonZeroRowIdx][colIdx]
                     }
                     zeroOut = true
                 } else { 
-                    // No need to zero out elements below this diagonal element.
+                    /// No need to zero out elements below this diagonal element.
                 }
             } 
             
@@ -98,15 +107,20 @@ struct PerspectiveTransformMatrix: CustomStringConvertible {
 }
 
 extension DoublePoint { 
-    func transformed(by matrix: PerspectiveTransformMatrix) -> DoublePoint {
+    func transformed(by matrix: PerspectiveTransformMatrix) -> DoublePoint? {
         /// Via https://en.wikipedia.org/wiki/Transformation_matrix#/media/File:Perspective_transformation_matrix_2D.svg
         let (a, b, c) = (matrix.a, matrix.b, matrix.c)
         let (d, e, f) = (matrix.d, matrix.e, matrix.f)
         let (g, h, i) = (matrix.g, matrix.h, matrix.i)
-        return DoublePoint(
+        let point = DoublePoint(
             x: ((a * self.x) + (b * self.y) + c) / ((g * self.x) + (h * self.y) + i),
             y: ((d * self.x) + (e * self.y) + f) / ((g * self.x) + (h * self.y) + i)
         )
+        if point.x.isNaN || point.x.isInfinite || point.y.isNaN || point.y.isInfinite {
+            return nil
+        } else {
+            return point
+        }
     }
 }
 

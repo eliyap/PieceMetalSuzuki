@@ -7,122 +7,92 @@ final class PieceMetalSuzukiTests: XCTestCase {
         Bundle.module.url(forResource: name, withExtension: ".png", subdirectory: "Images")!
     }
     
-    func testExample() throws {
-        // This is an example of a functional test case.
-        // Use XCTAssert and related functions to verify your tests produce the correct
-        // results.
-    }
-    
-    func testDoubleDonut() async throws {
-        measure {
-            _ = PieceMetalSuzuki(imageUrl: url("input"), patternSize: .w1h1) { device, queue, texture, pixelBuffer, pointsFilled, runsFilled, pointsUnfilled, runsUnfilled in
-                applyMetalSuzuki(device: device, commandQueue: queue, texture: texture, pointsFilled: pointsFilled, runsFilled: runsFilled, pointsUnfilled: pointsUnfilled, runsUnfilled: runsUnfilled)
-            }
-        }
-        
-        await Profiler.report()
-    }
-    
-    func testWaffle() throws {
-        _ = PieceMetalSuzuki(imageUrl: url("waffle"), patternSize: .w1h1) { device, queue, texture, pixelBuffer, pointsFilled, runsFilled, pointsUnfilled, runsUnfilled in
-            applyMetalSuzuki(device: device, commandQueue: queue, texture: texture, pointsFilled: pointsFilled, runsFilled: runsFilled, pointsUnfilled: pointsUnfilled, runsUnfilled: runsUnfilled)
-        }
-    }
-    
-    func testWhite() throws {
-        _ = PieceMetalSuzuki(imageUrl: url("white"), patternSize: .w1h1) { device, queue, texture, pixelBuffer, pointsFilled, runsFilled, pointsUnfilled, runsUnfilled in
-            applyMetalSuzuki(device: device, commandQueue: queue, texture: texture, pointsFilled: pointsFilled, runsFilled: runsFilled, pointsUnfilled: pointsUnfilled, runsUnfilled: runsUnfilled)
-        }
-    }
-    
-    func testDots() throws {
-        _ = PieceMetalSuzuki(imageUrl: url("dots"), patternSize: .w1h1) { device, queue, texture, pixelBuffer, pointsFilled, runsFilled, pointsUnfilled, runsUnfilled in
-            applyMetalSuzuki(device: device, commandQueue: queue, texture: texture, pointsFilled: pointsFilled, runsFilled: runsFilled, pointsUnfilled: pointsUnfilled, runsUnfilled: runsUnfilled)
-        }
-    }
-    
-    func testDiamonds() throws {
-        _ = PieceMetalSuzuki(imageUrl: url("diamonds"), patternSize: .w1h1) { device, queue, texture, pixelBuffer, pointsFilled, runsFilled, pointsUnfilled, runsUnfilled in
-            applyMetalSuzuki(device: device, commandQueue: queue, texture: texture, pointsFilled: pointsFilled, runsFilled: runsFilled, pointsUnfilled: pointsUnfilled, runsUnfilled: runsUnfilled)
-        }
-    }
-    
-    func testSquare() throws {
-        _ = PieceMetalSuzuki(imageUrl: url("square"), patternSize: .w1h1) { device, queue, texture, pixelBuffer, pointsFilled, runsFilled, pointsUnfilled, runsUnfilled in
-            applyMetalSuzuki(device: device, commandQueue: queue, texture: texture, pointsFilled: pointsFilled, runsFilled: runsFilled, pointsUnfilled: pointsUnfilled, runsUnfilled: runsUnfilled)
-        }
-    }
-    
-    func testDonut() throws {
-        _ = PieceMetalSuzuki(imageUrl: url("donut"), patternSize: .w1h1) { device, queue, texture, pixelBuffer, pointsFilled, runsFilled, pointsUnfilled, runsUnfilled in
-            applyMetalSuzuki(device: device, commandQueue: queue, texture: texture, pointsFilled: pointsFilled, runsFilled: runsFilled, pointsUnfilled: pointsUnfilled, runsUnfilled: runsUnfilled)
-        }
-    }
-    
-    func testIndirectLUT1x1() throws {
-        let device = MTLCreateSystemDefaultDevice()!
-        let patternSize = PatternSize.w1h1
-        let ltb = LookupTableBuilder(patternSize: patternSize)
-        ltb.setBuffers()
-        
-        _ = PieceMetalSuzuki(imageUrl: url("square"), patternSize: patternSize) { device, queue, texture, pixelBuffer, pointsFilled, runsFilled, pointsUnfilled, runsUnfilled in
-            applyMetalSuzuki_LUT(device: device, commandQueue: queue, texture: texture, pointsFilled: pointsFilled, runsFilled: runsFilled, pointsUnfilled: pointsUnfilled, runsUnfilled: runsUnfilled, patternSize: patternSize)
-        }
-    }
-    
-    func testIndirectLUT2x1() async throws {
-        let patternSize = PatternSize.w2h1
-        let ltb = LookupTableBuilder(patternSize: patternSize)
-        ltb.setBuffers()
-        
-        measure {
-            _ = PieceMetalSuzuki(imageUrl: url("input"), patternSize: patternSize) { device, queue, texture, pixelBuffer, pointsFilled, runsFilled, pointsUnfilled, runsUnfilled in
-                applyMetalSuzuki_LUT(device: device, commandQueue: queue, texture: texture, pointsFilled: pointsFilled, runsFilled: runsFilled, pointsUnfilled: pointsUnfilled, runsUnfilled: runsUnfilled, patternSize: patternSize)
-            }
-        }
-        
-        await Profiler.report()
-    }
-    
-    func testIndirectLUT2x2() async throws {
+    func testDetection() async throws {
         let patternSize = PatternSize.w2h2
-        
-        /// Generate LUT from scratch.
-//        let ltb = LookupTableBuilder(patternSize: patternSize)
-//        ltb.setBuffers()
-        
-        /// Load LUT from JSON.
-        loadLookupTables(patternSize)
-        
-        measure {
-            _ = PieceMetalSuzuki(imageUrl: url("input"), patternSize: patternSize) { device, queue, texture, pixelBuffer, pointsFilled, runsFilled, pointsUnfilled, runsUnfilled in
-                applyMetalSuzuki_LUT(device: device, commandQueue: queue, texture: texture, pointsFilled: pointsFilled, runsFilled: runsFilled, pointsUnfilled: pointsUnfilled, runsUnfilled: runsUnfilled, patternSize: patternSize)
-            }
-        }
-
-        await Profiler.report()
-    }
-    
-    @available(iOS 16.0, *)
-    @available(macOS 13.0, *)
-    func testEmitLUT2x1() async throws {
-        LookupTableBuilder(patternSize: .w2h1).emit()
-    }
-    
-    @available(iOS 16.0, *)
-    @available(macOS 13.0, *)
-    func testEmitLUT2x2() async throws {
-        LookupTableBuilder(patternSize: .w2h2).emit()
-    }
-    
-    func testRDP() throws {
-        let patternSize = PatternSize.w2h2
-        loadLookupTables(patternSize)
+        let format = kCVPixelFormatType_32BGRA
+        assert(loadLookupTables(patternSize))
         
         let imageUrl = url("qrTilt")
-        _ = PieceMetalSuzuki(imageUrl: imageUrl, patternSize: patternSize) { device, queue, texture, pixelBuffer, pointsFilled, runsFilled, pointsUnfilled, runsUnfilled in
+        _ = PieceMetalSuzuki(imageUrl: imageUrl, patternSize: patternSize, format: format) { device, queue, texture, pixelBuffer, pointsFilled, runsFilled, pointsUnfilled, runsUnfilled in
             let runIndices = applyMetalSuzuki_LUT(device: device, commandQueue: queue, texture: texture, pointsFilled: pointsFilled, runsFilled: runsFilled, pointsUnfilled: pointsUnfilled, runsUnfilled: runsUnfilled, patternSize: patternSize)!
-            decodeMarkers(pixelBuffer: pixelBuffer, pointBuffer: pointsFilled, runBuffer: runsFilled, runIndices: runIndices)
+            measure {
+                let quads = findCandidateQuadrilaterals(pointBuffer: pointsFilled, runBuffer: runsFilled, runIndices: runIndices, parameters: RDPParameters(
+                    minPoints: 10,
+                    sideErrorLimit: 0.1,
+                    aspectRatioErrorLimit: 0.5
+                ))
+                
+                debugPrint("\(quads.count) quads")
+                decodeMarkers(pixelBuffer: pixelBuffer, quadrilaterals: quads)
+            }
+            saveBufferToPng(buffer: pixelBuffer, format: .BGRA8)
         }
+        
+        await QuadProfiler.report()
+    }
+    
+    func testBgraImageManipulation() throws {
+        let imageUrl = url("qrTilt")
+        let ciImage = CIImage(contentsOf: imageUrl)!
+        var pixelBuffer: CVPixelBuffer!
+        CVPixelBufferCreate(
+            kCFAllocatorDefault,
+            Int(ciImage.extent.width),
+            Int(ciImage.extent.height),
+            kCVPixelFormatType_32BGRA,
+            NSDictionary(),
+            &pixelBuffer
+        )
+        CIContext().render(ciImage, to: pixelBuffer)
+        
+        /// Draw a diagonal line from top left to bottom right.
+        CVPixelBufferLockBaseAddress(pixelBuffer, [])
+        let baseAddress = CVPixelBufferGetBaseAddress(pixelBuffer)!
+            .assumingMemoryBound(to: UInt8.self)
+        let bytesPerRow = CVPixelBufferGetBytesPerRow(pixelBuffer)
+        let width = CVPixelBufferGetWidth(pixelBuffer)
+        let height = CVPixelBufferGetHeight(pixelBuffer)
+        for idx in 0..<min(width, height) {
+            let pixel = baseAddress.advanced(by: (idx * bytesPerRow) + (idx * 4))
+            pixel[0] = 255
+            pixel[1] = 0
+            pixel[2] = 0
+            pixel[3] = 255
+        }
+        CVPixelBufferUnlockBaseAddress(pixelBuffer, [])
+
+        saveBufferToPng(buffer: pixelBuffer, format: .RGBA8)
+    }
+    
+    func testYCbCrImageManipulation() throws {
+        let imageUrl = url("qrTilt")
+        let ciImage = CIImage(contentsOf: imageUrl)!
+        var pixelBuffer: CVPixelBuffer!
+        CVPixelBufferCreate(
+            kCFAllocatorDefault,
+            Int(ciImage.extent.width),
+            Int(ciImage.extent.height),
+            kCVPixelFormatType_420YpCbCr8BiPlanarFullRange,
+            NSDictionary(),
+            &pixelBuffer
+        )
+        CIContext().render(ciImage, to: pixelBuffer)
+        
+        /// Draw a diagonal line from top left to bottom right.
+        CVPixelBufferLockBaseAddress(pixelBuffer, [])
+        let lumaPlaneIndex = 0
+        let planeType = UInt8.self
+        let baseAddress = CVPixelBufferGetBaseAddressOfPlane(pixelBuffer, lumaPlaneIndex)!
+            .assumingMemoryBound(to: planeType)
+        let bytesPerRow = CVPixelBufferGetBytesPerRowOfPlane(pixelBuffer, lumaPlaneIndex)
+        let width = CVPixelBufferGetWidthOfPlane(pixelBuffer, lumaPlaneIndex)
+        let height = CVPixelBufferGetHeightOfPlane(pixelBuffer, lumaPlaneIndex)
+        for idx in 0..<min(width, height) {
+            let pixel = baseAddress.advanced(by: (idx * bytesPerRow) + idx)
+            pixel[0] = 0
+        }
+        CVPixelBufferUnlockBaseAddress(pixelBuffer, [])
+
+        saveBufferToPng(buffer: pixelBuffer, format: .RGBA8)
     }
 }

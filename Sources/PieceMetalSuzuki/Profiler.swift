@@ -17,16 +17,36 @@ extension Dictionary where Key: Comparable {
     }
 }
 
-public actor Profiler {
-    enum CodeRegion: CaseIterable {
-        case blit, trailingCopy, binarize, startChains, overall, makeTexture, initRegions, bufferInit, blitWait, runIndices
-        case combineAll, combine, combineFindPartner, combineJoin
-        case lutCopy
-    }
+public protocol CodeRegion: Hashable, CaseIterable { }
 
-    private var timing: [CodeRegion: (Int, TimeInterval)] = {
-        var dict = [CodeRegion: (Int, TimeInterval)]()
-        for region in CodeRegion.allCases {
+enum SuzukiRegion: Hashable, CaseIterable, CodeRegion {
+    case blit, trailingCopy, binarize, startChains, overall, makeTexture, initRegions, bufferInit, blitWait, runIndices
+    case combineAll, combine, combineFindPartner, combineJoin
+    case lutCopy
+}
+
+enum QuadRegion: Hashable, CaseIterable, CodeRegion {
+    case overall, overallSerial
+    case findFurthest, findOpposite, findExtrema
+}
+
+#if PROFILE_SUZUKI
+internal let SuzukiProfiler = Profiler<SuzukiRegion>(enabled: true)
+#else
+internal let SuzukiProfiler = Profiler<SuzukiRegion>(enabled: false)
+#endif
+
+#if PROFILE_QUAD
+internal let QuadProfiler = Profiler<QuadRegion>(enabled: true)
+#else
+internal let QuadProfiler = Profiler<QuadRegion>(enabled: false)
+#endif
+
+public actor Profiler<Region: CodeRegion> {
+
+    private var timing: [Region: (Int, TimeInterval)] = {
+        var dict = [Region: (Int, TimeInterval)]()
+        for region in Region.allCases {
             dict[region] = (0, 0)
         }
         return dict
@@ -37,93 +57,95 @@ public actor Profiler {
         return dict
     }()
 
-    private init() { }
-    public static let shared = Profiler()
-
-    private func add(_ duration: TimeInterval, to region: CodeRegion) -> Void {
+    private let ENABLED: Bool
+    public init(enabled: Bool) {
+        self.ENABLED = enabled
+    }
+    
+    private func addIsolated(_ duration: TimeInterval, to region: Region) {
         let (count, total) = timing[region]!
-        timing[region] = (count + 1, total + duration)
+        self.timing[region] = (count + 1, total + duration)
     }
-    static func add(_ duration: TimeInterval, to region: CodeRegion) {
-        #if PROFILER_ON
+    nonisolated func add(_ duration: TimeInterval, to region: Region) {
+        guard ENABLED else { return }
         Task(priority: .high) {
-            await Profiler.shared.add(duration, to: region)
+            await addIsolated(duration, to: region)
         }
-        #endif
     }
     
-    private func add(_ duration: TimeInterval, iteration: Int) -> Void {
+    private func addIsolated(_ duration: TimeInterval, iteration: Int) -> Void {
         let (count, total) = iterationTiming[iteration] ?? (0, 0)
-        iterationTiming[iteration] = (count + 1, total + duration)
+        self.iterationTiming[iteration] = (count + 1, total + duration)
     }
-    static func add(_ duration: TimeInterval, iteration: Int) -> Void {
-        #if PROFILER_ON
+    nonisolated func add(_ duration: TimeInterval, iteration: Int) -> Void {
+        guard ENABLED else { return }
         Task(priority: .high) {
-            await Profiler.shared.add(duration, iteration: iteration)
+            await addIsolated(duration, iteration: iteration)
         }
-        #endif
     }
 
-    static func time(_ region: CodeRegion, _ block: () -> Void) {
-        #if PROFILER_ON
+    nonisolated func time(_ region: Region, _ block: () -> Void) {
         let start = CFAbsoluteTimeGetCurrent()
-        #endif
         
         block()
         
-        #if PROFILER_ON
         let end = CFAbsoluteTimeGetCurrent()
-        Profiler.add(end - start, to: region)
-        #endif
-    }
-    
-    static func time(_ iteration: Int, _ block: () -> Void) {
-        #if PROFILER_ON
-        let start = CFAbsoluteTimeGetCurrent()
-        #endif
-        
-        block()
-        
-        #if PROFILER_ON
-        let end = CFAbsoluteTimeGetCurrent()
-        Task(priority: .high) {
-            await Profiler.shared.add(end - start, iteration: iteration)
+        let duration = end - start
+        if ENABLED {
+            self.add(duration, to: region)
         }
-        #endif
     }
     
-    static func time<Result>(_ region: CodeRegion, _ block: () -> Result) -> Result {
-        #if PROFILER_ON
+    nonisolated func time(_ iteration: Int, _ block: () -> Void) {
         let start = CFAbsoluteTimeGetCurrent()
-        #endif
+        
+        block()
+        
+        let end = CFAbsoluteTimeGetCurrent()
+        let duration = end - start
+        if ENABLED {
+            self.add(duration, iteration: iteration)
+        }
+    }
+        
+    
+    nonisolated func time<Result>(_ region: Region, _ block: () -> Result) -> Result {
+        let start = CFAbsoluteTimeGetCurrent()
         
         let result = block()
         
-        #if PROFILER_ON
         let end = CFAbsoluteTimeGetCurrent()
-        Profiler.add(end - start, to: region)
-        #endif
-
+        let duration = end - start
+        if ENABLED {
+            self.add(duration, to: region)
+        }
         return result
     }
 
-    static func report() async {
-        #if PROFILER_ON
+    public func report() async {
+        guard ENABLED else { return }
         /// Wait for everything to finish.
         try! await Task.sleep(nanoseconds: UInt64(1_000_000_000 * 2))
         
-        let dict = await Profiler.shared.timing
+        let dict = self.timing
 //        for (region, results) in dict where [.overall, .combineAll, .combine].contains(region) {
             for (region, results) in dict where results.0 > 0 {
             let (count, time) = results
             print("\(region): \(time)s, \(count) (avg \(time / Double(count))s)")
         }
         
-        let timingDict = await Profiler.shared.iterationTiming
+        let timingDict = self.iterationTiming
         for (iteration, results) in timingDict.sortedByKey() {
             let (count, time) = results
             print("\(iteration): \(time)s, \(count) (avg \(time / Double(count))s)")
         }
-        #endif
     }
+}
+
+internal func printTime<Result>(_ label: String = "Time", _ block: () -> Result) -> Result {
+    let start = CFAbsoluteTimeGetCurrent()
+    let result = block()
+    let end = CFAbsoluteTimeGetCurrent()
+    debugPrint(label + String(format: ": %.2f s", end - start))
+    return result
 }
