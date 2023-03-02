@@ -18,7 +18,6 @@ let package = Package(
     dependencies: [
         // Dependencies declare other packages that this package depends on.
         // .package(url: /* package url */, from: "1.0.0"),
-        .package(url: "https://github.com/apple/swift-collections.git", .upToNextMajor(from: "1.0.0")),
         .package(url: "https://github.com/apple/swift-protobuf.git", from: "1.21.0"),
     ],
     targets: [
@@ -27,7 +26,6 @@ let package = Package(
         .target(
             name: "PieceMetalSuzuki",
             dependencies: [
-                .product(name: "Collections", package: "swift-collections"),
                 .product(name: "SwiftProtobuf", package: "swift-protobuf"),
             ],
             resources: [

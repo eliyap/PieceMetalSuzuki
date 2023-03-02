@@ -7,7 +7,6 @@
 
 import Foundation
 import CoreVideo
-import OrderedCollections
 
 /**
  The objective of a Lookup Table is to quick-start the creation of a `Region` from a pattern.
