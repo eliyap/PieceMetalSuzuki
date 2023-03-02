@@ -46,13 +46,18 @@ internal final class LookupTableBuilder {
             return
         }
         
+        guard let kernelFunction = loadChainStarterFunction(device: device) else {
+            assert(false, "Failed to load function.")
+            return
+        }
+        
         let starterSize = PatternSize.w1h1
         let iterations = 0..<patternSize.lutHeight
         for iteration in iterations {
             buffer.setPattern(coreSize: patternSize.coreSize, iteration: iteration)
             let texture = makeTextureFromCVPixelBuffer(pixelBuffer: buffer.buffer, textureFormat: .bgra8Unorm, textureCache: metalTextureCache)!
             
-            createChainStarters(device: device, commandQueue: commandQueue, texture: texture, runBuffer: runBuffer, pointBuffer: pointBuffer)
+                createChainStarters(device: device, function: kernelFunction, commandQueue: commandQueue, texture: texture, runBuffer: runBuffer, pointBuffer: pointBuffer)
             var grid = Grid(
                 imageSize: PixelSize(width: UInt32(texture.width), height: UInt32(texture.height)),
                 regions: SuzukiProfiler.time(.initRegions) {

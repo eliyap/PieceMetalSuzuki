@@ -296,8 +296,14 @@ internal func applyMetalSuzuki(
 ) -> Range<Int>? {
     let patternSize = PatternSize.w1h1
     
+    
+    guard let kernelFunction = loadChainStarterFunction(device: device) else {
+        assert(false, "Failed to load function.")
+        return nil
+    }
+    
     /// Apply Metal filter to pixel buffer.
-    guard createChainStarters(device: device, commandQueue: commandQueue, texture: texture, runBuffer: runsFilled, pointBuffer: pointsFilled) else {
+    guard createChainStarters(device: device, function: kernelFunction, commandQueue: commandQueue, texture: texture, runBuffer: runsFilled, pointBuffer: pointsFilled) else {
         assert(false, "Failed to run chain start kernel.")
         return nil
     }
@@ -409,6 +415,7 @@ internal func loadChainStarterFunction(device: MTLDevice) -> MTLFunction? {
 
 internal func createChainStarters(
     device: MTLDevice,
+    function: MTLFunction,
     commandQueue: MTLCommandQueue,
     texture: MTLTexture,
     runBuffer: Buffer<Run>,
