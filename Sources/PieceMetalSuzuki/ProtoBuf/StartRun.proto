@@ -6,3 +6,7 @@ message StartRunSerial {
     uint32 from = 3;
     uint32 to   = 4;
 }
+
+message StartRunSerialArray { 
+    repeated StartRunSerial contents = 1;
+}

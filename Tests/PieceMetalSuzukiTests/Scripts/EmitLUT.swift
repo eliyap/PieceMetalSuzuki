@@ -17,4 +17,8 @@ final class EmitLUT: XCTestCase {
     func testEmitLUT2x2JSON() async throws {
         LookupTableBuilder(patternSize: .w2h2).emitJSON()
     }
+    
+    func testEmitLUT2x1ProtoBuf() async throws {
+        LookupTableBuilder(patternSize: .w2h1).emitProtoBuf()
+    }
 }

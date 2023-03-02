@@ -56,6 +56,57 @@ extension LookupTableBuilder {
     }
 }
 
+extension LookupTableBuilder {
+    @available(iOS 16.0, *)
+    @available(macOS 13.0, *)
+    func emitProtoBuf() -> Void {
+        let patternCode = "\(patternSize.coreSize.width)x\(patternSize.coreSize.height)"
+        write(to: "runIndices\(patternCode).buf") { fileHandle in
+            var buf = ArrayIndices()
+            buf.indices = runIndices.map { UInt32($0) }
+            let data = try! buf.serializedData()
+            fileHandle.write(data)
+        }
+        
+        write(to: "runTable\(patternCode).buf") { fileHandle in
+            var buf = StartRunSerialArray()
+            buf.contents = runTable.flatMap{ runRow in
+                return runRow.map { run in
+                    var serial = StartRunSerial()
+                    serial.head = Int32(run.head)
+                    serial.tail = Int32(run.tail)
+                    serial.from = UInt32(run.from)
+                    serial.to = UInt32(run.to)
+                    return serial
+                }
+            }
+            let data = try! buf.serializedData()
+            fileHandle.write(data)
+        }
+
+        write(to: "pointIndices\(patternCode).buf") { fileHandle in
+            var buf = ArrayIndices()
+            buf.indices = pointIndices.map { UInt32($0) }
+            let data = try! buf.serializedData()
+            fileHandle.write(data)
+        }
+
+        write(to: "pointTable\(patternCode).buf") { fileHandle in
+            var buf = StartPointSerialArray()
+            buf.contents = pointTable.flatMap{ pointRow in
+                return pointRow.map { point in
+                    var serial = StartPointSerial()
+                    serial.x = UInt32(point.x)
+                    serial.y = UInt32(point.y)
+                    return serial
+                }
+            }
+            let data = try! buf.serializedData()
+            fileHandle.write(data)
+        }
+    }
+}
+
 public func loadLookupTablesJSON(_ patternSize: PatternSize) -> Bool {
     /// - Note: the folder is `./LookupTables/JSON` is copied to `./JSON`. The super-directory is not preserved.
     let dir = "JSON"
