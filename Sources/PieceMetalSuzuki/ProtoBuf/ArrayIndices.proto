@@ -1,0 +1,7 @@
+syntax = "proto3";
+
+message ArrayIndices { 
+    // For a 2x4 core size, the pattern size is 4x6.
+    // Hence 24 bits which is < 32 bits.
+    repeated uint32 indices = 1;
+}
