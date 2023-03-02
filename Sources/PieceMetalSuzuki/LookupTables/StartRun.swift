@@ -10,7 +10,7 @@ import Foundation
 /// Represents a series of points in the pattern's core.
 /// Because runs are short, we can use narrow integers.
 // @metal-type
-struct StartRun: Hashable, Codable {
+struct StartRun: Hashable, Codable, Equatable {
     /// Invalid negative values signal absence of a run.
     let tail: Int8
     let head: Int8

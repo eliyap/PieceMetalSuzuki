@@ -17,11 +17,11 @@ internal final class LookupTableBuilder {
     let patternSize: PatternSize
     
     /// Contains distinct series of points.
-    var pointTable: OrderedSet<[StartPoint]> = []
+    var pointTable: [[StartPoint]] = []
     var pointIndices: [UInt16] = []
     
     /// Contains distinct series of runs.
-    var runTable: OrderedSet<[StartRun]> = []
+    var runTable: [[StartRun]] = []
     var runIndices: [UInt16] = []
     
     public init(patternSize: PatternSize) {
@@ -69,7 +69,7 @@ internal final class LookupTableBuilder {
                 runsUnfilled: runsUnfilled,
                 commandQueue: commandQueue
             )
-
+            
             assert(runs.count <= patternSize.tableWidth)
             let startRuns = (0..<patternSize.tableWidth).map { runIdx in
                 if runs.indices.contains(runIdx) {
@@ -85,9 +85,13 @@ internal final class LookupTableBuilder {
                     return .invalid
                 }
             }
-            runTable.append(startRuns)
-            runIndices.append(UInt16(runTable.firstIndex(of: startRuns)!))
-
+            if let rowIdx = runTable.firstIndex(of: startRuns) {
+                runIndices.append(UInt16(rowIdx))
+            } else {
+                runIndices.append(UInt16(runTable.count))
+                runTable.append(startRuns)
+            }
+            
             assert(points.count <= patternSize.tableWidth)
             let startPoints = (0..<patternSize.tableWidth).map { pointIdx in
                 if points.indices.contains(pointIdx) {
@@ -100,8 +104,12 @@ internal final class LookupTableBuilder {
                     return .invalid
                 }
             }
-            pointTable.append(startPoints)
-            pointIndices.append(UInt16(pointTable.firstIndex(of: startPoints)!))
+            if let rowIdx = pointTable.firstIndex(of: startPoints) {
+                pointIndices.append(UInt16(rowIdx))
+            } else {
+                pointIndices.append(UInt16(pointTable.count))
+                pointTable.append(startPoints)
+            }
             
             if (iteration.isMultiple(of: 10000)) {
                 print(iteration)
