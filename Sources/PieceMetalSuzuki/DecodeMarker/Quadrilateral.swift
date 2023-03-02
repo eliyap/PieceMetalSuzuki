@@ -13,6 +13,13 @@ public struct Quadrilateral {
     public let corner3: DoublePoint
     public let corner4: DoublePoint
     
+    public init(corner1: DoublePoint, corner2: DoublePoint, corner3: DoublePoint, corner4: DoublePoint) {
+        self.corner1 = corner1
+        self.corner2 = corner2
+        self.corner3 = corner3
+        self.corner4 = corner4
+    }
+    
     var xPixelBounds: Range<Int> {
         let xMin = min(corner1.x, corner2.x, corner3.x, corner4.x)
         let xPixelMin = Int(xMin.rounded(.down))
