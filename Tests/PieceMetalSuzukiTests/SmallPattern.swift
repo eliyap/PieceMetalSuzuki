@@ -50,6 +50,7 @@ final class SmallPatternTests: XCTestCase {
     func testDots() throws {
         try checkPatternCountNoLUT(name: "dots", expectedCount: 0)
         try checkPatternCountJSON(name: "dots", expectedCount: 0, patternSize: patternSize)
+        try checkPatternCountProtoBuf(name: "dots", expectedCount: 0, patternSize: patternSize)
     }
     
     func testDiamonds() throws {
