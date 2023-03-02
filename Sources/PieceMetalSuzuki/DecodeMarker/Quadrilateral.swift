@@ -51,7 +51,7 @@ public struct RDPParameters {
     public let aspectRatioErrorLimit: Double
     
     public static let starter = RDPParameters(
-        minPoints: 20,
+        minPoints: 100,
         sideErrorLimit: 0.10,
         aspectRatioErrorLimit: 0.5
     )
