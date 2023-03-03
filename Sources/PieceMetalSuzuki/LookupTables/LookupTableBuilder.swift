@@ -126,6 +126,10 @@ internal final class LookupTableBuilder {
         /// Report.
         debugPrint("\(runTable.count) distinct runs")
         debugPrint("\(pointTable.count) distinct points")
+        let validRunCount = runTable
+            .map { row in row.filter { $0 != .invalid }.count }
+            .reduce(0, +)
+        debugPrint("\(validRunCount) / \(runTable.count * runTable[0].count) valid runs")
     }
     
     public func setBuffers() -> Void {
