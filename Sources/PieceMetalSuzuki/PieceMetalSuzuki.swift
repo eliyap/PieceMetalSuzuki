@@ -231,8 +231,6 @@ internal struct PieceMetalSuzuki {
 //
 //        /// Write image back out.
 //        saveBufferToPng(buffer: bufferA, format: .RGBA8)
-
-        print("so far so good")
     }
 }
 
