@@ -1,10 +1,12 @@
 syntax = "proto3";
 
 message StartRunSerial { 
-    sint32 tail = 1;
-    sint32 head = 2;
-    uint32 from = 3;
-    uint32 to   = 4;
+    // A packed combination of
+    // - tail: Int8
+    // - head: Int8
+    // - from: UInt8
+    // - to:   UInt8
+    uint32 tailHeadFromTo = 1;
 }
 
 message StartRunSerialArray { 

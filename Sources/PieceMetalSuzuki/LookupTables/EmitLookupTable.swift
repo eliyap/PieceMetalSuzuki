@@ -42,10 +42,11 @@ extension LookupTableBuilder {
             buf.contents = runTable.flatMap{ runRow in
                 return runRow.map { run in
                     var serial = StartRunSerial()
-                    serial.head = Int32(run.head)
-                    serial.tail = Int32(run.tail)
-                    serial.from = UInt32(run.from)
-                    serial.to = UInt32(run.to)
+                    serial.tailHeadFromTo = UInt32.zero
+                        | UInt32(truncatingIfNeeded: run.tail) << 24
+                        | UInt32(truncatingIfNeeded: run.head) << 16
+                        | UInt32(truncatingIfNeeded: run.from) <<  8
+                        | UInt32(truncatingIfNeeded: run.to  ) <<  0
                     return serial
                 }
             }
@@ -106,7 +107,12 @@ public func loadLookupTablesProtoBuf(_ patternSize: PatternSize) -> Bool {
         StartRun.lookupTable          = try StartRunSerialArray(serializedData: runTableData)
             .contents
             .map { serial in
-                StartRun(tail: Int8(serial.tail), head: Int8(serial.head), from: UInt8(serial.from), to: UInt8(serial.to))
+                StartRun(
+                    tail:  Int8(truncatingIfNeeded: serial.tailHeadFromTo >> 24),
+                    head:  Int8(truncatingIfNeeded: serial.tailHeadFromTo >> 16),
+                    from: UInt8(truncatingIfNeeded: serial.tailHeadFromTo >>  8),
+                    to:   UInt8(truncatingIfNeeded: serial.tailHeadFromTo >>  0)
+                )
             }
         StartRun.lookupTableIndices   = try ArrayIndices(serializedData: runIndicesData)
             .indices
