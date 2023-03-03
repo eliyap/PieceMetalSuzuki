@@ -40,13 +40,7 @@ extension LookupTableBuilder {
         write(to: "runTable\(patternSize.patternCode).buf") { fileHandle in
             var buf = StartRunSerialArray()
             buf.contents = runTable.flatMap{ runRow in
-                return runRow.map { run in
-                    return UInt32.zero
-                        | UInt32(truncatingIfNeeded: run.tail) << 24
-                        | UInt32(truncatingIfNeeded: run.head) << 16
-                        | UInt32(truncatingIfNeeded: run.from) <<  8
-                        | UInt32(truncatingIfNeeded: run.to  ) <<  0
-                }
+                return runRow.map { $0.binary }
             }
             let data = try! buf.serializedData()
             fileHandle.write(data)
@@ -104,14 +98,7 @@ public func loadLookupTablesProtoBuf(_ patternSize: PatternSize) -> Bool {
             .map { LookupTableBuilder.TableIndex($0) }
         StartRun.lookupTable          = try StartRunSerialArray(serializedData: runTableData)
             .contents
-            .map { tailHeadFromTo in
-                StartRun(
-                    tail:  Int8(truncatingIfNeeded: tailHeadFromTo >> 24),
-                    head:  Int8(truncatingIfNeeded: tailHeadFromTo >> 16),
-                    from: UInt8(truncatingIfNeeded: tailHeadFromTo >>  8),
-                    to:   UInt8(truncatingIfNeeded: tailHeadFromTo >>  0)
-                )
-            }
+            .map { StartRun.init(binary: $0) }
         StartRun.lookupTableIndices   = try ArrayIndices(serializedData: runIndicesData)
             .indices
             .map { LookupTableBuilder.TableIndex($0) }
