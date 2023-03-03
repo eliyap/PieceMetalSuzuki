@@ -72,7 +72,7 @@ extension PatternSize {
     
     public static let w4h2 = PatternSize(
         coreSize: PixelSize(width: 4, height: 2),
-        tableWidth: 8,
+        tableWidth: 16,
         pointsPerPixel: 2
     )
 }
