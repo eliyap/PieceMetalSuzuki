@@ -440,10 +440,15 @@ internal func createChainStarters(
             }
             memcpy(runLutBuffer.array, Run.LUT, MemoryLayout<Run>.stride * Run.LUT.count)
 
+            guard let pointLutBuffer = Buffer<PixelPoint>.init(device: device, count: PixelPoint.LUT.count, token: releaseToken) else {
+                assertionFailure("Failed to create LUT buffer")
+                return false
+            }
+
             cmdEncoder.setBuffer(pointBuffer.mtlBuffer, offset: 0, index: 0)
             cmdEncoder.setBuffer(runBuffer.mtlBuffer, offset: 0, index: 1)
             cmdEncoder.setBuffer(runLutBuffer.mtlBuffer, offset: 0, index: 2)
-            cmdEncoder.setBuffer(PixelPoint.LUTBuffer!.mtlBuffer, offset: 0, index: 3)
+            cmdEncoder.setBuffer(pointLutBuffer.mtlBuffer, offset: 0, index: 3)
 
             let (tPerTG, tgPerGrid) = pipelineState.threadgroupParameters(texture: texture)
             cmdEncoder.dispatchThreadgroups(tgPerGrid, threadsPerThreadgroup: tPerTG)
