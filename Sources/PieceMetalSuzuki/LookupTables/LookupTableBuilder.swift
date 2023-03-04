@@ -51,83 +51,83 @@ internal final class LookupTableBuilder {
             return
         }
         withAutoRelease { releaseToken in
-        let starterSize = PatternSize.w1h1
-        let iterations = 0..<patternSize.lutHeight
-        for iteration in iterations {
-            buffer.setPattern(coreSize: patternSize.coreSize, iteration: iteration)
-            CVMetalTextureCacheFlush(metalTextureCache, 0)
-            let texture = makeTextureFromCVPixelBuffer(pixelBuffer: buffer.buffer, textureFormat: .bgra8Unorm, textureCache: metalTextureCache)!
-
-            createChainStarters(device: device, function: kernelFunction, commandQueue: commandQueue, texture: texture, runBuffer: runsFilled, pointBuffer: pointsFilled, releaseToken: releaseToken)
-            var grid = Grid(
-                imageSize: PixelSize(width: UInt32(texture.width), height: UInt32(texture.height)),
-                regions: initializeRegions(runBuffer: runsFilled, texture: texture, patternSize: starterSize),
-                patternSize: starterSize
-            )
-
-            let (region, runs, points) = grid.combineAllForLUT(
-                coreSize: patternSize.coreSize,
-                device: device,
-                pointsFilled: pointsFilled,
-                runsFilled: runsFilled,
-                pointsUnfilled: pointsUnfilled,
-                runsUnfilled: runsUnfilled,
-                commandQueue: commandQueue
-            )
-
-            assert(runs.count <= patternSize.tableWidth)
-            let startRuns = (0..<patternSize.tableWidth).map { runIdx in
-                if runs.indices.contains(runIdx) {
-                    let run = runs[runIdx]
-                    let base = Int32(baseOffset(grid: grid, region: region))
-                    return StartRun(
-                        tail: Int8(run.oldTail - base),
-                        head: Int8(run.oldHead - base),
-                        from: run.tailTriadFrom,
-                        to: run.headTriadTo
-                    )
+            let starterSize = PatternSize.w1h1
+            let iterations = 0..<patternSize.lutHeight
+            for iteration in iterations {
+                buffer.setPattern(coreSize: patternSize.coreSize, iteration: iteration)
+                CVMetalTextureCacheFlush(metalTextureCache, 0)
+                let texture = makeTextureFromCVPixelBuffer(pixelBuffer: buffer.buffer, textureFormat: .bgra8Unorm, textureCache: metalTextureCache)!
+                
+                createChainStarters(device: device, function: kernelFunction, commandQueue: commandQueue, texture: texture, runBuffer: runsFilled, pointBuffer: pointsFilled, releaseToken: releaseToken)
+                var grid = Grid(
+                    imageSize: PixelSize(width: UInt32(texture.width), height: UInt32(texture.height)),
+                    regions: initializeRegions(runBuffer: runsFilled, texture: texture, patternSize: starterSize),
+                    patternSize: starterSize
+                )
+                
+                let (region, runs, points) = grid.combineAllForLUT(
+                    coreSize: patternSize.coreSize,
+                    device: device,
+                    pointsFilled: pointsFilled,
+                    runsFilled: runsFilled,
+                    pointsUnfilled: pointsUnfilled,
+                    runsUnfilled: runsUnfilled,
+                    commandQueue: commandQueue
+                )
+                
+                assert(runs.count <= patternSize.tableWidth)
+                let startRuns = (0..<patternSize.tableWidth).map { runIdx in
+                    if runs.indices.contains(runIdx) {
+                        let run = runs[runIdx]
+                        let base = Int32(baseOffset(grid: grid, region: region))
+                        return StartRun(
+                            tail: Int8(run.oldTail - base),
+                            head: Int8(run.oldHead - base),
+                            from: run.tailTriadFrom,
+                            to: run.headTriadTo
+                        )
+                    } else {
+                        return .invalid
+                    }
+                }
+                if let rowIdx = runTable.firstIndex(of: startRuns) {
+                    runIndices.append(TableIndex(rowIdx))
                 } else {
-                    return .invalid
+                    runIndices.append(TableIndex(runTable.count))
+                    runTable.append(startRuns)
+                }
+                
+                assert(points.count <= patternSize.tableWidth)
+                let startPoints = (0..<patternSize.tableWidth).map { pointIdx in
+                    if points.indices.contains(pointIdx) {
+                        let point = points[pointIdx]
+                        return StartPoint(
+                            x: UInt8(point.x - patternSize.coreSize.width),
+                            y: UInt8(point.y - patternSize.coreSize.height)
+                        )
+                    } else {
+                        return .invalid
+                    }
+                }
+                if let rowIdx = pointTable.firstIndex(of: startPoints) {
+                    pointIndices.append(TableIndex(rowIdx))
+                } else {
+                    pointIndices.append(TableIndex(pointTable.count))
+                    pointTable.append(startPoints)
+                }
+                
+                if (iteration.isMultiple(of: 10000)) {
+                    print(iteration)
                 }
             }
-            if let rowIdx = runTable.firstIndex(of: startRuns) {
-                runIndices.append(TableIndex(rowIdx))
-            } else {
-                runIndices.append(TableIndex(runTable.count))
-                runTable.append(startRuns)
-            }
-
-            assert(points.count <= patternSize.tableWidth)
-            let startPoints = (0..<patternSize.tableWidth).map { pointIdx in
-                if points.indices.contains(pointIdx) {
-                    let point = points[pointIdx]
-                    return StartPoint(
-                        x: UInt8(point.x - patternSize.coreSize.width),
-                        y: UInt8(point.y - patternSize.coreSize.height)
-                    )
-                } else {
-                    return .invalid
-                }
-            }
-            if let rowIdx = pointTable.firstIndex(of: startPoints) {
-                pointIndices.append(TableIndex(rowIdx))
-            } else {
-                pointIndices.append(TableIndex(pointTable.count))
-                pointTable.append(startPoints)
-            }
-
-            if (iteration.isMultiple(of: 10000)) {
-                print(iteration)
-            }
-        }
-
-        /// Report.
-        debugPrint("\(runTable.count) distinct runs")
-        debugPrint("\(pointTable.count) distinct points")
-        let validRunCount = runTable
-            .map { row in row.filter { $0 != .invalid }.count }
-            .reduce(0, +)
-        debugPrint("\(validRunCount) / \(runTable.count * runTable[0].count) valid runs")
+            
+            /// Report.
+            debugPrint("\(runTable.count) distinct runs")
+            debugPrint("\(pointTable.count) distinct points")
+            let validRunCount = runTable
+                .map { row in row.filter { $0 != .invalid }.count }
+                .reduce(0, +)
+            debugPrint("\(validRunCount) / \(runTable.count * runTable[0].count) valid runs")
         }
     }
     
