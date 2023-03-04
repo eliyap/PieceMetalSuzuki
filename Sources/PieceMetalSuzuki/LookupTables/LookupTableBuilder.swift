@@ -27,69 +27,16 @@ internal final class LookupTableBuilder {
     
     public init(patternSize: PatternSize) {
         self.patternSize = patternSize
-        let buffer = BGRAPixelBuffer(coreSize: patternSize.coreSize)
         
         /// Setup.
         let device = MTLCreateSystemDefaultDevice()!
-        let commandQueue = device.makeCommandQueue()!
-        var metalTextureCache: CVMetalTextureCache!
-        CVMetalTextureCacheCreate(kCFAllocatorDefault, nil, device, nil, &metalTextureCache)
         
-        let count = CVPixelBufferGetWidth(buffer.buffer) * CVPixelBufferGetHeight(buffer.buffer) * BGRAChannels
-        guard
-            let pointsFilled = Buffer<PixelPoint>(device: device, count: count),
-            let runsFilled = Buffer<Run>(device: device, count: count),
-            let pointsUnfilled = Buffer<PixelPoint>(device: device, count: count),
-            let runsUnfilled = Buffer<Run>(device: device, count: count)
-        else {
-            assert(false, "Failed to create buffer.")
-            return
-        }
-        
-        guard let kernelFunction = loadChainStarterFunction(device: device) else {
-            assert(false, "Failed to load function.")
-            return
-        }
-        withAutoRelease { releaseToken in
-            let starterSize = PatternSize.w1h1
-            let iterations = 0..<patternSize.lutHeight
-            for iteration in iterations {
-                buffer.setPattern(coreSize: patternSize.coreSize, iteration: iteration)
-                CVMetalTextureCacheFlush(metalTextureCache, 0)
-                let texture = makeTextureFromCVPixelBuffer(pixelBuffer: buffer.buffer, textureFormat: .bgra8Unorm, textureCache: metalTextureCache)!
+        let iterations = 0..<patternSize.lutHeight
+        for iteration in iterations {
+            withAutoRelease { releaseToken in
+                let (startRuns, startPoints) = findTableRow(iteration: iteration, device: device, releaseToken: releaseToken)
                 
-                createChainStarters(device: device, function: kernelFunction, commandQueue: commandQueue, texture: texture, runBuffer: runsFilled, pointBuffer: pointsFilled, releaseToken: releaseToken)
-                var grid = Grid(
-                    imageSize: PixelSize(width: UInt32(texture.width), height: UInt32(texture.height)),
-                    regions: initializeRegions(runBuffer: runsFilled, texture: texture, patternSize: starterSize),
-                    patternSize: starterSize
-                )
-                
-                let (region, runs, points) = grid.combineAllForLUT(
-                    coreSize: patternSize.coreSize,
-                    device: device,
-                    pointsFilled: pointsFilled,
-                    runsFilled: runsFilled,
-                    pointsUnfilled: pointsUnfilled,
-                    runsUnfilled: runsUnfilled,
-                    commandQueue: commandQueue
-                )
-                
-                assert(runs.count <= patternSize.tableWidth)
-                let startRuns = (0..<patternSize.tableWidth).map { runIdx in
-                    if runs.indices.contains(runIdx) {
-                        let run = runs[runIdx]
-                        let base = Int32(baseOffset(grid: grid, region: region))
-                        return StartRun(
-                            tail: Int8(run.oldTail - base),
-                            head: Int8(run.oldHead - base),
-                            from: run.tailTriadFrom,
-                            to: run.headTriadTo
-                        )
-                    } else {
-                        return .invalid
-                    }
-                }
+                /// Insert row.
                 if let rowIdx = runTable.firstIndex(of: startRuns) {
                     runIndices.append(TableIndex(rowIdx))
                 } else {
@@ -97,38 +44,103 @@ internal final class LookupTableBuilder {
                     runTable.append(startRuns)
                 }
                 
-                assert(points.count <= patternSize.tableWidth)
-                let startPoints = (0..<patternSize.tableWidth).map { pointIdx in
-                    if points.indices.contains(pointIdx) {
-                        let point = points[pointIdx]
-                        return StartPoint(
-                            x: UInt8(point.x - patternSize.coreSize.width),
-                            y: UInt8(point.y - patternSize.coreSize.height)
-                        )
-                    } else {
-                        return .invalid
-                    }
-                }
+                /// Insert row.
                 if let rowIdx = pointTable.firstIndex(of: startPoints) {
                     pointIndices.append(TableIndex(rowIdx))
                 } else {
                     pointIndices.append(TableIndex(pointTable.count))
                     pointTable.append(startPoints)
                 }
-                
-                if (iteration.isMultiple(of: 10000)) {
-                    print(iteration)
-                }
             }
-            
-            /// Report.
-            debugPrint("\(runTable.count) distinct runs")
-            debugPrint("\(pointTable.count) distinct points")
-            let validRunCount = runTable
-                .map { row in row.filter { $0 != .invalid }.count }
-                .reduce(0, +)
-            debugPrint("\(validRunCount) / \(runTable.count * runTable[0].count) valid runs")
         }
+        
+        /// Report.
+        debugPrint("\(runTable.count) distinct runs")
+        debugPrint("\(pointTable.count) distinct points")
+        let validRunCount = runTable
+            .map { row in row.filter { $0 != .invalid }.count }
+            .reduce(0, +)
+        debugPrint("\(validRunCount) / \(runTable.count * runTable[0].count) valid runs")
+    }
+    
+    func findTableRow(iteration: Int, device: MTLDevice, releaseToken: AutoReleasePoolToken) -> ([StartRun], [StartPoint]) {
+        let buffer = BGRAPixelBuffer(coreSize: patternSize.coreSize)
+        let count = CVPixelBufferGetWidth(buffer.buffer) * CVPixelBufferGetHeight(buffer.buffer) * BGRAChannels
+            
+        let commandQueue = device.makeCommandQueue()!
+        var metalTextureCache: CVMetalTextureCache!
+        CVMetalTextureCacheCreate(kCFAllocatorDefault, nil, device, nil, &metalTextureCache)
+        
+        let starterSize = PatternSize.w1h1
+        
+        guard
+            let pointsFilled = Buffer<PixelPoint>(device: device, count: count, token: releaseToken),
+            let runsFilled = Buffer<Run>(device: device, count: count, token: releaseToken),
+            let pointsUnfilled = Buffer<PixelPoint>(device: device, count: count, token: releaseToken),
+            let runsUnfilled = Buffer<Run>(device: device, count: count, token: releaseToken)
+        else {
+            fatalError("Failed to create buffer.")
+        }
+        
+        guard let kernelFunction = loadChainStarterFunction(device: device) else {
+            fatalError("Failed to load function.")
+        }
+            
+        buffer.setPattern(coreSize: patternSize.coreSize, iteration: iteration)
+        CVMetalTextureCacheFlush(metalTextureCache, 0)
+        let texture = makeTextureFromCVPixelBuffer(pixelBuffer: buffer.buffer, textureFormat: .bgra8Unorm, textureCache: metalTextureCache)!
+        
+        createChainStarters(device: device, function: kernelFunction, commandQueue: commandQueue, texture: texture, runBuffer: runsFilled, pointBuffer: pointsFilled, releaseToken: releaseToken)
+        var grid = Grid(
+            imageSize: PixelSize(width: UInt32(texture.width), height: UInt32(texture.height)),
+            regions: initializeRegions(runBuffer: runsFilled, texture: texture, patternSize: starterSize),
+            patternSize: starterSize
+        )
+        
+        let (region, runs, points) = grid.combineAllForLUT(
+            coreSize: patternSize.coreSize,
+            device: device,
+            pointsFilled: pointsFilled,
+            runsFilled: runsFilled,
+            pointsUnfilled: pointsUnfilled,
+            runsUnfilled: runsUnfilled,
+            commandQueue: commandQueue
+        )
+        
+        assert(runs.count <= patternSize.tableWidth)
+        let startRuns = (0..<patternSize.tableWidth).map { runIdx in
+            if runs.indices.contains(runIdx) {
+                let run = runs[runIdx]
+                let base = Int32(baseOffset(grid: grid, region: region))
+                return StartRun(
+                    tail: Int8(run.oldTail - base),
+                    head: Int8(run.oldHead - base),
+                    from: run.tailTriadFrom,
+                    to: run.headTriadTo
+                )
+            } else {
+                return .invalid
+            }
+        }
+        
+        assert(points.count <= patternSize.tableWidth)
+        let startPoints = (0..<patternSize.tableWidth).map { pointIdx in
+            if points.indices.contains(pointIdx) {
+                let point = points[pointIdx]
+                return StartPoint(
+                    x: UInt8(point.x - patternSize.coreSize.width),
+                    y: UInt8(point.y - patternSize.coreSize.height)
+                )
+            } else {
+                return .invalid
+            }
+        }
+        
+        if (iteration.isMultiple(of: 10000)) {
+            print(iteration)
+        }
+        
+        return (startRuns, startPoints)
     }
     
     public func setBuffers() -> Void {
@@ -178,7 +190,6 @@ internal final class BGRAPixelBuffer {
        self.bufferHeight = bottomPixels + bufferHeight
 
         fill()
-        print("bufferWidth, bufferHeight", bufferWidth, bufferHeight)
     }
 
     deinit {
