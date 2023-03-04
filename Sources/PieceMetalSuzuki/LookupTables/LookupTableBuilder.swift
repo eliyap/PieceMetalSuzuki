@@ -37,8 +37,8 @@ internal final class LookupTableBuilder {
         
         let count = CVPixelBufferGetWidth(buffer.buffer) * CVPixelBufferGetHeight(buffer.buffer) * BGRAChannels
         guard
-            let pointBuffer = Buffer<PixelPoint>(device: device, count: count),
-            let runBuffer = Buffer<Run>(device: device, count: count),
+            let pointsFilled = Buffer<PixelPoint>(device: device, count: count),
+            let runsFilled = Buffer<Run>(device: device, count: count),
             let pointsUnfilled = Buffer<PixelPoint>(device: device, count: count),
             let runsUnfilled = Buffer<Run>(device: device, count: count)
         else {
@@ -58,18 +58,18 @@ internal final class LookupTableBuilder {
             CVMetalTextureCacheFlush(metalTextureCache, 0)
             let texture = makeTextureFromCVPixelBuffer(pixelBuffer: buffer.buffer, textureFormat: .bgra8Unorm, textureCache: metalTextureCache)!
 
-            createChainStarters(device: device, function: kernelFunction, commandQueue: commandQueue, texture: texture, runBuffer: runBuffer, pointBuffer: pointBuffer)
+            createChainStarters(device: device, function: kernelFunction, commandQueue: commandQueue, texture: texture, runBuffer: runsFilled, pointBuffer: pointsFilled)
             var grid = Grid(
                 imageSize: PixelSize(width: UInt32(texture.width), height: UInt32(texture.height)),
-                regions: initializeRegions(runBuffer: runBuffer, texture: texture, patternSize: starterSize),
+                regions: initializeRegions(runBuffer: runsFilled, texture: texture, patternSize: starterSize),
                 patternSize: starterSize
             )
 
             let (region, runs, points) = grid.combineAllForLUT(
                 coreSize: patternSize.coreSize,
                 device: device,
-                pointsFilled: pointBuffer,
-                runsFilled: runBuffer,
+                pointsFilled: pointsFilled,
+                runsFilled: runsFilled,
                 pointsUnfilled: pointsUnfilled,
                 runsUnfilled: runsUnfilled,
                 commandQueue: commandQueue
