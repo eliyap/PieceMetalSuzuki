@@ -420,7 +420,7 @@ internal func createChainStarters(
     pointBuffer: Buffer<PixelPoint>
 ) -> Bool {
     SuzukiProfiler.time(.startChains) {
-        autoreleasepool {
+        withAutoRelease { releaseToken in
             guard
                 let pipelineState = try? device.makeComputePipelineState(function: function),
                 let cmdBuffer = commandQueue.makeCommandBuffer(),
@@ -433,10 +433,16 @@ internal func createChainStarters(
             cmdEncoder.label = "Custom Kernel Encoder"
             cmdEncoder.setComputePipelineState(pipelineState)
             cmdEncoder.setTexture(texture, index: 0)
+            
+            guard let runLutBuffer = Buffer<Run>.init(device: device, count: Run.LUT.count, token: releaseToken) else {
+                assertionFailure("Failed to create LUT buffer")
+                return false
+            }
+            memcpy(runLutBuffer.array, Run.LUT, MemoryLayout<Run>.stride * Run.LUT.count)
 
             cmdEncoder.setBuffer(pointBuffer.mtlBuffer, offset: 0, index: 0)
             cmdEncoder.setBuffer(runBuffer.mtlBuffer, offset: 0, index: 1)
-            cmdEncoder.setBuffer(Run.LUTBuffer!.mtlBuffer, offset: 0, index: 2)
+            cmdEncoder.setBuffer(runLutBuffer.mtlBuffer, offset: 0, index: 2)
             cmdEncoder.setBuffer(PixelPoint.LUTBuffer!.mtlBuffer, offset: 0, index: 3)
 
             let (tPerTG, tgPerGrid) = pipelineState.threadgroupParameters(texture: texture)
