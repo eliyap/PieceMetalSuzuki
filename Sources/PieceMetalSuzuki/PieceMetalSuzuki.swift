@@ -419,6 +419,9 @@ internal func createChainStarters(
     texture: MTLTexture,
     runBuffer: Buffer<Run>,
     pointBuffer: Buffer<PixelPoint>,
+    /// `autoreleasepool` prevents mem-leaks in
+    /// - the `MTLCommandBuffer` and `MTLComputeCommandEncoder`
+    /// - the allocated Lookup Table buffers
     releaseToken: AutoReleasePoolToken
 ) -> Bool {
     SuzukiProfiler.time(.startChains) {
