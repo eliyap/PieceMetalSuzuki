@@ -21,9 +21,9 @@ final class SuzukiTimeProfile: XCTestCase {
         assert(loadLookupTablesProtoBuf(patternSize))
         
         let options = SuzukiTimeProfile.defaultMeasureOptions
-        options.iterationCount = 100
+        options.iterationCount = 10
         measure(options: options) {
-            _ = PieceMetalSuzuki(imageUrl: url("input"), patternSize: patternSize, format: kCVPixelFormatType_32BGRA) { device, queue, texture, pixelBuffer, pointsFilled, runsFilled, pointsUnfilled, runsUnfilled in
+            _ = PieceMetalSuzuki(imageUrl: url("bigDots"), patternSize: patternSize, format: kCVPixelFormatType_32BGRA) { device, queue, texture, pixelBuffer, pointsFilled, runsFilled, pointsUnfilled, runsUnfilled in
                 _ = applyMetalSuzuki_LUT(device: device, commandQueue: queue, texture: texture, pointsFilled: pointsFilled, runsFilled: runsFilled, pointsUnfilled: pointsUnfilled, runsUnfilled: runsUnfilled, patternSize: patternSize)
             }
         }
