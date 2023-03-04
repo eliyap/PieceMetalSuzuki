@@ -26,9 +26,9 @@ internal func write(to fileName: String, _ block: (FileHandle) -> Void) -> Void 
     fileHandle.closeFile()
 }
 
+@available(iOS 16.0, *)
+@available(macOS 13.0, *)
 extension LookupTableBuilder {
-    @available(iOS 16.0, *)
-    @available(macOS 13.0, *)
     func emitProtoBuf() -> Void {
         write(to: "runIndices\(patternSize.patternCode).buf") { fileHandle in
             var buf = ArrayIndices()
