@@ -299,9 +299,9 @@ internal func applyMetalSuzuki(
         assert(false, "Failed to load function.")
         return nil
     }
-    
+    return withAutoRelease { releaseToken in
     /// Apply Metal filter to pixel buffer.
-    guard createChainStarters(device: device, function: kernelFunction, commandQueue: commandQueue, texture: texture, runBuffer: runsFilled, pointBuffer: pointsFilled) else {
+    guard createChainStarters(device: device, function: kernelFunction, commandQueue: commandQueue, texture: texture, runBuffer: runsFilled, pointBuffer: pointsFilled, releaseToken: releaseToken) else {
         assert(false, "Failed to run chain start kernel.")
         return nil
     }
@@ -326,6 +326,7 @@ internal func applyMetalSuzuki(
     }
     
     return grid.regions[0][0].runIndices(imageSize: grid.imageSize, gridSize: grid.gridSize)
+    }
 }
 
 /**
@@ -417,10 +418,10 @@ internal func createChainStarters(
     commandQueue: MTLCommandQueue,
     texture: MTLTexture,
     runBuffer: Buffer<Run>,
-    pointBuffer: Buffer<PixelPoint>
+    pointBuffer: Buffer<PixelPoint>,
+    releaseToken: AutoReleasePoolToken
 ) -> Bool {
     SuzukiProfiler.time(.startChains) {
-        withAutoRelease { releaseToken in
             guard
                 let pipelineState = try? device.makeComputePipelineState(function: function),
                 let cmdBuffer = commandQueue.makeCommandBuffer(),
@@ -466,5 +467,4 @@ internal func createChainStarters(
 
             return true
         }
-    }
 }

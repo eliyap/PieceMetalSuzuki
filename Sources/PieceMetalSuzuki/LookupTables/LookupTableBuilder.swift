@@ -50,7 +50,7 @@ internal final class LookupTableBuilder {
             assert(false, "Failed to load function.")
             return
         }
-        
+        withAutoRelease { releaseToken in
         let starterSize = PatternSize.w1h1
         let iterations = 0..<patternSize.lutHeight
         for iteration in iterations {
@@ -58,7 +58,7 @@ internal final class LookupTableBuilder {
             CVMetalTextureCacheFlush(metalTextureCache, 0)
             let texture = makeTextureFromCVPixelBuffer(pixelBuffer: buffer.buffer, textureFormat: .bgra8Unorm, textureCache: metalTextureCache)!
 
-            createChainStarters(device: device, function: kernelFunction, commandQueue: commandQueue, texture: texture, runBuffer: runsFilled, pointBuffer: pointsFilled)
+            createChainStarters(device: device, function: kernelFunction, commandQueue: commandQueue, texture: texture, runBuffer: runsFilled, pointBuffer: pointsFilled, releaseToken: releaseToken)
             var grid = Grid(
                 imageSize: PixelSize(width: UInt32(texture.width), height: UInt32(texture.height)),
                 regions: initializeRegions(runBuffer: runsFilled, texture: texture, patternSize: starterSize),
@@ -128,6 +128,7 @@ internal final class LookupTableBuilder {
             .map { row in row.filter { $0 != .invalid }.count }
             .reduce(0, +)
         debugPrint("\(validRunCount) / \(runTable.count * runTable[0].count) valid runs")
+        }
     }
     
     public func setBuffers() -> Void {
