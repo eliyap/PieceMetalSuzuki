@@ -12,6 +12,10 @@ public final class MarkerDetector {
     
     public var rdpParameters: RDPParameters = .starter
     
+    /// Linear ratio by which to downscale image.
+    /// e.g. a 10x10 image downscaled by 2 is 5x5.
+    public var scale: Double = 2.5
+    
     /// The type of Lookup Table used to kickstart contour detection.
     private let patternSize: PatternSize
     
@@ -62,7 +66,7 @@ public final class MarkerDetector {
     public func detect(pixelBuffer: CVPixelBuffer) -> Void {
         /// Apply a binary filter to make the image black & white.
         guard let filteredBuffer = SuzukiProfiler.time(.binarize, {
-            applyMetalFilter(to: pixelBuffer, device: device, commandQueue: queue, metalTextureCache: textureCache)
+            applyMetalFilter(to: pixelBuffer, scale: self.scale, device: device, commandQueue: queue, metalTextureCache: textureCache)
         }) else {
             assert(false, "Failed to create pixel buffer.")
             return
@@ -176,8 +180,10 @@ internal struct PieceMetalSuzuki {
         }
         
         SuzukiProfiler.time(.overall) {
+            let scale = 1.0
+            
             guard let filteredBuffer = SuzukiProfiler.time(.binarize, {
-                applyMetalFilter(to: pixelBuffer, device: device, commandQueue: commandQueue, metalTextureCache: metalTextureCache)
+                applyMetalFilter(to: pixelBuffer, scale: scale, device: device, commandQueue: commandQueue, metalTextureCache: metalTextureCache)
             }) else {
                 assert(false, "Failed to create pixel buffer.")
                 return
@@ -246,15 +252,17 @@ internal func createBuffer(width: Int, height: Int, format: OSType) -> CVPixelBu
 
 internal func applyMetalFilter(
     to buffer: CVPixelBuffer,
+    scale: Double,
     device: MTLDevice,
     commandQueue: MTLCommandQueue,
     metalTextureCache: CVMetalTextureCache
 ) -> CVPixelBuffer? {
-    let scale: Int = 2
+    let scaledWidth  = Int((Double(CVPixelBufferGetWidth(buffer))  / scale).rounded(.down))
+    let scaledHeight = Int((Double(CVPixelBufferGetHeight(buffer)) / scale).rounded(.down))
     
     guard
-        let scaledBuffer    = createBuffer(width: CVPixelBufferGetWidth(buffer) / scale, height: CVPixelBufferGetHeight(buffer) / scale, format: CVPixelBufferGetPixelFormatType(buffer)),
-        let binarizedBuffer = createBuffer(width: CVPixelBufferGetWidth(buffer) / scale, height: CVPixelBufferGetHeight(buffer) / scale, format: CVPixelBufferGetPixelFormatType(buffer)),
+        let scaledBuffer    = createBuffer(width: scaledWidth, height: scaledHeight, format: CVPixelBufferGetPixelFormatType(buffer)),
+        let binarizedBuffer = createBuffer(width: scaledWidth, height: scaledHeight, format: CVPixelBufferGetPixelFormatType(buffer)),
         let sourceTexture    = makeTextureFromCVPixelBuffer(pixelBuffer: buffer, textureFormat: .bgra8Unorm, textureCache: metalTextureCache),
         let scaledTexture    = makeTextureFromCVPixelBuffer(pixelBuffer: scaledBuffer, textureFormat: .bgra8Unorm, textureCache: metalTextureCache),
         let binarizedTexture = makeTextureFromCVPixelBuffer(pixelBuffer: binarizedBuffer, textureFormat: .bgra8Unorm, textureCache: metalTextureCache)
@@ -270,7 +278,7 @@ internal func applyMetalFilter(
         return nil
     }
     
-    var transform = MPSScaleTransform(scaleX: 1.0 / Double(scale), scaleY: 1.0 / Double(scale), translateX: 0, translateY: 0)
+    var transform = MPSScaleTransform(scaleX: 1.0 / scale, scaleY: 1.0 / scale, translateX: 0, translateY: 0)
     withUnsafePointer(to: &transform) { transformPtr in
         /// Downscale, then binarize, otherwise image will be grayscale, instead of B&W.
         let scale = MPSImageBilinearScale(device: device)
