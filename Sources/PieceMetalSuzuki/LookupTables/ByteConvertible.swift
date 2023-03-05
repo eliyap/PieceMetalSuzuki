@@ -26,3 +26,21 @@ extension UInt32: ByteConvertible {
              | UInt32(data[data.indices.lowerBound + 3]) <<  0
     }
 }
+
+extension Array where Element: ByteConvertible {
+    var data: Data {
+        return self.reduce(Data()) { partialResult, element in
+            partialResult + element.data
+        }
+    }
+    
+    init(data: Data) {
+        let count = data.count / Element.byteCount
+        self.init(unsafeUninitializedCapacity: count) { ptr, initCount in
+            for offset in stride(from: 0, to: data.count, by: Element.byteCount) {
+                ptr[offset / Element.byteCount] = Element(data: data[offset..<(offset+Element.byteCount)])
+            }
+            initCount = count
+        }
+    }
+}

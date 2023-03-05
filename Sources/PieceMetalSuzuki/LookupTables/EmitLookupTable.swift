@@ -67,6 +67,24 @@ extension LookupTableBuilder {
             fileHandle.write(data)
         }
     }
+    
+    func emitData() -> Void {
+        write(to: "runIndices\(patternSize.patternCode).data") { fileHandle in
+            fileHandle.write(runIndices.data)
+        }
+        
+        write(to: "runTable\(patternSize.patternCode).data") { fileHandle in
+            fileHandle.write(runTable.flatMap{$0}.data)
+        }
+
+        write(to: "pointIndices\(patternSize.patternCode).data") { fileHandle in
+            fileHandle.write(pointIndices.data)
+        }
+
+        write(to: "pointTable\(patternSize.patternCode).data") { fileHandle in
+            fileHandle.write(pointTable.flatMap{$0}.data)
+        }
+    }
 }
 
 public func loadLookupTablesProtoBuf(_ patternSize: PatternSize) -> Bool {
