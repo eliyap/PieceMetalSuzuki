@@ -33,8 +33,7 @@ struct Grid {
         pointsFilled: Buffer<PixelPoint>,
         runsFilled: Buffer<Run>,
         pointsUnfilled: Buffer<PixelPoint>,
-        runsUnfilled: Buffer<Run>,
-        commandQueue: MTLCommandQueue
+        runsUnfilled: Buffer<Run>
     ) -> Void {
         var dxn = ReduceDirection.vertical
         let pointsHorizontal = pointsFilled

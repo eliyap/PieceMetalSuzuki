@@ -335,8 +335,7 @@ internal func applyMetalSuzuki(
                 pointsFilled: pointsFilled,
                 runsFilled: runsFilled,
                 pointsUnfilled: pointsUnfilled,
-                runsUnfilled: runsUnfilled,
-                commandQueue: commandQueue
+                runsUnfilled: runsUnfilled
             )
         }
         
@@ -378,8 +377,7 @@ internal func applyMetalSuzuki_LUT(
             pointsFilled: pointsFilled,
             runsFilled: runsFilled,
             pointsUnfilled: pointsUnfilled,
-            runsUnfilled: runsUnfilled,
-            commandQueue: commandQueue
+            runsUnfilled: runsUnfilled
         )
     }
     
