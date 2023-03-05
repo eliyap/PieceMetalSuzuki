@@ -250,47 +250,57 @@ internal func applyMetalFilter(
     commandQueue: MTLCommandQueue,
     metalTextureCache: CVMetalTextureCache
 ) -> CVPixelBuffer? {
-    var result: CVPixelBuffer!
     
-    guard CVPixelBufferCreate(
-        kCFAllocatorDefault,
-        CVPixelBufferGetWidth(buffer),
-        CVPixelBufferGetHeight(buffer),
-        CVPixelBufferGetPixelFormatType(buffer),
-        NSDictionary(dictionary: [
-            kCVPixelBufferCGImageCompatibilityKey: true,
-            kCVPixelBufferMetalCompatibilityKey: true,
-        ]),
-        &result
-    ) == kCVReturnSuccess else {
-        assert(false, "Failed to create pixel buffer.")
+    guard let scaledBuffer = createBuffer(
+        width: CVPixelBufferGetWidth(buffer) / 2,
+        height: CVPixelBufferGetHeight(buffer) / 2,
+        format: CVPixelBufferGetPixelFormatType(buffer)
+    ) else {
         return nil
     }
     
+    guard let binarizedBuffer = createBuffer(
+        width: CVPixelBufferGetWidth(buffer) / 2,
+        height: CVPixelBufferGetHeight(buffer) / 2,
+        format: CVPixelBufferGetPixelFormatType(buffer)
+    ) else {
+        return nil
+    }
+    
+    guard
+        let sourceTexture = makeTextureFromCVPixelBuffer(pixelBuffer: buffer, textureFormat: .bgra8Unorm, textureCache: metalTextureCache),
+        let scaledTexture = makeTextureFromCVPixelBuffer(pixelBuffer: scaledBuffer, textureFormat: .bgra8Unorm, textureCache: metalTextureCache),
+        let binarizedTexture = makeTextureFromCVPixelBuffer(pixelBuffer: binarizedBuffer, textureFormat: .bgra8Unorm, textureCache: metalTextureCache)
+    else {
+        assert(false, "Failed to create textures.")
+        return nil
+    }
+    
+    
     /// Apply Metal filter to pixel buffer.
-    guard  let binaryBuffer = commandQueue.makeCommandBuffer() else {
+    guard  let commandBuffer = commandQueue.makeCommandBuffer() else {
         assert(false, "Failed to get metal device.")
         return nil
     }
     
-    guard let source = makeTextureFromCVPixelBuffer(pixelBuffer: buffer, textureFormat: .bgra8Unorm, textureCache: metalTextureCache) else {
-        assert(false, "Failed to create texture.")
-        return nil
-    }
-    guard let destination = makeTextureFromCVPixelBuffer(pixelBuffer: result, textureFormat: .bgra8Unorm, textureCache: metalTextureCache) else {
-        assert(false, "Failed to create texture.")
-        return nil
+    var transform = MPSScaleTransform(scaleX: 1.0/2.0, scaleY: 1.0/2.0, translateX: 0, translateY: 0)
+    withUnsafePointer(to: &transform) { transformPtr in
+        /// Downscale, then binarize, otherwise image will be grayscale, instead of B&W.
+        let scale = MPSImageBilinearScale(device: device)
+        scale.scaleTransform = transformPtr
+        scale.encode(commandBuffer: commandBuffer, sourceTexture: sourceTexture, destinationTexture: scaledTexture)
+        
+        /// Apply a binary threshold.
+        /// This is 1 in both signed and unsigned numbers.
+        let setVal: Float = 1.0/256.0
+        let binary = MPSImageThresholdBinary(device: device, thresholdValue: 0.5, maximumValue: setVal, linearGrayColorTransform: nil)
+        binary.encode(commandBuffer: commandBuffer, sourceTexture: scaledTexture, destinationTexture: binarizedTexture)
+        
+        commandBuffer.commit()
+        commandBuffer.waitUntilCompleted()
     }
     
-    /// Apply a binary threshold.
-    /// This is 1 in both signed and unsigned numbers.
-    let setVal: Float = 1.0/256.0
-    let binary = MPSImageThresholdBinary(device: device, thresholdValue: 0.5, maximumValue: setVal, linearGrayColorTransform: nil)
-    binary.encode(commandBuffer: binaryBuffer, sourceTexture: source, destinationTexture: destination)
-    binaryBuffer.commit()
-    binaryBuffer.waitUntilCompleted()
-    
-    return result
+    return binarizedBuffer
 }
 
 internal func applyMetalSuzuki(
