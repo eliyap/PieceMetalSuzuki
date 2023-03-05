@@ -228,6 +228,22 @@ internal struct PieceMetalSuzuki {
     }
 }
 
+internal func createBuffer(width: Int, height: Int, format: OSType) -> CVPixelBuffer? {
+    var buffer: CVPixelBuffer!
+    let attributes: CFDictionary = NSDictionary(dictionary: [
+        kCVPixelBufferCGImageCompatibilityKey: true,
+        kCVPixelBufferMetalCompatibilityKey: true,
+    ])
+    
+    let status = CVPixelBufferCreate(kCFAllocatorDefault, width, height, format, attributes, &buffer)
+    guard status == kCVReturnSuccess else {
+        assert(false, "Failed to create pixel buffer.")
+        return nil
+    }
+    
+    return buffer
+}
+
 internal func applyMetalFilter(
     to buffer: CVPixelBuffer,
     device: MTLDevice,
