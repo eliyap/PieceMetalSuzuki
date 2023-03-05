@@ -31,11 +31,68 @@ internal final class LookupTableBuilder {
         /// Setup.
         let device = MTLCreateSystemDefaultDevice()!
         
-        let iterations = 0..<patternSize.lutHeight
-        for iteration in iterations {
-            withAutoRelease { releaseToken in
-                let (startRuns, startPoints) = findTableRow(iteration: iteration, device: device, releaseToken: releaseToken)
-                
+        let queue = DispatchQueue(label: "com.aruco.LookupTableBuilder", qos: .utility, attributes: [.concurrent])
+        
+        let iterations = 0..<(patternSize.lutHeight / 8)
+        for batch in iterations {
+            
+            var startRuns1: [StartRun] = []
+            var startPoints1: [StartPoint] = []
+            var startRuns2: [StartRun] = []
+            var startPoints2: [StartPoint] = []
+            var startRuns3: [StartRun] = []
+            var startPoints3: [StartPoint] = []
+            var startRuns4: [StartRun] = []
+            var startPoints4: [StartPoint] = []
+            var startRuns5: [StartRun] = []
+            var startPoints5: [StartPoint] = []
+            var startRuns6: [StartRun] = []
+            var startPoints6: [StartPoint] = []
+            var startRuns7: [StartRun] = []
+            var startPoints7: [StartPoint] = []
+            var startRuns8: [StartRun] = []
+            var startPoints8: [StartPoint] = []
+            
+            let group = DispatchGroup()
+            withAutoRelease { [self] releaseToken in
+                DispatchQueue.global(qos: .utility).async(group: group) {
+                    (startRuns1, startPoints1) = findTableRow(iteration: batch * 8 + 0, device: device, releaseToken: releaseToken)
+                }
+                DispatchQueue.global(qos: .utility).async(group: group) {
+                    (startRuns2, startPoints2) = findTableRow(iteration: batch * 8 + 1, device: device, releaseToken: releaseToken)
+                }
+                DispatchQueue.global(qos: .utility).async(group: group) {
+                    (startRuns3, startPoints3) = findTableRow(iteration: batch * 8 + 2, device: device, releaseToken: releaseToken)
+                }
+                DispatchQueue.global(qos: .utility).async(group: group) {
+                    (startRuns4, startPoints4) = findTableRow(iteration: batch * 8 + 3, device: device, releaseToken: releaseToken)
+                }
+                DispatchQueue.global(qos: .utility).async(group: group) {
+                    (startRuns5, startPoints5) = findTableRow(iteration: batch * 8 + 4, device: device, releaseToken: releaseToken)
+                }
+                DispatchQueue.global(qos: .utility).async(group: group) {
+                    (startRuns6, startPoints6) = findTableRow(iteration: batch * 8 + 5, device: device, releaseToken: releaseToken)
+                }
+                DispatchQueue.global(qos: .utility).async(group: group) {
+                    (startRuns7, startPoints7) = findTableRow(iteration: batch * 8 + 6, device: device, releaseToken: releaseToken)
+                }
+                DispatchQueue.global(qos: .utility).async(group: group) {
+                    (startRuns8, startPoints8) = findTableRow(iteration: batch * 8 + 7, device: device, releaseToken: releaseToken)
+                }
+            }
+            
+            group.wait()
+            
+            for (startRuns, startPoints) in [
+                (startRuns1, startPoints1),
+                (startRuns2, startPoints2),
+                (startRuns3, startPoints3),
+                (startRuns4, startPoints4),
+                (startRuns5, startPoints5),
+                (startRuns6, startPoints6),
+                (startRuns7, startPoints7),
+                (startRuns8, startPoints8)
+            ] {
                 /// Insert row.
                 if let rowIdx = runTable.firstIndex(of: startRuns) {
                     runIndices.append(TableIndex(rowIdx))
