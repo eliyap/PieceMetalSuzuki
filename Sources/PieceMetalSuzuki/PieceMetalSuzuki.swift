@@ -250,26 +250,13 @@ internal func applyMetalFilter(
     commandQueue: MTLCommandQueue,
     metalTextureCache: CVMetalTextureCache
 ) -> CVPixelBuffer? {
-    
-    guard let scaledBuffer = createBuffer(
-        width: CVPixelBufferGetWidth(buffer) / 2,
-        height: CVPixelBufferGetHeight(buffer) / 2,
-        format: CVPixelBufferGetPixelFormatType(buffer)
-    ) else {
-        return nil
-    }
-    
-    guard let binarizedBuffer = createBuffer(
-        width: CVPixelBufferGetWidth(buffer) / 2,
-        height: CVPixelBufferGetHeight(buffer) / 2,
-        format: CVPixelBufferGetPixelFormatType(buffer)
-    ) else {
-        return nil
-    }
+    let scale: Int = 2
     
     guard
-        let sourceTexture = makeTextureFromCVPixelBuffer(pixelBuffer: buffer, textureFormat: .bgra8Unorm, textureCache: metalTextureCache),
-        let scaledTexture = makeTextureFromCVPixelBuffer(pixelBuffer: scaledBuffer, textureFormat: .bgra8Unorm, textureCache: metalTextureCache),
+        let scaledBuffer    = createBuffer(width: CVPixelBufferGetWidth(buffer) / scale, height: CVPixelBufferGetHeight(buffer) / scale, format: CVPixelBufferGetPixelFormatType(buffer)),
+        let binarizedBuffer = createBuffer(width: CVPixelBufferGetWidth(buffer) / scale, height: CVPixelBufferGetHeight(buffer) / scale, format: CVPixelBufferGetPixelFormatType(buffer)),
+        let sourceTexture    = makeTextureFromCVPixelBuffer(pixelBuffer: buffer, textureFormat: .bgra8Unorm, textureCache: metalTextureCache),
+        let scaledTexture    = makeTextureFromCVPixelBuffer(pixelBuffer: scaledBuffer, textureFormat: .bgra8Unorm, textureCache: metalTextureCache),
         let binarizedTexture = makeTextureFromCVPixelBuffer(pixelBuffer: binarizedBuffer, textureFormat: .bgra8Unorm, textureCache: metalTextureCache)
     else {
         assert(false, "Failed to create textures.")
@@ -283,7 +270,7 @@ internal func applyMetalFilter(
         return nil
     }
     
-    var transform = MPSScaleTransform(scaleX: 1.0/2.0, scaleY: 1.0/2.0, translateX: 0, translateY: 0)
+    var transform = MPSScaleTransform(scaleX: 1.0 / Double(scale), scaleY: 1.0 / Double(scale), translateX: 0, translateY: 0)
     withUnsafePointer(to: &transform) { transformPtr in
         /// Downscale, then binarize, otherwise image will be grayscale, instead of B&W.
         let scale = MPSImageBilinearScale(device: device)
