@@ -42,8 +42,4 @@ final class SuzukiTimeProfile: XCTestCase {
     func testLUT2x2() async throws {
         try await timeLUT(patternSize: .w2h2)
     }
-    
-    func testLUT4x2() async throws {
-        try await timeLUT(patternSize: .w4h2)
-    }
 }
