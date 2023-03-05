@@ -14,7 +14,7 @@ public final class MarkerDetector {
     
     /// Linear ratio by which to downscale image.
     /// e.g. a 10x10 image downscaled by 2 is 5x5.
-    public var scale: Double = 2.5
+    public var scale: Double = 3.5
     
     /// The type of Lookup Table used to kickstart contour detection.
     private let patternSize: PatternSize
@@ -98,13 +98,13 @@ public final class MarkerDetector {
         }
         
         /// Run core algorithms.
-        let runIndices =  applyMetalSuzuki_LUT(device: device, commandQueue: queue, texture: texture, pointsFilled: pointsFilled, runsFilled: runsFilled, pointsUnfilled: pointsUnfilled, runsUnfilled: runsUnfilled, patternSize: patternSize)
+        let runIndices = applyMetalSuzuki_LUT(device: device, commandQueue: queue, texture: texture, pointsFilled: pointsFilled, runsFilled: runsFilled, pointsUnfilled: pointsUnfilled, runsUnfilled: runsUnfilled, patternSize: patternSize)
         guard let runIndices else {
             assertionFailure("Failed to get image contours")
             return
         }
         let imageSize = CGSize(width: CVPixelBufferGetWidth(pixelBuffer), height: CVPixelBufferGetHeight(pixelBuffer))
-        let quads = findCandidateQuadrilaterals(pointBuffer: pointsFilled, runBuffer: runsFilled, runIndices: runIndices, parameters: self.rdpParameters)
+        let quads = findCandidateQuadrilaterals(pointBuffer: pointsFilled, runBuffer: runsFilled, runIndices: runIndices, parameters: self.rdpParameters, scale: self.scale)
         delegate?.didFind(quadrilaterals: quads, imageSize: imageSize)
         decodeMarkers(pixelBuffer: pixelBuffer, quadrilaterals: quads)
     }

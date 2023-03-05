@@ -12,7 +12,9 @@ internal func findCandidateQuadrilaterals(
     pointBuffer: Buffer<PixelPoint>,
     runBuffer: Buffer<Run>,
     runIndices: Range<Int>,
-    parameters: RDPParameters
+    parameters: RDPParameters,
+    /// Used to scale quadrilaterals back up to size.
+    scale: Double
 ) -> [Quadrilateral] {
     return QuadProfiler.time(.overall) {
         let candidates = [Quadrilateral?].init(unsafeUninitializedCapacity: runIndices.count) { buffer, count in
@@ -31,7 +33,9 @@ internal func findCandidateQuadrilaterals(
             }
             count = runIndices.count
         }
-        return candidates.compactMap { $0 }
+        return candidates
+            .compactMap { $0 }
+            .map { $0.scaled(by: scale) }
     }
 }
 
