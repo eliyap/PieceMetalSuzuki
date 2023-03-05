@@ -142,9 +142,9 @@ public actor Profiler<Region: CodeRegion> {
     }
 }
 
-internal func printTime<Result>(_ label: String = "Time", _ block: () -> Result) -> Result {
+internal func printTime<Result>(_ label: String = "Time", _ block: () throws -> Result) rethrows -> Result {
     let start = CFAbsoluteTimeGetCurrent()
-    let result = block()
+    let result = try block()
     let end = CFAbsoluteTimeGetCurrent()
     debugPrint(label + String(format: ": %.2f s", end - start))
     return result
