@@ -10,23 +10,13 @@ import Metal
 
 extension StartPoint {
     /// Set by `LookupTableBuilder`.
-    static var lookupTableIndices: [UInt16] = []
+    static var lookupTableIndices: [LookupTableBuilder.TableIndex] = []
     
     /// Set by `LookupTableBuilder`.
     static var lookupTable: [Self] = []
 }
 
 extension PixelPoint {
-    
-    static var LUTBuffer: Buffer<PixelPoint>? = {
-        let device = MTLCreateSystemDefaultDevice()!
-        guard let buffer = Buffer<PixelPoint>.init(device: device, count: LUT.count) else {
-            assertionFailure("Failed to create LUT buffer")
-            return nil
-        }
-        memcpy(buffer.array, LUT, MemoryLayout<PixelPoint>.stride * LUT.count)
-        return buffer
-    }()
     
     static let LUT: [PixelPoint] = [
         // 000

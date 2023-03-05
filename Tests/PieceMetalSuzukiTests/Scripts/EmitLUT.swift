@@ -10,14 +10,6 @@ import XCTest
 @available(iOS 16.0, *)
 @available(macOS 13.0, *)
 final class EmitLUT: XCTestCase {
-    func testEmitLUT2x1JSON() async throws {
-        LookupTableBuilder(patternSize: .w2h1).emitJSON()
-    }
-    
-    func testEmitLUT2x2JSON() async throws {
-        LookupTableBuilder(patternSize: .w2h2).emitJSON()
-    }
-    
     func testEmitLUT2x1ProtoBuf() async throws {
         LookupTableBuilder(patternSize: .w2h1).emitProtoBuf()
     }
@@ -26,9 +18,15 @@ final class EmitLUT: XCTestCase {
         LookupTableBuilder(patternSize: .w2h2).emitProtoBuf()
     }
     
+    func testEmitLUT2x1Data() async throws {
+        LookupTableBuilder(patternSize: .w2h1).emitData()
+    }
+    
+    func testEmitLUT2x2Data() async throws {
+        LookupTableBuilder(patternSize: .w2h2).emitData()
+    }
+    
     func testLoad() throws {
-        XCTAssertTrue(loadLookupTablesJSON(.w2h1))
-        XCTAssertTrue(loadLookupTablesJSON(.w2h2))
         XCTAssertTrue(loadLookupTablesProtoBuf(.w2h1))
         XCTAssertTrue(loadLookupTablesProtoBuf(.w2h2))
     }

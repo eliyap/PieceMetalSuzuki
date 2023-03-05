@@ -37,6 +37,26 @@ public final class Buffer<Element> {
         self.array = buffer.contents().bindMemory(to: Element.self, capacity: count)
     }
     
+    public init?(device: MTLDevice, count: Int, token: AutoReleasePoolToken) {
+        self.size = MemoryLayout<Element>.stride * count
+        guard let buffer = device.makeBuffer(length: size) else {
+            assert(false, "Failed to create buffer.")
+            return nil
+        }
+        
+        self.count = count
+        self.mtlBuffer = buffer
+        
+        /** - Warning: 23.02.16
+         If not called within `autoreleasepool`, `.contents()` causes a memory leak, even if
+         - no `.bindMemory` is called
+         - the return pointer is never assigned to a variable
+         - the `MTLBuffer` has no remaining references.
+         - `.setPurgeableState(.empty)` is called.
+         */
+        self.array = buffer.contents().bindMemory(to: Element.self, capacity: count)
+    }
+    
     deinit {
         mtlBuffer.setPurgeableState(.empty)
     }

@@ -46,7 +46,7 @@ public final class MarkerDetector {
         }
         self.textureCache = metalTextureCache
         
-        guard loadLookupTablesJSON(patternSize) else {
+        guard loadLookupTablesProtoBuf(patternSize) else {
             assertionFailure("Failed to load lookup tables for pattern")
             return nil
         }
@@ -231,8 +231,6 @@ internal struct PieceMetalSuzuki {
 //
 //        /// Write image back out.
 //        saveBufferToPng(buffer: bufferA, format: .RGBA8)
-
-        print("so far so good")
     }
 }
 
@@ -296,32 +294,39 @@ internal func applyMetalSuzuki(
 ) -> Range<Int>? {
     let patternSize = PatternSize.w1h1
     
-    /// Apply Metal filter to pixel buffer.
-    guard createChainStarters(device: device, commandQueue: commandQueue, texture: texture, runBuffer: runsFilled, pointBuffer: pointsFilled) else {
-        assert(false, "Failed to run chain start kernel.")
+    
+    guard let kernelFunction = loadChainStarterFunction(device: device) else {
+        assert(false, "Failed to load function.")
         return nil
     }
-    
-    var grid = Grid(
-        imageSize: PixelSize(width: UInt32(texture.width), height: UInt32(texture.height)),
-        regions: SuzukiProfiler.time(.initRegions) {
-            return initializeRegions(runBuffer: runsFilled, texture: texture, patternSize: patternSize)
-        },
-        patternSize: patternSize
-    )
-    
-    SuzukiProfiler.time(.combineAll) {
-        grid.combineAll(
-            device: device,
-            pointsFilled: pointsFilled,
-            runsFilled: runsFilled,
-            pointsUnfilled: pointsUnfilled,
-            runsUnfilled: runsUnfilled,
-            commandQueue: commandQueue
+    return withAutoRelease { releaseToken in
+        /// Apply Metal filter to pixel buffer.
+        guard createChainStarters(device: device, function: kernelFunction, commandQueue: commandQueue, texture: texture, runBuffer: runsFilled, pointBuffer: pointsFilled, releaseToken: releaseToken) else {
+            assert(false, "Failed to run chain start kernel.")
+            return nil
+        }
+        
+        var grid = Grid(
+            imageSize: PixelSize(width: UInt32(texture.width), height: UInt32(texture.height)),
+            regions: SuzukiProfiler.time(.initRegions) {
+                return initializeRegions(runBuffer: runsFilled, texture: texture, patternSize: patternSize)
+            },
+            patternSize: patternSize
         )
+        
+        SuzukiProfiler.time(.combineAll) {
+            grid.combineAll(
+                device: device,
+                pointsFilled: pointsFilled,
+                runsFilled: runsFilled,
+                pointsUnfilled: pointsUnfilled,
+                runsUnfilled: runsUnfilled,
+                commandQueue: commandQueue
+            )
+        }
+        
+        return grid.regions[0][0].runIndices(imageSize: grid.imageSize, gridSize: grid.gridSize)
     }
-    
-    return grid.regions[0][0].runIndices(imageSize: grid.imageSize, gridSize: grid.gridSize)
 }
 
 /**
@@ -409,48 +414,60 @@ internal func loadChainStarterFunction(device: MTLDevice) -> MTLFunction? {
 
 internal func createChainStarters(
     device: MTLDevice,
+    function: MTLFunction,
     commandQueue: MTLCommandQueue,
     texture: MTLTexture,
     runBuffer: Buffer<Run>,
-    pointBuffer: Buffer<PixelPoint>
+    pointBuffer: Buffer<PixelPoint>,
+    /// `autoreleasepool` prevents mem-leaks in
+    /// - the `MTLCommandBuffer` and `MTLComputeCommandEncoder`
+    /// - the allocated Lookup Table buffers
+    releaseToken: AutoReleasePoolToken
 ) -> Bool {
-    let start = CFAbsoluteTimeGetCurrent()
-    
-    guard
-        let kernelFunction = loadChainStarterFunction(device: device),
-        let pipelineState = try? device.makeComputePipelineState(function: kernelFunction),
-        let cmdBuffer = commandQueue.makeCommandBuffer(),
-        let cmdEncoder = cmdBuffer.makeComputeCommandEncoder()
-    else {
-        assert(false, "Failed to setup pipeline.")
-        return false
+    SuzukiProfiler.time(.startChains) {
+        guard
+            let pipelineState = try? device.makeComputePipelineState(function: function),
+            let cmdBuffer = commandQueue.makeCommandBuffer(),
+            let cmdEncoder = cmdBuffer.makeComputeCommandEncoder()
+        else {
+            assert(false, "Failed to setup pipeline.")
+            return false
+        }
+
+        cmdEncoder.label = "Custom Kernel Encoder"
+        cmdEncoder.setComputePipelineState(pipelineState)
+        cmdEncoder.setTexture(texture, index: 0)
+        
+        guard let runLutBuffer = Buffer<Run>.init(device: device, count: Run.LUT.count, token: releaseToken) else {
+            assertionFailure("Failed to create LUT buffer")
+            return false
+        }
+        memcpy(runLutBuffer.array, Run.LUT, MemoryLayout<Run>.stride * Run.LUT.count)
+
+        guard let pointLutBuffer = Buffer<PixelPoint>.init(device: device, count: PixelPoint.LUT.count, token: releaseToken) else {
+            assertionFailure("Failed to create LUT buffer")
+            return false
+        }
+
+        cmdEncoder.setBuffer(pointBuffer.mtlBuffer, offset: 0, index: 0)
+        cmdEncoder.setBuffer(runBuffer.mtlBuffer, offset: 0, index: 1)
+        cmdEncoder.setBuffer(runLutBuffer.mtlBuffer, offset: 0, index: 2)
+        cmdEncoder.setBuffer(pointLutBuffer.mtlBuffer, offset: 0, index: 3)
+
+        let (tPerTG, tgPerGrid) = pipelineState.threadgroupParameters(texture: texture)
+        cmdEncoder.dispatchThreadgroups(tgPerGrid, threadsPerThreadgroup: tPerTG)
+        cmdEncoder.endEncoding()
+        cmdBuffer.commit()
+        cmdBuffer.waitUntilCompleted()
+
+        #if SHOW_GRID_WORK
+        debugPrint("[Initial Points]")
+        let count = texture.width * texture.height * 4
+        for i in 0..<count where runBuffer.array[i].isValid {
+            print(runBuffer.array[i], pointBuffer.array[i])
+        }
+        #endif
+
+        return true
     }
-
-    cmdEncoder.label = "Custom Kernel Encoder"
-    cmdEncoder.setComputePipelineState(pipelineState)
-    cmdEncoder.setTexture(texture, index: 0)
-
-    cmdEncoder.setBuffer(pointBuffer.mtlBuffer, offset: 0, index: 0)
-    cmdEncoder.setBuffer(runBuffer.mtlBuffer, offset: 0, index: 1)
-    cmdEncoder.setBuffer(Run.LUTBuffer!.mtlBuffer, offset: 0, index: 2)
-    cmdEncoder.setBuffer(PixelPoint.LUTBuffer!.mtlBuffer, offset: 0, index: 3)
-
-    let (tPerTG, tgPerGrid) = pipelineState.threadgroupParameters(texture: texture)
-    cmdEncoder.dispatchThreadgroups(tgPerGrid, threadsPerThreadgroup: tPerTG)
-    cmdEncoder.endEncoding()
-    cmdBuffer.commit()
-    cmdBuffer.waitUntilCompleted()
-    
-    #if SHOW_GRID_WORK
-    debugPrint("[Initial Points]")
-    let count = texture.width * texture.height * 4
-    for i in 0..<count where runBuffer.array[i].isValid {
-        print(runBuffer.array[i], pointBuffer.array[i])
-    }
-    #endif
-    
-    let end = CFAbsoluteTimeGetCurrent()
-    SuzukiProfiler.add(end - start, to: .startChains)
-    
-    return true
 }

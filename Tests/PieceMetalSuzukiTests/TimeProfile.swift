@@ -2,6 +2,7 @@ import XCTest
 @testable import PieceMetalSuzuki
 
 final class SuzukiTimeProfile: XCTestCase {
+    
     func url(_ name: String) -> URL {
         Bundle.module.url(forResource: name, withExtension: ".png", subdirectory: "Images")!
     }
@@ -17,10 +18,12 @@ final class SuzukiTimeProfile: XCTestCase {
     }
     
     func timeLUT(patternSize: PatternSize) async throws {
-        assert(loadLookupTablesJSON(patternSize))
+        assert(loadLookupTablesProtoBuf(patternSize))
         
-        measure {
-            _ = PieceMetalSuzuki(imageUrl: url("input"), patternSize: patternSize, format: kCVPixelFormatType_32BGRA) { device, queue, texture, pixelBuffer, pointsFilled, runsFilled, pointsUnfilled, runsUnfilled in
+        let options = SuzukiTimeProfile.defaultMeasureOptions
+        options.iterationCount = 10
+        measure(options: options) {
+            _ = PieceMetalSuzuki(imageUrl: url("bigDots"), patternSize: patternSize, format: kCVPixelFormatType_32BGRA) { device, queue, texture, pixelBuffer, pointsFilled, runsFilled, pointsUnfilled, runsUnfilled in
                 _ = applyMetalSuzuki_LUT(device: device, commandQueue: queue, texture: texture, pointsFilled: pointsFilled, runsFilled: runsFilled, pointsUnfilled: pointsUnfilled, runsUnfilled: runsUnfilled, patternSize: patternSize)
             }
         }

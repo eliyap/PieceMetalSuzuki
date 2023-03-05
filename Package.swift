@@ -31,14 +31,14 @@ let package = Package(
             resources: [
                 .copy("Images/"),
                 .copy("Metal/"),
-                .copy("LookupTables/JSON/"),
                 .copy("LookupTables/ProtocolBuffers/"),
+                .copy("LookupTables/Data/"),
             ],
             swiftSettings: [
                 .unsafeFlags([
                     /// Disabling this flag turns of time profiling and the associated overhead.
 //                    "-DPROFILE_SUZUKI",
-                    "-DPROFILE_QUAD",
+//                    "-DPROFILE_QUAD",
 
                     /// Optimization settings.
                     "-Ounchecked",

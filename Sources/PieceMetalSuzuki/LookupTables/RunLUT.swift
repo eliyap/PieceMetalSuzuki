@@ -10,24 +10,14 @@ import Metal
 
 extension StartRun {
     /// Set by `LookupTableBuilder`.
-    static var lookupTableIndices: [UInt16] = []
+    static var lookupTableIndices: [LookupTableBuilder.TableIndex] = []
     
     /// Set by `LookupTableBuilder`.
     static var lookupTable: [Self] = []
 }
 
 extension Run {
-    
-    static var LUTBuffer: Buffer<Run>? = {
-        let device = MTLCreateSystemDefaultDevice()!
-        guard let buffer = Buffer<Run>.init(device: device, count: LUT.count) else {
-            assertionFailure("Failed to create LUT buffer")
-            return nil
-        }
-        memcpy(buffer.array, LUT, MemoryLayout<Run>.stride * LUT.count)
-        return buffer
-    }()
-    
+        
     static let LUT: [Run] = [
         // 000
         // 0 0

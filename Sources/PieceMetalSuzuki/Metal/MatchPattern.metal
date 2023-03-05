@@ -53,9 +53,9 @@ kernel void matchPatterns1x1(
     device PixelPoint*             points            [[ buffer (0) ]],
     device Run*                    runs              [[ buffer (1) ]],
     device const StartRun*         startRuns         [[ buffer (2) ]],
-    device const uint16_t*         startRunIndices   [[ buffer (3) ]],
+    device const uint32_t*         startRunIndices   [[ buffer (3) ]],
     device const StartPoint*       startPoints       [[ buffer (4) ]],
-    device const uint16_t*         startPointIndices [[ buffer (5) ]],
+    device const uint32_t*         startPointIndices [[ buffer (5) ]],
     uint2                          gid               [[thread_position_in_grid]]
 ) {
     uint8_t TableWidth = 4;
@@ -136,9 +136,9 @@ kernel void matchPatterns2x1(
     device PixelPoint*             points            [[ buffer (0) ]],
     device Run*                    runs              [[ buffer (1) ]],
     device const StartRun*         startRuns         [[ buffer (2) ]],
-    device const uint16_t*         startRunIndices   [[ buffer (3) ]],
+    device const uint32_t*         startRunIndices   [[ buffer (3) ]],
     device const StartPoint*       startPoints       [[ buffer (4) ]],
-    device const uint16_t*         startPointIndices [[ buffer (5) ]],
+    device const uint32_t*         startPointIndices [[ buffer (5) ]],
     uint2                          gid               [[thread_position_in_grid]]
 ) {
     uint32_t coreWidth = 2;
@@ -236,9 +236,9 @@ kernel void matchPatterns2x2(
     device PixelPoint*             points            [[ buffer (0) ]],
     device Run*                    runs              [[ buffer (1) ]],
     device const StartRun*         startRuns         [[ buffer (2) ]],
-    device const uint16_t*         startRunIndices   [[ buffer (3) ]],
+    device const uint32_t*         startRunIndices   [[ buffer (3) ]],
     device const StartPoint*       startPoints       [[ buffer (4) ]],
-    device const uint16_t*         startPointIndices [[ buffer (5) ]],
+    device const uint32_t*         startPointIndices [[ buffer (5) ]],
     uint2                          gid               [[thread_position_in_grid]]
 ) {
     uint32_t coreWidth = 2;
@@ -280,7 +280,7 @@ kernel void matchPatterns2x2(
     uint32_t minRow = 0;
     uint32_t maxRow = tex.get_height() - 1;
     
-    // Find the values in a 2x1 kernel, and its border.
+    // Find the values in a 2x2 kernel, and its border.
     //  0123
     // 0+--+
     // 1|XX|

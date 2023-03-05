@@ -18,5 +18,56 @@ struct StartRun: Hashable, Codable, Equatable {
     let from: ChainDirection.RawValue
     let to: ChainDirection.RawValue
     
+    public init(tail: Int8, head: Int8, from: ChainDirection.RawValue, to: ChainDirection.RawValue) {
+        self.tail = tail
+        self.head = head
+        self.from = from
+        self.to = to
+    }
+    
     public static let invalid = StartRun(tail: -1, head: -1, from: .max, to: .max)
+}
+
+extension StartRun {
+    public var binary: UInt32 {
+        /// Pack bits together.
+        return UInt32.zero
+            | UInt32(truncatingIfNeeded: tail) << 24
+            | UInt32(truncatingIfNeeded: head) << 16
+            | UInt32(truncatingIfNeeded: from) <<  8
+            | UInt32(truncatingIfNeeded: to  ) <<  0
+    }
+    
+    public init(binary: UInt32) {
+        self.init(
+            tail:  Int8(truncatingIfNeeded: binary >> 24),
+            head:  Int8(truncatingIfNeeded: binary >> 16),
+            from: UInt8(truncatingIfNeeded: binary >>  8),
+            to:   UInt8(truncatingIfNeeded: binary >>  0)
+        )
+    }
+}
+
+extension StartRun: ByteConvertible {
+    
+    static var byteCount: Int = 4
+    
+    public var data: Data {
+        /// Pack bits together.
+        return Data([
+            UInt8(bitPattern: tail),
+            UInt8(bitPattern: head),
+            from,
+            to,
+        ])
+    }
+    
+    public init(data: Data) {
+        self.init(
+            tail: Int8(bitPattern: data[data.indices.lowerBound + 0]),
+            head: Int8(bitPattern: data[data.indices.lowerBound + 1]),
+            from:                  data[data.indices.lowerBound + 2],
+            to:                    data[data.indices.lowerBound + 3]
+        )
+    }
 }
