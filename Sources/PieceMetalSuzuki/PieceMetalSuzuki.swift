@@ -94,21 +94,15 @@ public final class MarkerDetector {
         }
         
         /// Run core algorithms.
-        let runIndices = printTime("suzuki") {
-            applyMetalSuzuki_LUT(device: device, commandQueue: queue, texture: texture, pointsFilled: pointsFilled, runsFilled: runsFilled, pointsUnfilled: pointsUnfilled, runsUnfilled: runsUnfilled, patternSize: patternSize)
-        }
+        let runIndices =  applyMetalSuzuki_LUT(device: device, commandQueue: queue, texture: texture, pointsFilled: pointsFilled, runsFilled: runsFilled, pointsUnfilled: pointsUnfilled, runsUnfilled: runsUnfilled, patternSize: patternSize)
         guard let runIndices else {
             assertionFailure("Failed to get image contours")
             return
         }
         let imageSize = CGSize(width: CVPixelBufferGetWidth(pixelBuffer), height: CVPixelBufferGetHeight(pixelBuffer))
-        let quads = printTime("findQuads") {
-            findCandidateQuadrilaterals(pointBuffer: pointsFilled, runBuffer: runsFilled, runIndices: runIndices, parameters: self.rdpParameters)
-        }
+        let quads = findCandidateQuadrilaterals(pointBuffer: pointsFilled, runBuffer: runsFilled, runIndices: runIndices, parameters: self.rdpParameters)
         delegate?.didFind(quadrilaterals: quads, imageSize: imageSize)
-        printTime("decodeMarkers") {
-            decodeMarkers(pixelBuffer: pixelBuffer, quadrilaterals: quads)
-        }
+        decodeMarkers(pixelBuffer: pixelBuffer, quadrilaterals: quads)
     }
     
     private func allocateBuffers(ofSize count: Int) -> Bool {
