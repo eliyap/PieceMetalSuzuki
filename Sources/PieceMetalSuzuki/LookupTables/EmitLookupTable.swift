@@ -127,3 +127,36 @@ public func loadLookupTablesProtoBuf(_ patternSize: PatternSize) -> Bool {
     
     return true
 }
+
+public func loadLookupTablesData(_ patternSize: PatternSize) -> Bool {
+    /// - Note: the folder is `./LookupTables/Data` is copied to `./Data`. The super-directory is not preserved.
+    let dir = "Data"
+    let ext = "data"
+    guard
+        let pointTableURL = Bundle.module.url(forResource: "pointTable\(patternSize.patternCode)", withExtension: ext, subdirectory: dir),
+        let pointIndicesURL = Bundle.module.url(forResource: "pointIndices\(patternSize.patternCode)", withExtension: ext, subdirectory: dir),
+        let runTableURL = Bundle.module.url(forResource: "runTable\(patternSize.patternCode)", withExtension: ext, subdirectory: dir),
+        let runIndicesURL = Bundle.module.url(forResource: "runIndices\(patternSize.patternCode)", withExtension: ext, subdirectory: dir)
+    else {
+        return false
+    }
+    
+    do {
+        let pointTableData   = try Data(contentsOf: pointTableURL)
+        let pointIndicesData = try Data(contentsOf: pointIndicesURL)
+        let runTableData     = try printTime("runTable Data") {
+            try Data(contentsOf: runTableURL)
+        }
+        let runIndicesData   = try Data(contentsOf: runIndicesURL)
+        
+        StartPoint.lookupTable        = .init(data: pointTableData)
+        StartPoint.lookupTableIndices = .init(data: pointIndicesData)
+        StartRun.lookupTable          = .init(data: runTableData)
+        StartRun.lookupTableIndices   = .init(data: runIndicesData)
+    } catch {
+        assertionFailure("\(error)")
+        return false
+    }
+    
+    return true
+}
