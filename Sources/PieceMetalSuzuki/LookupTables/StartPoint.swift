@@ -16,3 +16,20 @@ struct StartPoint: Hashable, Codable, Equatable {
     
     public static let invalid = StartPoint(x: .max, y: .max)
 }
+
+extension StartPoint: ByteConvertible {
+    
+    static var byteCount: Int = 2
+    
+    public var data: Data {
+        /// Pack bits together.
+        return Data([x, y])
+    }
+    
+    public init(data: Data) {
+        self.init(
+            x: data[data.indices.lowerBound + 0],
+            y: data[data.indices.lowerBound + 1]
+        )
+    }
+}

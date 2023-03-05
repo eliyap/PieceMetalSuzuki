@@ -47,3 +47,27 @@ extension StartRun {
         )
     }
 }
+
+extension StartRun: ByteConvertible {
+    
+    static var byteCount: Int = 4
+    
+    public var data: Data {
+        /// Pack bits together.
+        return Data([
+            UInt8(bitPattern: tail),
+            UInt8(bitPattern: head),
+            from,
+            to,
+        ])
+    }
+    
+    public init(data: Data) {
+        self.init(
+            tail: Int8(bitPattern: data[data.indices.lowerBound + 0]),
+            head: Int8(bitPattern: data[data.indices.lowerBound + 1]),
+            from:                  data[data.indices.lowerBound + 2],
+            to:                    data[data.indices.lowerBound + 3]
+        )
+    }
+}
