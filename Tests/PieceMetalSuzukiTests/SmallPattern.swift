@@ -38,6 +38,7 @@ final class SmallPatternTests: XCTestCase {
     func testWaffle() throws {
         try checkPatternCountNoLUT(name: "waffle", expectedCount: 5)
         try checkPatternCountProtoBuf(name: "waffle", expectedCount: 5, patternSize: patternSize)
+        try checkPatternCountData(name: "waffle", expectedCount: 5, patternSize: patternSize)
     }
     
     func testWhite() throws {
