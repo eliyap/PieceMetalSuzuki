@@ -200,7 +200,7 @@ internal final class LookupTableBuilder {
         return (startRuns, startPoints)
     }
     
-    public func setBuffers() -> Void {
+    internal func setBuffers() -> Void {
         StartPoint.lookupTable = pointTable.reduce([], +)
         StartPoint.lookupTableIndices = pointIndices
         StartRun.lookupTable = runTable.reduce([], +)

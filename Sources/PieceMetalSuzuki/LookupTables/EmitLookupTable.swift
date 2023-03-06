@@ -87,7 +87,7 @@ extension LookupTableBuilder {
     }
 }
 
-public func loadLookupTablesProtoBuf(_ patternSize: PatternSize) -> Bool {
+internal func loadLookupTablesProtoBuf(_ patternSize: PatternSize) -> Bool {
     /// - Note: the folder is `./LookupTables/ProtocolBuffers` is copied to `./ProtocolBuffers`. The super-directory is not preserved.
     let dir = "ProtocolBuffers"
     let ext = "buf"
@@ -128,7 +128,7 @@ public func loadLookupTablesProtoBuf(_ patternSize: PatternSize) -> Bool {
     return true
 }
 
-public func loadLookupTablesData(_ patternSize: PatternSize) -> Bool {
+internal func loadLookupTablesData(_ patternSize: PatternSize) -> Bool {
     /// - Note: the folder is `./LookupTables/Data` is copied to `./Data`. The super-directory is not preserved.
     let dir = "Data"
     let ext = "data"
