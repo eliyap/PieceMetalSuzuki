@@ -15,7 +15,7 @@ internal final class LookupTableBuilder {
     
     let patternSize: PatternSize
     
-    public typealias TableIndex = UInt32
+    public typealias TableIndex = UInt16
     
     /// Contains distinct series of points.
     var pointTable: [[StartPoint]] = []

@@ -1,6 +1,8 @@
 #include <metal_stdlib>
 using namespace metal;
 
+#define table_index_t uint16_t
+
 struct Run {
     int32_t oldTail;
     int32_t oldHead;
@@ -53,9 +55,9 @@ kernel void matchPatterns1x1(
     device PixelPoint*             points            [[ buffer (0) ]],
     device Run*                    runs              [[ buffer (1) ]],
     device const StartRun*         startRuns         [[ buffer (2) ]],
-    device const uint32_t*         startRunIndices   [[ buffer (3) ]],
+    device const table_index_t*    startRunIndices   [[ buffer (3) ]],
     device const StartPoint*       startPoints       [[ buffer (4) ]],
-    device const uint32_t*         startPointIndices [[ buffer (5) ]],
+    device const table_index_t*    startPointIndices [[ buffer (5) ]],
     uint2                          gid               [[thread_position_in_grid]]
 ) {
     uint8_t TableWidth = 4;
@@ -136,9 +138,9 @@ kernel void matchPatterns2x1(
     device PixelPoint*             points            [[ buffer (0) ]],
     device Run*                    runs              [[ buffer (1) ]],
     device const StartRun*         startRuns         [[ buffer (2) ]],
-    device const uint32_t*         startRunIndices   [[ buffer (3) ]],
+    device const table_index_t*    startRunIndices   [[ buffer (3) ]],
     device const StartPoint*       startPoints       [[ buffer (4) ]],
-    device const uint32_t*         startPointIndices [[ buffer (5) ]],
+    device const table_index_t*    startPointIndices [[ buffer (5) ]],
     uint2                          gid               [[thread_position_in_grid]]
 ) {
     uint32_t coreWidth = 2;
@@ -236,9 +238,9 @@ kernel void matchPatterns2x2(
     device PixelPoint*             points            [[ buffer (0) ]],
     device Run*                    runs              [[ buffer (1) ]],
     device const StartRun*         startRuns         [[ buffer (2) ]],
-    device const uint32_t*         startRunIndices   [[ buffer (3) ]],
+    device const table_index_t*    startRunIndices   [[ buffer (3) ]],
     device const StartPoint*       startPoints       [[ buffer (4) ]],
-    device const uint32_t*         startPointIndices [[ buffer (5) ]],
+    device const table_index_t*    startPointIndices [[ buffer (5) ]],
     uint2                          gid               [[thread_position_in_grid]]
 ) {
     uint32_t coreWidth = 2;
