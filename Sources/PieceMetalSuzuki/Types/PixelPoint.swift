@@ -30,25 +30,6 @@ internal struct PixelPoint: Equatable, CustomStringConvertible {
         case .topLeft:     return PixelPoint(x: x - 1, y: y - 1)
         }
     }
-    
-    subscript(raw: ChainDirection.RawValue) -> PixelPoint {
-        switch raw {
-        case ChainDirection.up.rawValue:          return PixelPoint(x: x,     y: y - 1)
-        case ChainDirection.topRight.rawValue:    return PixelPoint(x: x + 1, y: y - 1)
-        case ChainDirection.right.rawValue:       return PixelPoint(x: x + 1, y: y    )
-        case ChainDirection.bottomRight.rawValue: return PixelPoint(x: x + 1, y: y + 1)
-        case ChainDirection.down.rawValue:        return PixelPoint(x: x,     y: y + 1)
-        case ChainDirection.bottomLeft.rawValue:  return PixelPoint(x: x - 1, y: y + 1)
-        case ChainDirection.left.rawValue:        return PixelPoint(x: x - 1, y: y    )
-        case ChainDirection.topLeft.rawValue:     return PixelPoint(x: x - 1, y: y - 1)
-        case ChainDirection.closed.rawValue:
-            assert(false, "Cannot index a closed border.")
-            return self
-        default:
-            assert(false, "Cannot invalid direction.")
-            return self
-        }
-    }
 
     /// An invalid point.
     static let invalid = PixelPoint(x: UInt32.max, y: UInt32.max)

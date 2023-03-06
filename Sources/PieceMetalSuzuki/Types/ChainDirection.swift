@@ -36,11 +36,6 @@ enum ChainDirection: UInt8, Equatable {
         case .topLeft:     return .bottomRight
         }
     }
-    
-    static func invert(_ raw: Self.RawValue) -> Self.RawValue {
-        assert(raw != Self.closed.rawValue)
-        return 9 - raw
-    }
 }
 
 extension ChainDirection: CustomStringConvertible {
