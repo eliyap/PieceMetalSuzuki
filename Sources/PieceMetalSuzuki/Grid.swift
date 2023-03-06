@@ -342,12 +342,12 @@ struct Grid {
         }
         
         /// Find run, if any, whose tail matches the head at this point, pointing in this direction.
-        private mutating func findTailForHead(point: PixelPoint, direction: ChainDirection.RawValue) -> Int? {
-            precondition(direction != ChainDirection.closed.rawValue)
+        private mutating func findTailForHead(point: PixelPoint, direction: ChainDirection) -> Int? {
+            precondition(direction != .closed)
 
             /// For the given head pointer, describe the corresponding tail pointer.
             let tail: PixelPoint = point[direction]
-            let from = ChainDirection.invert(direction)
+            let from = direction.inverse.rawValue
             func tailDoesMatch(idx: Int) -> Bool {
                 return tail == tailPoint(for: idx) && srcRuns[idx].tailTriadFrom == from
             }
@@ -358,12 +358,12 @@ struct Grid {
             return nil
         }
 
-        private mutating func findHeadForTail(point: PixelPoint, direction: ChainDirection.RawValue) -> Int? {
-            precondition(direction != ChainDirection.closed.rawValue)
+        private mutating func findHeadForTail(point: PixelPoint, direction: ChainDirection) -> Int? {
+            precondition(direction != .closed)
 
             /// For the given tail pointer, describe the corresponding head pointer.
             let head: PixelPoint = point[direction]
-            let to = ChainDirection.invert(direction)
+            let to = direction.inverse.rawValue
             func headDoesMatch(idx: Int) -> Bool {
                 return head == headPoint(for: idx) && srcRuns[idx].headTriadTo == to
             }
@@ -382,7 +382,7 @@ struct Grid {
             var headDxn = srcRuns[runIdx].headTriadTo
             while
                 headDxn != ChainDirection.closed.rawValue, /// Skip search if run is closed.
-                let nextRunIdx = findTailForHead(point: headPt, direction: headDxn)
+                let nextRunIdx = findTailForHead(point: headPt, direction: ChainDirection(rawValue: headDxn)!)
             {
                 joinedRunsIndices.append(nextRunIdx)
                 headPt = headPoint(for: nextRunIdx)
@@ -393,7 +393,7 @@ struct Grid {
             var tailDxn = srcRuns[runIdx].tailTriadFrom
             while
                 tailDxn != ChainDirection.closed.rawValue, /// Skip search if run is closed.
-                let prevRunIdx = findHeadForTail(point: tailPt, direction: tailDxn)
+                let prevRunIdx = findHeadForTail(point: tailPt, direction: ChainDirection(rawValue: tailDxn)!)
             {
                 joinedRunsIndices.insert(prevRunIdx, at: 0)
                 tailPt = tailPoint(for: prevRunIdx)
