@@ -181,8 +181,8 @@ struct Grid {
         if dxn == .horizontal {
             /// Last iteration was vertical, then flipped.
             /// Move data back to "filled" buffers.
-            memcpy(pointsVertical.array, pointsHorizontal.array, pointsVertical.count)
-            memcpy(runsVertical.array, runsHorizontal.array, runsVertical.count)
+            memcpy(pointsVertical.array, pointsHorizontal.array, MemoryLayout<PixelPoint>.stride * pointsVertical.count)
+            memcpy(runsVertical.array, runsHorizontal.array, MemoryLayout<Run>.stride * runsVertical.count)
         }
         
         /// Return final results.
