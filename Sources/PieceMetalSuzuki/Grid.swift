@@ -415,23 +415,15 @@ struct Grid {
             var newTailFrom = srcRuns[joinedRunsIndices.first!].tailTriadFrom
             var newHeadTo = srcRuns[joinedRunsIndices.last!].headTriadTo
             
-            _ = {
-                let headDxn = ChainDirection(rawValue: headDxn)!
-                let tailDxn = ChainDirection(rawValue: tailDxn)!
-                
-                /// Check if already closed.
-                if headDxn == .closed {
-                    precondition(tailDxn == .closed)
-                    return
-                }
-                
-                /// Check if the new run is closed.
-                if headDxn.inverse == tailDxn && headPt[headDxn] == tailPt {
-                    precondition(tailPt[tailDxn] == headPt)
-                    newTailFrom = ChainDirection.closed.rawValue
-                    newHeadTo = ChainDirection.closed.rawValue
-                }
-            }()
+            /// Check if already closed.
+            if headDxn == ChainDirection.closed.rawValue {
+                precondition(tailDxn == ChainDirection.closed.rawValue)
+            } else if ChainDirection.invert(headDxn) == tailDxn && headPt[headDxn] == tailPt {
+                /// New run is newly closed.
+                precondition(tailPt[tailDxn] == headPt)
+                newTailFrom = ChainDirection.closed.rawValue
+                newHeadTo = ChainDirection.closed.rawValue
+            }
             
             /// Finally, add the new run.
             let newRun = Run(
