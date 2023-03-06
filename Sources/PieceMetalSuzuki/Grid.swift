@@ -206,7 +206,7 @@ struct Grid {
             assert(run.headTriadTo == ChainDirection.closed.rawValue)
             assert(run.tailTriadFrom == ChainDirection.closed.rawValue)
         }
-//        print("Found \(regions[0][0].runsCount) contours.")
+        print("Found \(regions[0][0].runsCount) contours.")
         #endif
         
         return
@@ -216,7 +216,7 @@ struct Grid {
     func dump(region: Region, points: UnsafeMutablePointer<PixelPoint>, runs: UnsafeMutablePointer<Run>) {
         let baseOffset = baseOffset(grid: self, region: region)
         debugPrint("[DUMP]: \(region)")
-        for offset in 0..<Int(region.runsCount) {
+        for offset in 0..<region.runsCount {
             let runBufferOffset = Int(offset + Int(baseOffset))
             let run = runs[runBufferOffset]
             assert(run.isValid)
@@ -276,7 +276,7 @@ struct Grid {
         var runIndices: [Int]
         
         var nextPointOffset = Int32.zero
-        var nextRunOffset = UInt32.zero
+        var nextRunOffset = Int.zero
         
         let srcPts: UnsafeMutablePointer<PixelPoint>
         let srcRuns: UnsafeMutablePointer<Run>
@@ -301,8 +301,8 @@ struct Grid {
             #endif
             let aBaseOffset = baseOffset(grid: grid, region: a)
             let bBaseOffset = baseOffset(grid: grid, region: b)
-            self.runIndices = (0..<Int(a.runsCount)).map { $0 + Int(aBaseOffset) }
-                            + (0..<Int(b.runsCount)).map { $0 + Int(bBaseOffset) }
+            self.runIndices = (0..<a.runsCount).map { $0 + Int(aBaseOffset) }
+                            + (0..<b.runsCount).map { $0 + Int(bBaseOffset) }
             
             switch dxn {
             case .vertical:
@@ -450,7 +450,7 @@ struct Grid {
             debugPrint("newRun \(newRun) \(__pts)")
             #endif
             
-            dstRuns[Int(newBaseOffset + nextRunOffset)] = newRun
+            dstRuns[Int(newBaseOffset) + nextRunOffset] = newRun
             nextRunOffset += 1
         }
         
