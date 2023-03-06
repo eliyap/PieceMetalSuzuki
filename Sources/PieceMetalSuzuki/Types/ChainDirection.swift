@@ -10,16 +10,13 @@ import Foundation
 enum ChainDirection: UInt8, Equatable {
     case closed      = 0 /// Indicates a closed border.
     case up          = 1
-    case down        = 8
-    
     case topRight    = 2
-    case bottomLeft  = 7
-    
     case right       = 3
-    case left        = 6
-    
     case bottomRight = 4
-    case topLeft     = 5
+    case down        = 5
+    case bottomLeft  = 6
+    case left        = 7
+    case topLeft     = 8
 
     var inverse : ChainDirection {
         switch self {
