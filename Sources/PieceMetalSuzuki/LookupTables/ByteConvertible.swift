@@ -27,6 +27,20 @@ extension UInt32: ByteConvertible {
     }
 }
 
+extension UInt16: ByteConvertible {
+    static var byteCount: Int = 2
+    var data: Data {
+        Data([
+            UInt8(truncatingIfNeeded: self >>  8),
+            UInt8(truncatingIfNeeded: self >>  0),
+        ])
+    }
+    init(data: Data) {
+        self = Self(data[data.indices.lowerBound + 0]) <<  8
+             | Self(data[data.indices.lowerBound + 1]) <<  0
+    }
+}
+
 extension Array where Element: ByteConvertible {
     var data: Data {
         return self.reduce(Data()) { partialResult, element in
