@@ -461,6 +461,7 @@ internal func createChainStarters(
             assertionFailure("Failed to create LUT buffer")
             return false
         }
+        memcpy(pointLutBuffer.array, PixelPoint.LUT, MemoryLayout<PixelPoint>.stride * PixelPoint.LUT.count)
 
         cmdEncoder.setBuffer(pointBuffer.mtlBuffer, offset: 0, index: 0)
         cmdEncoder.setBuffer(runBuffer.mtlBuffer, offset: 0, index: 1)
