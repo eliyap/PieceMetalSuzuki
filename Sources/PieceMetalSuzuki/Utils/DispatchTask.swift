@@ -10,10 +10,10 @@ import Foundation
 /// - I want the cooperative `Task` model instead of GCD.
 /// - I need to call it from `AVCaptureVideoDataOutputSampleBufferDelegate`,
 ///   which only has synchronous delegate methods.
-internal func DispatchTask(_ block: @escaping () async throws -> Void) rethrows -> Void {
+internal func DispatchTask(priority: TaskPriority? = nil, _ block: @escaping () async throws -> Void) rethrows -> Void {
     let group = DispatchGroup()
     group.enter()
-    Task(priority: .userInitiated) {
+    Task(priority: priority) {
         try await block()
         group.leave()
     }
