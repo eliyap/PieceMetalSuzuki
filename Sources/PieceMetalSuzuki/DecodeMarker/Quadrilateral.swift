@@ -1,9 +1,5 @@
-//
 //  Quadrilateral.swift
-//  Aruco
-//
 //  Created by Secret Asian Man Dev on 22/2/23.
-//
 
 import Foundation
 
@@ -34,6 +30,15 @@ public struct Quadrilateral {
         let yMax = max(corner1.y, corner2.y, corner3.y, corner4.y)
         let yPixelMax = Int(yMax.rounded(.up))
         return yPixelMin..<yPixelMax
+    }
+    
+    func scaled(by scale: Double) -> Self {
+        Self.init(
+            corner1: DoublePoint(x: corner1.x * scale, y: corner1.y * scale),
+            corner2: DoublePoint(x: corner2.x * scale, y: corner2.y * scale),
+            corner3: DoublePoint(x: corner3.x * scale, y: corner3.y * scale),
+            corner4: DoublePoint(x: corner4.x * scale, y: corner4.y * scale)
+        )
     }
 }
 

@@ -3,7 +3,7 @@
 //  https://gist.github.com/skyebook/e052199d08a7a59f2b59e32053b1b4bd
 
 import CoreVideo
-public func CVPixelBufferGetPixelFormatName(_ pixelBuffer: CVPixelBuffer) -> String {
+internal func CVPixelBufferGetPixelFormatName(_ pixelBuffer: CVPixelBuffer) -> String {
     let p = CVPixelBufferGetPixelFormatType(pixelBuffer)
     switch p {
     case kCVPixelFormatType_1Monochrome:                   return "kCVPixelFormatType_1Monochrome"

@@ -122,7 +122,7 @@ public actor Profiler<Region: CodeRegion> {
         return result
     }
 
-    public func report() async {
+    internal func report() async {
         guard ENABLED else { return }
         /// Wait for everything to finish.
         try! await Task.sleep(nanoseconds: UInt64(1_000_000_000 * 2))

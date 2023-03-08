@@ -15,7 +15,7 @@ internal final class LookupTableBuilder {
     
     let patternSize: PatternSize
     
-    public typealias TableIndex = UInt32
+    public typealias TableIndex = UInt16
     
     /// Contains distinct series of points.
     var pointTable: [[StartPoint]] = []
@@ -200,7 +200,7 @@ internal final class LookupTableBuilder {
         return (startRuns, startPoints)
     }
     
-    public func setBuffers() -> Void {
+    internal func setBuffers() -> Void {
         StartPoint.lookupTable = pointTable.reduce([], +)
         StartPoint.lookupTableIndices = pointIndices
         StartRun.lookupTable = runTable.reduce([], +)

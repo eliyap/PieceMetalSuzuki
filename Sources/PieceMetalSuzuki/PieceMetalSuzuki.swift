@@ -12,6 +12,10 @@ public final class MarkerDetector {
     
     public var rdpParameters: RDPParameters = .starter
     
+    /// Linear ratio by which to downscale image.
+    /// e.g. a 10x10 image downscaled by 2 is 5x5.
+    public var scale: Double = 3.5
+    
     /// The type of Lookup Table used to kickstart contour detection.
     private let patternSize: PatternSize
     
@@ -62,7 +66,7 @@ public final class MarkerDetector {
     public func detect(pixelBuffer: CVPixelBuffer) -> Void {
         /// Apply a binary filter to make the image black & white.
         guard let filteredBuffer = SuzukiProfiler.time(.binarize, {
-            applyMetalFilter(to: pixelBuffer, device: device, commandQueue: queue, metalTextureCache: textureCache)
+            applyMetalFilter(to: pixelBuffer, scale: self.scale, device: device, commandQueue: queue, metalTextureCache: textureCache)
         }) else {
             assert(false, "Failed to create pixel buffer.")
             return
@@ -94,21 +98,15 @@ public final class MarkerDetector {
         }
         
         /// Run core algorithms.
-        let runIndices = printTime("suzuki") {
-            applyMetalSuzuki_LUT(device: device, commandQueue: queue, texture: texture, pointsFilled: pointsFilled, runsFilled: runsFilled, pointsUnfilled: pointsUnfilled, runsUnfilled: runsUnfilled, patternSize: patternSize)
-        }
+        let runIndices = applyMetalSuzuki_LUT(device: device, commandQueue: queue, texture: texture, pointsFilled: pointsFilled, runsFilled: runsFilled, pointsUnfilled: pointsUnfilled, runsUnfilled: runsUnfilled, patternSize: patternSize)
         guard let runIndices else {
             assertionFailure("Failed to get image contours")
             return
         }
         let imageSize = CGSize(width: CVPixelBufferGetWidth(pixelBuffer), height: CVPixelBufferGetHeight(pixelBuffer))
-        let quads = printTime("findQuads") {
-            findCandidateQuadrilaterals(pointBuffer: pointsFilled, runBuffer: runsFilled, runIndices: runIndices, parameters: self.rdpParameters)
-        }
+        let quads = findCandidateQuadrilaterals(pointBuffer: pointsFilled, runBuffer: runsFilled, runIndices: runIndices, parameters: self.rdpParameters, scale: self.scale)
         delegate?.didFind(quadrilaterals: quads, imageSize: imageSize)
-        printTime("decodeMarkers") {
-            decodeMarkers(pixelBuffer: pixelBuffer, quadrilaterals: quads)
-        }
+        decodeMarkers(pixelBuffer: pixelBuffer, quadrilaterals: quads)
     }
     
     private func allocateBuffers(ofSize count: Int) -> Bool {
@@ -182,8 +180,10 @@ internal struct PieceMetalSuzuki {
         }
         
         SuzukiProfiler.time(.overall) {
+            let scale = 1.0
+            
             guard let filteredBuffer = SuzukiProfiler.time(.binarize, {
-                applyMetalFilter(to: pixelBuffer, device: device, commandQueue: commandQueue, metalTextureCache: metalTextureCache)
+                applyMetalFilter(to: pixelBuffer, scale: scale, device: device, commandQueue: commandQueue, metalTextureCache: metalTextureCache)
             }) else {
                 assert(false, "Failed to create pixel buffer.")
                 return
@@ -234,53 +234,68 @@ internal struct PieceMetalSuzuki {
     }
 }
 
-internal func applyMetalFilter(
-    to buffer: CVPixelBuffer,
-    device: MTLDevice,
-    commandQueue: MTLCommandQueue,
-    metalTextureCache: CVMetalTextureCache
-) -> CVPixelBuffer? {
-    var result: CVPixelBuffer!
+internal func createBuffer(width: Int, height: Int, format: OSType) -> CVPixelBuffer? {
+    var buffer: CVPixelBuffer!
+    let attributes: CFDictionary = NSDictionary(dictionary: [
+        kCVPixelBufferCGImageCompatibilityKey: true,
+        kCVPixelBufferMetalCompatibilityKey: true,
+    ])
     
-    guard CVPixelBufferCreate(
-        kCFAllocatorDefault,
-        CVPixelBufferGetWidth(buffer),
-        CVPixelBufferGetHeight(buffer),
-        CVPixelBufferGetPixelFormatType(buffer),
-        NSDictionary(dictionary: [
-            kCVPixelBufferCGImageCompatibilityKey: true,
-            kCVPixelBufferMetalCompatibilityKey: true,
-        ]),
-        &result
-    ) == kCVReturnSuccess else {
+    let status = CVPixelBufferCreate(kCFAllocatorDefault, width, height, format, attributes, &buffer)
+    guard status == kCVReturnSuccess else {
         assert(false, "Failed to create pixel buffer.")
         return nil
     }
     
+    return buffer
+}
+
+internal func applyMetalFilter(
+    to buffer: CVPixelBuffer,
+    scale: Double,
+    device: MTLDevice,
+    commandQueue: MTLCommandQueue,
+    metalTextureCache: CVMetalTextureCache
+) -> CVPixelBuffer? {
+    let scaledWidth  = Int((Double(CVPixelBufferGetWidth(buffer))  / scale).rounded(.down))
+    let scaledHeight = Int((Double(CVPixelBufferGetHeight(buffer)) / scale).rounded(.down))
+    
+    guard
+        let scaledBuffer    = createBuffer(width: scaledWidth, height: scaledHeight, format: CVPixelBufferGetPixelFormatType(buffer)),
+        let binarizedBuffer = createBuffer(width: scaledWidth, height: scaledHeight, format: CVPixelBufferGetPixelFormatType(buffer)),
+        let sourceTexture    = makeTextureFromCVPixelBuffer(pixelBuffer: buffer, textureFormat: .bgra8Unorm, textureCache: metalTextureCache),
+        let scaledTexture    = makeTextureFromCVPixelBuffer(pixelBuffer: scaledBuffer, textureFormat: .bgra8Unorm, textureCache: metalTextureCache),
+        let binarizedTexture = makeTextureFromCVPixelBuffer(pixelBuffer: binarizedBuffer, textureFormat: .bgra8Unorm, textureCache: metalTextureCache)
+    else {
+        assert(false, "Failed to create textures.")
+        return nil
+    }
+    
+    
     /// Apply Metal filter to pixel buffer.
-    guard  let binaryBuffer = commandQueue.makeCommandBuffer() else {
+    guard  let commandBuffer = commandQueue.makeCommandBuffer() else {
         assert(false, "Failed to get metal device.")
         return nil
     }
     
-    guard let source = makeTextureFromCVPixelBuffer(pixelBuffer: buffer, textureFormat: .bgra8Unorm, textureCache: metalTextureCache) else {
-        assert(false, "Failed to create texture.")
-        return nil
-    }
-    guard let destination = makeTextureFromCVPixelBuffer(pixelBuffer: result, textureFormat: .bgra8Unorm, textureCache: metalTextureCache) else {
-        assert(false, "Failed to create texture.")
-        return nil
+    var transform = MPSScaleTransform(scaleX: 1.0 / scale, scaleY: 1.0 / scale, translateX: 0, translateY: 0)
+    withUnsafePointer(to: &transform) { transformPtr in
+        /// Downscale, then binarize, otherwise image will be grayscale, instead of B&W.
+        let scale = MPSImageBilinearScale(device: device)
+        scale.scaleTransform = transformPtr
+        scale.encode(commandBuffer: commandBuffer, sourceTexture: sourceTexture, destinationTexture: scaledTexture)
+        
+        /// Apply a binary threshold.
+        /// This is 1 in both signed and unsigned numbers.
+        let setVal: Float = 1.0/256.0
+        let binary = MPSImageThresholdBinary(device: device, thresholdValue: 0.5, maximumValue: setVal, linearGrayColorTransform: nil)
+        binary.encode(commandBuffer: commandBuffer, sourceTexture: scaledTexture, destinationTexture: binarizedTexture)
+        
+        commandBuffer.commit()
+        commandBuffer.waitUntilCompleted()
     }
     
-    /// Apply a binary threshold.
-    /// This is 1 in both signed and unsigned numbers.
-    let setVal: Float = 1.0/256.0
-    let binary = MPSImageThresholdBinary(device: device, thresholdValue: 0.5, maximumValue: setVal, linearGrayColorTransform: nil)
-    binary.encode(commandBuffer: binaryBuffer, sourceTexture: source, destinationTexture: destination)
-    binaryBuffer.commit()
-    binaryBuffer.waitUntilCompleted()
-    
-    return result
+    return binarizedBuffer
 }
 
 internal func applyMetalSuzuki(
@@ -320,8 +335,7 @@ internal func applyMetalSuzuki(
                 pointsFilled: pointsFilled,
                 runsFilled: runsFilled,
                 pointsUnfilled: pointsUnfilled,
-                runsUnfilled: runsUnfilled,
-                commandQueue: commandQueue
+                runsUnfilled: runsUnfilled
             )
         }
         
@@ -363,8 +377,7 @@ internal func applyMetalSuzuki_LUT(
             pointsFilled: pointsFilled,
             runsFilled: runsFilled,
             pointsUnfilled: pointsUnfilled,
-            runsUnfilled: runsUnfilled,
-            commandQueue: commandQueue
+            runsUnfilled: runsUnfilled
         )
     }
     
@@ -448,6 +461,7 @@ internal func createChainStarters(
             assertionFailure("Failed to create LUT buffer")
             return false
         }
+        memcpy(pointLutBuffer.array, PixelPoint.LUT, MemoryLayout<PixelPoint>.stride * PixelPoint.LUT.count)
 
         cmdEncoder.setBuffer(pointBuffer.mtlBuffer, offset: 0, index: 0)
         cmdEncoder.setBuffer(runBuffer.mtlBuffer, offset: 0, index: 1)

@@ -4,7 +4,7 @@
 import Metal
 import CoreVideo
 
-public func makeTextureFromCVPixelBuffer(
+internal func makeTextureFromCVPixelBuffer(
     pixelBuffer: CVPixelBuffer,
     textureFormat: MTLPixelFormat,
     textureCache: CVMetalTextureCache
