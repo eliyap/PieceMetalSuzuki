@@ -14,7 +14,7 @@ public final class MarkerDetector {
     
     /// Linear ratio by which to downscale image.
     /// e.g. a 10x10 image downscaled by 2 is 5x5.
-    public var scale: Double = 1.75
+    public var scale: Double = 1.0
     
     /// The type of Lookup Table used to kickstart contour detection.
     private let patternSize: PatternSize
