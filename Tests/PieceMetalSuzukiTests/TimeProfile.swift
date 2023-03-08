@@ -18,7 +18,7 @@ final class SuzukiTimeProfile: XCTestCase {
     }
     
     func timeLUT(patternSize: PatternSize) async throws {
-        assert(loadLookupTablesProtoBuf(patternSize))
+        assert(loadLookupTablesData(patternSize))
         
         let options = SuzukiTimeProfile.defaultMeasureOptions
         options.iterationCount = 10

@@ -206,7 +206,7 @@ struct Grid {
             assert(run.headTriadTo == ChainDirection.closed.rawValue)
             assert(run.tailTriadFrom == ChainDirection.closed.rawValue)
         }
-        print("Found \(regions[0][0].runsCount) contours.")
+//        print("Found \(regions[0][0].runsCount) contours.")
         #endif
         
         return
