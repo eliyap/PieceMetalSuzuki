@@ -79,10 +79,9 @@ struct Grid {
                 
                 let newGridSize = PixelSize(width: gridSize.width * 2, height: gridSize.height)
                 SuzukiProfiler.time(.combine) {
-                    var indices: [(Int, Int)] = []
-                    for col in stride(from: 0, to: numCols - 1, by: 2).reversed() {
-                        for row in 0..<numRows {
-                            indices.append((row, col))
+                    let indices: [(Int, Int)] = stride(from: 0, to: numCols - 1, by: 2).reversed().flatMap { col in
+                        return (0..<numRows).map { row in
+                            return (row, col)
                         }
                     }
                     DispatchQueue.concurrentPerform(iterations: indices.count) { indicesIdx in
@@ -135,10 +134,9 @@ struct Grid {
                 
                 let newGridSize = PixelSize(width: gridSize.width, height: gridSize.height * 2)
                 SuzukiProfiler.time(.combine) {
-                    var indices: [(Int, Int)] = []
-                    for col in 0..<numCols {
-                        for row in stride(from: 0, to: numRows - 1, by: 2).reversed() {
-                            indices.append((row, col))
+                    let indices: [(Int, Int)] = (0..<numCols).flatMap { col in
+                        return stride(from: 0, to: numRows - 1, by: 2).reversed().map { row in
+                            return (row, col)
                         }
                     }
                     DispatchQueue.concurrentPerform(iterations: indices.count) { indicesIdx in
@@ -206,7 +204,7 @@ struct Grid {
             assert(run.headTriadTo == ChainDirection.closed.rawValue)
             assert(run.tailTriadFrom == ChainDirection.closed.rawValue)
         }
-//        print("Found \(regions[0][0].runsCount) contours.")
+        print("Found \(regions[0][0].runsCount) contours.")
         #endif
         
         return
@@ -525,10 +523,9 @@ extension Grid {
                 }
                 
                 let newGridSize = PixelSize(width: gridSize.width * 2, height: gridSize.height)
-                var indices: [(Int, Int)] = []
-                for col in stride(from: 0, to: numCols - 1, by: 2).reversed() {
-                    for row in 0..<numRows {
-                        indices.append((row, col))
+                let indices: [(Int, Int)] = stride(from: 0, to: numCols - 1, by: 2).reversed().flatMap { col in
+                    (0..<numRows).map { row in
+                        return (row, col)
                     }
                 }
                 DispatchQueue.concurrentPerform(iterations: indices.count) { indicesIdx in
@@ -575,10 +572,9 @@ extension Grid {
                 }
                 
                 let newGridSize = PixelSize(width: gridSize.width, height: gridSize.height * 2)
-                var indices: [(Int, Int)] = []
-                for col in 0..<numCols {
-                    for row in stride(from: 0, to: numRows - 1, by: 2).reversed() {
-                        indices.append((row, col))
+                let indices: [(Int, Int)] = (0..<numCols).flatMap { col in
+                    stride(from: 0, to: numRows - 1, by: 2).reversed().map { row in
+                        return (row, col)
                     }
                 }
                 DispatchQueue.concurrentPerform(iterations: indices.count) { indicesIdx in
