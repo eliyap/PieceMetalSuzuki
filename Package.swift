@@ -48,6 +48,11 @@ let package = Package(
                     /// Best used with single images when running test cases.
 //                    "-DSHOW_RDP_WORK",
 //                    "-DSHOW_GRID_WORK",
+                    
+                    /// Strict concurrency checking.
+                    /// Incompatible with some of the unsafe parallelization.
+//                    "-Xfrontend", "-warn-concurrency",
+//                    "-Xfrontend", "-enable-actor-data-race-checks",
                 ], nil)
             ]),
         .testTarget(
