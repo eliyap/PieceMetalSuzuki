@@ -102,4 +102,11 @@ final class PieceMetalSuzukiTests: XCTestCase {
 
         saveBufferToPng(buffer: pixelBuffer, format: .RGBA8)
     }
+    
+    @available(macOS 13.0, *)
+    func testAsyncFromSync() throws {
+        DispatchTask {
+            try? await Task.sleep(for: .seconds(2))
+        }
+    }
 }
