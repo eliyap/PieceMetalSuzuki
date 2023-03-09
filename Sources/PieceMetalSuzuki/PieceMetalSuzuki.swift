@@ -72,8 +72,6 @@ public final class MarkerDetector {
             return
         }
         
-        delegate?.didBinarizeImage(result: filteredBuffer)
-        
         /// Obtain a Metal Texture from the image.
         guard let texture = SuzukiProfiler.time(.makeTexture, {
             makeTextureFromCVPixelBuffer(pixelBuffer: filteredBuffer, textureFormat: .bgra8Unorm, textureCache: textureCache)
@@ -129,9 +127,6 @@ public final class MarkerDetector {
 }
 
 public protocol MarkerDetectorDelegate: AnyObject {
-    /// Applied the binarization filter to make a black and white image.
-    func didBinarizeImage(result: CVPixelBuffer) -> Void
-    
     /// Found a set of square-ish shapes among the contours in the image.
     func didFind(parallelograms: [Parallelogram], imageSize: CGSize) -> Void
 }
