@@ -81,10 +81,10 @@ public struct RDPParameters {
     )
 }
 
-internal func checkQuadrilateral(
+internal func reduceToParallelogram(
     polyline: [DoublePoint],
     parameters: RDPParameters
-) -> Quadrilateral? {
+) -> Parallelogram? {
     guard polyline.count > parameters.minPoints else {
         #if SHOW_RDP_WORK
         debugPrint("[RDP] Too few points")

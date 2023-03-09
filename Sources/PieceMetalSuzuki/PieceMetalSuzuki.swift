@@ -104,9 +104,9 @@ public final class MarkerDetector {
             return
         }
         let imageSize = CGSize(width: CVPixelBufferGetWidth(pixelBuffer), height: CVPixelBufferGetHeight(pixelBuffer))
-        let quads = findCandidateQuadrilaterals(pointBuffer: pointsFilled, runBuffer: runsFilled, runIndices: runIndices, parameters: self.rdpParameters, scale: self.scale)
-        delegate?.didFind(quadrilaterals: quads, imageSize: imageSize)
-        decodeMarkers(pixelBuffer: pixelBuffer, quadrilaterals: quads)
+        let parallelograms = findParallelograms(pointBuffer: pointsFilled, runBuffer: runsFilled, runIndices: runIndices, parameters: self.rdpParameters, scale: self.scale)
+        delegate?.didFind(parallelograms: parallelograms, imageSize: imageSize)
+        decodeMarkers(pixelBuffer: pixelBuffer, parallelograms: parallelograms)
     }
     
     private func allocateBuffers(ofSize count: Int) -> Bool {
@@ -133,7 +133,7 @@ public protocol MarkerDetectorDelegate: AnyObject {
     func didBinarizeImage(result: CVPixelBuffer) -> Void
     
     /// Found a set of square-ish shapes among the contours in the image.
-    func didFind(quadrilaterals: [Quadrilateral], imageSize: CGSize) -> Void
+    func didFind(parallelograms: [Parallelogram], imageSize: CGSize) -> Void
 }
 
 internal struct PieceMetalSuzuki {

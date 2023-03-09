@@ -8,14 +8,14 @@
 import Foundation
 import CoreVideo
 
-internal func findCandidateQuadrilaterals(
+internal func findParallelograms(
     pointBuffer: Buffer<PixelPoint>,
     runBuffer: Buffer<Run>,
     runIndices: Range<Int>,
     parameters: RDPParameters,
     /// Used to scale quadrilaterals back up to size.
     scale: Double
-) -> [Quadrilateral] {
+) -> [Parallelogram] {
     return QuadProfiler.time(.overall) {
         let candidates = [Quadrilateral?].init(unsafeUninitializedCapacity: runIndices.count) { buffer, count in
             DispatchQueue.concurrentPerform(iterations: runIndices.count) { iteration in
@@ -28,7 +28,7 @@ internal func findCandidateQuadrilaterals(
                     }
                     
                     /// Check if the contour can be reduced to a nice quadrilateral.
-                    buffer[iteration] = checkQuadrilateral(polyline: points, parameters: parameters)
+                    buffer[iteration] = reduceToParallelogram(polyline: points, parameters: parameters)
                 }
             }
             count = runIndices.count
@@ -41,15 +41,15 @@ internal func findCandidateQuadrilaterals(
 
 internal func decodeMarkers(
     pixelBuffer: CVPixelBuffer,
-    quadrilaterals: [Quadrilateral],
+    parallelograms: [Parallelogram],
     rdpParameters: RDPParameters = .starter
 ) -> Void {
     pixelBuffer.withLockedBaseAddress { token in
-        for quadrilateral in quadrilaterals {
+        for parallelogram in parallelograms {
             let samples = sampleSkewedGrid(
                 pixelBuffer: pixelBuffer,
                 token: token,
-                quadrilateral: quadrilateral,
+                quadrilateral: parallelogram,
                 parameters: SkewedSampleParameters(marginSize: 0.1, gridSize: 3)
             )
             guard let samples else {
