@@ -77,7 +77,7 @@ public struct RDPParameters {
     public static let starter = RDPParameters(
         minPoints: 10,
         sideErrorLimit: 0.10,
-        aspectRatioErrorLimit: 0.5
+        aspectRatioErrorLimit: 0.15
     )
 }
 
@@ -196,9 +196,12 @@ internal func reduceToParallelogram(
         return nil
     }
     
-    /// Check aspect ratio is reasonable.
-    let aspRatio = corner1.distance(to: corner2) / corner2.distance(to: corner3)
-    let aspRatioError = abs(1.0 - aspRatio)
+    /// Check whether quadrilateral is parallelogram-y enough.
+    /// This means opposite sides should be approximately equal in length.
+    let aspRatioError = max(
+        abs(1.0 - (corner1.distance(to: corner2) / corner3.distance(to: corner4))),
+        abs(1.0 - (corner2.distance(to: corner3) / corner1.distance(to: corner4)))
+    )
     guard aspRatioError < parameters.aspectRatioErrorLimit else {
         #if SHOW_RDP_WORK
         debugPrint("[RDP] Failed due to aspect ratio error \(aspRatioError)")
