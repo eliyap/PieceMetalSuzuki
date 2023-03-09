@@ -87,4 +87,72 @@ public struct DoubleDiamondParameters {
         misalignmentTolerance: .pi * 0.1
     )
 }
+
+public struct DoubleDiamond {
+    
+    let diamond1: Parallelogram
+    let diamond2: Parallelogram
+    
+    internal let longestSideLengthRatioError: Double
+    
+    /// A measure of how well aligned each diamond is with the line between them.
+    /// If no angles are eligible, value is `nil` and this struct should be disqualified.
+    internal let misalignment: Double?
+
+    init(diamond1: Parallelogram, diamond2: Parallelogram) {
+        self.diamond1 = diamond1
+        self.diamond2 = diamond2
+        
+        self.longestSideLengthRatioError = {
+            func longestSide(_ p: Parallelogram) -> Double {
+                [
+                    p.corner1.distance(to: p.corner2),
+                    p.corner2.distance(to: p.corner3),
+                    p.corner3.distance(to: p.corner4),
+                    p.corner4.distance(to: p.corner1),
+                ].max()!
+            }
+            return abs(1.0 - (longestSide(diamond1) / longestSide(diamond2)))
+        }()
+        
+        self.misalignment = { () -> Double? in
+            let centerVector = DoubleVector(start: diamond1.center, end: diamond2.center)
+            
+            /// Both diamonds should have a best-aligned side (minimum angle against center vector).
+            /// Return the worse angle of the two best-aligned sides.
+            let angles1 = diamond1.sides.compactMap { $0.angle(to: centerVector) }
+            let angles2 = diamond2.sides.compactMap { $0.angle(to: centerVector) }
+            if angles1.isEmpty || angles2.isEmpty {
+                return nil
+            } else {
+                return max(angles1.min()!, angles2.min()!)
+            }
+        }()
+    }
+}
+
+/// Of the detected contours, which pair (if any) is most likely our stylus?
+internal func findDoubleDiamond(
+    parallelograms: [Parallelogram],
+    parameters: DoubleDiamondParameters = .starter
+) -> DoubleDiamond? {
+    guard parallelograms.isEmpty == false else { return nil }
+    var pairs = (0..<(parallelograms.count - 1)).flatMap { firstIdx in
+        return ((firstIdx + 1)..<parallelograms.count).map { secondIdx in
+            return DoubleDiamond(
+                diamond1: parallelograms[firstIdx],
+                diamond2: parallelograms[secondIdx]
+            )
+        }
+    }
+    
+    pairs = pairs.filter({ candidate in
+        guard let misalignment = candidate.misalignment else { return false }
+        return (misalignment < parameters.misalignmentTolerance)
+            && (candidate.longestSideLengthRatioError < parameters.longestSideLengthTolerance)
+    })
+    
+    return pairs.min { lhs, rhs in
+        lhs.longestSideLengthRatioError < rhs.longestSideLengthRatioError
+    }
 }
