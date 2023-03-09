@@ -3,6 +3,25 @@
 
 import Foundation
 
+/**
+ ```
+   -----
+  /    /
+ /    /
+ -----
+ ```
+ The contour we expect to find in images is a *parallelogram*.
+ The small, square markers can be
+ - tilted away from the camera, making rectangles
+ - rotated, making rhombi
+ - both, making parallelograms.
+ 
+ This excludes certain quadrilaterals which we will reject, such as
+ - kites
+ - trapezoids
+ */
+public typealias Parallelogram = Quadrilateral
+
 public struct Quadrilateral { 
     public let corner1: DoublePoint
     public let corner2: DoublePoint
@@ -44,7 +63,7 @@ public struct Quadrilateral {
 
 /// Based on a version of Ramer-Douglas-Peucker
 /// https://en.wikipedia.org/wiki/Ramer%E2%80%93Douglas%E2%80%93Peucker_algorithm
-/// Adapted from OpenCV's implementation.
+/// Loosely inspired by OpenCV's implementation.
 public struct RDPParameters {
     public var minPoints: Int
     
