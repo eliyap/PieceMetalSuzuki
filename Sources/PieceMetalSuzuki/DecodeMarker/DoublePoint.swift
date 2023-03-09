@@ -52,3 +52,33 @@ public struct DoublePoint: Equatable, CustomStringConvertible {
         return "(\(String(format: format, x)), \(String(format: format, y)))"
     }
 }
+
+public struct DoubleVector {
+    
+    public let start: DoublePoint
+    public let end: DoublePoint
+
+    public var dx: Double {
+        end.x - start.x
+    }
+
+    public var dy: Double {
+        end.y - start.y
+    }
+
+    public var magnitude: Double {
+        sqrt(dx * dx + dy * dy)
+    }
+
+    public static let minMagnitude: Double = 0.0000001
+
+    func angle(to other: DoubleVector) -> Double? {
+        guard self.magnitude > DoubleVector.minMagnitude, other.magnitude > DoubleVector.minMagnitude else {
+            return nil
+        }
+        let cross = (dx * other.dy) - (dy * other.dx)
+        let sinTheta = cross / (magnitude * other.magnitude)
+        let theta = asin(sinTheta)
+        return theta
+    }
+}
