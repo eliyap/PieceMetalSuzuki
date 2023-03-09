@@ -59,3 +59,14 @@ internal func decodeMarkers(
         }
     }
 }
+
+public struct DoubleDiamondParameters {
+    /// Markers are
+    /// - equal in size,
+    /// - close together – should undergo roughly equal perspective transformations.
+    ///
+    /// Hence their longest sides (whichever that is) should be equal in length.
+    /// This defines the tolerance for error in that metric.
+    /// e.g. `0.2` allows for 80% to 120%.
+    public var longestSideLengthTolerance = 0.15
+}
