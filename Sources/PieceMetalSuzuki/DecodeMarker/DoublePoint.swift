@@ -79,6 +79,8 @@ public struct DoubleVector {
         let cross = (dx * other.dy) - (dy * other.dx)
         let sinTheta = cross / (magnitude * other.magnitude)
         let theta = asin(sinTheta)
-        return theta
+        
+        /// Angles are mapped from `[-.pi / 2, +.pi / 2)` to `[0, .pi / 2)`
+        return abs(theta)
     }
 }
