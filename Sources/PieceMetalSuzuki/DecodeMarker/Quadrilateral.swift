@@ -61,6 +61,24 @@ public struct Quadrilateral {
     }
 }
 
+extension Quadrilateral {
+    var center: DoublePoint {
+        DoublePoint(
+            x: (corner1.x + corner2.x + corner3.x + corner4.x) / 4.0,
+            y: (corner1.y + corner2.y + corner3.y + corner4.y) / 4.0
+        )
+    }
+
+    var sides: [DoubleVector] {
+        [
+            DoubleVector(start: corner1, end: corner2),
+            DoubleVector(start: corner2, end: corner3),
+            DoubleVector(start: corner3, end: corner4),
+            DoubleVector(start: corner4, end: corner1),
+        ]
+    }
+}
+
 /// Based on a version of Ramer-Douglas-Peucker
 /// https://en.wikipedia.org/wiki/Ramer%E2%80%93Douglas%E2%80%93Peucker_algorithm
 /// Loosely inspired by OpenCV's implementation.
