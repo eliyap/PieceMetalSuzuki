@@ -61,31 +61,7 @@ internal func decodeMarkers(
 }
 
 public struct DoubleDiamondParameters {
-    /// Markers are
-    /// - equal in size,
-    /// - close together – should undergo roughly equal perspective transformations.
-    ///
-    /// Hence their longest sides (whichever that is) should be equal in length.
-    /// This defines the tolerance for error in that metric.
-    /// e.g. `0.2` allows for 80% to 120%.
-    public var longestSideLengthTolerance: Double
-    
-    /// Largest allowed angle.
-    /// Ideally, as below, angle should be zero.
-    /// Angle is positive, in radians.
-    /// ```
-    ///  +-----+ <- parallel with center vector  +-----+
-    ///  |     |                                 |     |
-    ///  |  X--|---------------------------------|--X  |
-    ///  |     |                                 |     |
-    ///  +-----+  parallel with center vector -> +-----+
-    /// ```
-    public var misalignment: AbsoluteTolerance<Double>
-    
-    public static let starter = DoubleDiamondParameters(
-        longestSideLengthTolerance: 0.15,
-        misalignment: AbsoluteTolerance(target: 0, maxError: .pi * 0.1)
-    )
+    public static let starter = DoubleDiamondParameters()
 }
 
 public struct DoubleDiamond {
@@ -93,36 +69,9 @@ public struct DoubleDiamond {
     public let diamond1: Parallelogram
     public let diamond2: Parallelogram
     
-    internal let longestSideLengthRatioError: Double
-    
-    /// A measure of how well aligned each diamond is with the line between them.
-    /// If no angles are eligible, value is `nil` and this struct should be disqualified.
-    internal let misalignment: Double?
-
     init(diamond1: Parallelogram, diamond2: Parallelogram) {
         self.diamond1 = diamond1
         self.diamond2 = diamond2
-        
-        self.longestSideLengthRatioError = {
-            func longestSide(_ p: Parallelogram) -> Double {
-                p.sides.map { $0.magnitude }.max()!
-            }
-            return abs(1.0 - (longestSide(diamond1) / longestSide(diamond2)))
-        }()
-        
-        self.misalignment = { () -> Double? in
-            let centerVector = DoubleVector(start: diamond1.center, end: diamond2.center)
-            
-            /// Both diamonds should have a best-aligned side (minimum angle against center vector).
-            /// Return the worse angle of the two best-aligned sides.
-            let angles1 = diamond1.sides.compactMap { $0.angle(to: centerVector) }
-            let angles2 = diamond2.sides.compactMap { $0.angle(to: centerVector) }
-            if angles1.isEmpty || angles2.isEmpty {
-                return nil
-            } else {
-                return max(angles1.min()!, angles2.min()!)
-            }
-        }()
     }
 }
 
@@ -131,23 +80,5 @@ internal func findDoubleDiamond(
     parallelograms: [Parallelogram],
     parameters: DoubleDiamondParameters = .starter
 ) -> DoubleDiamond? {
-    guard parallelograms.isEmpty == false else { return nil }
-    var pairs = (0..<(parallelograms.count - 1)).flatMap { firstIdx in
-        return ((firstIdx + 1)..<parallelograms.count).map { secondIdx in
-            return DoubleDiamond(
-                diamond1: parallelograms[firstIdx],
-                diamond2: parallelograms[secondIdx]
-            )
-        }
-    }
-    
-    pairs = pairs.filter({ candidate in
-        guard let misalignment = candidate.misalignment else { return false }
-        return (misalignment.isWithin(parameters.misalignment))
-            && (candidate.longestSideLengthRatioError < parameters.longestSideLengthTolerance)
-    })
-    
-    return pairs.min { lhs, rhs in
-        lhs.longestSideLengthRatioError < rhs.longestSideLengthRatioError
-    }
+    return nil
 }
