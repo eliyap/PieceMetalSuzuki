@@ -105,12 +105,7 @@ public struct DoubleDiamond {
         
         self.longestSideLengthRatioError = {
             func longestSide(_ p: Parallelogram) -> Double {
-                [
-                    p.corner1.distance(to: p.corner2),
-                    p.corner2.distance(to: p.corner3),
-                    p.corner3.distance(to: p.corner4),
-                    p.corner4.distance(to: p.corner1),
-                ].max()!
+                p.sides.map { $0.magnitude }.max()!
             }
             return abs(1.0 - (longestSide(diamond1) / longestSide(diamond2)))
         }()
