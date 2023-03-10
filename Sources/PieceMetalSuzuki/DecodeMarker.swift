@@ -90,8 +90,8 @@ public struct DoubleDiamondParameters {
 
 public struct DoubleDiamond {
     
-    let diamond1: Parallelogram
-    let diamond2: Parallelogram
+    public let diamond1: Parallelogram
+    public let diamond2: Parallelogram
     
     internal let longestSideLengthRatioError: Double
     

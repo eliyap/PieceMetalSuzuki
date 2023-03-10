@@ -51,6 +51,10 @@ public struct DoublePoint: Equatable, CustomStringConvertible {
         let format = "%.3f"
         return "(\(String(format: format, x)), \(String(format: format, y)))"
     }
+    
+    public var cgPoint: CGPoint {
+        CGPoint(x: x, y: y)
+    }
 }
 
 public struct DoubleVector {

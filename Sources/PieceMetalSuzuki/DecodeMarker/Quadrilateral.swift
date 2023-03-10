@@ -61,7 +61,7 @@ public struct Quadrilateral {
     }
 }
 
-extension Quadrilateral {
+public extension Quadrilateral {
     var center: DoublePoint {
         DoublePoint(
             x: (corner1.x + corner2.x + corner3.x + corner4.x) / 4.0,
