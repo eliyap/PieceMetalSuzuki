@@ -80,11 +80,11 @@ public struct DoubleDiamondParameters {
     ///  |     |                                 |     |
     ///  +-----+  parallel with center vector -> +-----+
     /// ```
-    public var misalignmentTolerance: Double
+    public var misalignment: AbsoluteTolerance<Double>
     
     public static let starter = DoubleDiamondParameters(
         longestSideLengthTolerance: 0.15,
-        misalignmentTolerance: .pi * 0.1
+        misalignment: AbsoluteTolerance(target: 0, maxError: .pi * 0.1)
     )
 }
 
@@ -143,7 +143,7 @@ internal func findDoubleDiamond(
     
     pairs = pairs.filter({ candidate in
         guard let misalignment = candidate.misalignment else { return false }
-        return (misalignment < parameters.misalignmentTolerance)
+        return (misalignment.isWithin(parameters.misalignment))
             && (candidate.longestSideLengthRatioError < parameters.longestSideLengthTolerance)
     })
     
