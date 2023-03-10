@@ -30,7 +30,8 @@ final class PieceMetalSuzukiTests: XCTestCase {
                 )
                 
                 debugPrint("\(quads.count) quads")
-                decodeMarkers(pixelBuffer: pixelBuffer, quadrilaterals: quads)
+                let found = findDoubleDiamond(parallelograms: quads)
+                print("Found \(String(describing: found))")
             }
             saveBufferToPng(buffer: pixelBuffer, format: .BGRA8)
         }

@@ -104,7 +104,10 @@ public final class MarkerDetector {
         let imageSize = CGSize(width: CVPixelBufferGetWidth(pixelBuffer), height: CVPixelBufferGetHeight(pixelBuffer))
         let parallelograms = findParallelograms(pointBuffer: pointsFilled, runBuffer: runsFilled, runIndices: runIndices, parameters: self.rdpParameters, scale: self.scale)
         delegate?.didFind(parallelograms: parallelograms, imageSize: imageSize)
-        decodeMarkers(pixelBuffer: pixelBuffer, parallelograms: parallelograms)
+        // DEBUG – Building
+        if let found = findDoubleDiamond(parallelograms: parallelograms, parameters: .starter) {
+            delegate?.didFind(doubleDiamond: found, imageSize: imageSize)
+        }
     }
     
     private func allocateBuffers(ofSize count: Int) -> Bool {
@@ -129,6 +132,9 @@ public final class MarkerDetector {
 public protocol MarkerDetectorDelegate: AnyObject {
     /// Found a set of square-ish shapes among the contours in the image.
     func didFind(parallelograms: [Parallelogram], imageSize: CGSize) -> Void
+    
+    /// Found a pair of markers.
+    func didFind(doubleDiamond: DoubleDiamond, imageSize: CGSize) -> Void
 }
 
 internal struct PieceMetalSuzuki {
