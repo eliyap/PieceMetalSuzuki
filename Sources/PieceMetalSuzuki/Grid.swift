@@ -511,6 +511,33 @@ struct Grid {
     }
 }
 
+/// Calculate where a region resides in buffer memory.
+/// Conceptually, this is equal to the number of pixels "before" the region.
+/// - rows above
+/// - regions to the left
+///
+/// Consider a grid with 2x2 regions, covering a 3x3 image
+/// ```
+///   -----   <- width and height aren't clean multiples of grid size
+/// | +--+--+
+/// | |  |A |
+/// | +--+--+
+/// | |B |C | <- What is the offset here?
+///   +--+--+
+/// ```
+/// C's offset is
+/// - 1 grid row above x 2 pixel rows per grid cell x 3 pixels per image row
+/// - 1 grid cell left      x 2 pixel rows per grid cell x 2 pixels per grid cell row
+///
+/// Notice that B's offset "encroaches" on A's memory.
+/// Since while combining,
+/// - number of points remains constant
+/// - number of runs strictly decreases
+/// - data is left aligned
+/// A's memory usage can be no larger than equivalent usage for 1x1 regions.
+/// i.e. blank pixels = blank memory, no worries about writing into it.
+///
+/// Lastly, all values are scaled by `pointsPerPixel`, to account for multiple triads in the same pixel.
 func baseOffset(imageSize: PixelSize, gridSize: PixelSize, regionSize: PixelSize, gridPos: GridPosition, patternSize: PatternSize) -> UInt32 {
     let rowOffset = imageSize.width.roundedUp(toClosest: patternSize.coreSize.width) * gridSize.height * gridPos.row
     let colOffset = gridSize.width * regionSize.height * gridPos.col
