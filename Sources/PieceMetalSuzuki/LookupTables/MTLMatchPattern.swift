@@ -60,6 +60,29 @@ internal func matchPatterns(
     
     let (tPerTG, tgPerGrid) = pipelineState.threadgroupParameters(texture: texture)
     cmdEncoder.dispatchThreadgroups(tgPerGrid, threadsPerThreadgroup: tPerTG)
+    
+    
+    if patternSize == .w4h2 {
+        guard
+            let combineFunction = loadCombinePatternFunction(device: device, coreSize: patternSize.coreSize),
+            let combineState = try? device.makeComputePipelineState(function: combineFunction)
+        else {
+            assert(false, "Failed to setup pipeline.")
+            return false
+        }
+        ({
+            cmdEncoder.setComputePipelineState(combineState)
+            cmdEncoder.setTexture(texture, index: 0)
+
+            cmdEncoder.setBuffer(pointBuffer.mtlBuffer, offset: 0, index: 0)
+            cmdEncoder.setBuffer(runBuffer.mtlBuffer, offset: 0, index: 1)
+            
+            let (tPerTG, tgPerGrid) = combineState.threadgroupParameters(texture: texture)
+            cmdEncoder.dispatchThreadgroups(tgPerGrid, threadsPerThreadgroup: tPerTG)
+        })()
+    }
+    
+    
     cmdEncoder.endEncoding()
     cmdBuffer.commit()
     cmdBuffer.waitUntilCompleted()
@@ -89,6 +112,27 @@ fileprivate func loadMatchPatternFunction(device: MTLDevice, coreSize: PixelSize
         let library = try device.makeLibrary(source: source, options: nil)
         let functionLabel = "\(coreSize.width)x\(coreSize.height)"
         guard let function = library.makeFunction(name: "matchPatterns\(functionLabel)") else {
+            assert(false, "Failed to get library.")
+            return nil
+        }
+        return function
+    } catch {
+        debugPrint(error)
+        return nil
+    }
+}
+
+/// Load and compile the `.metal` code which ships with the package.
+fileprivate func loadCombinePatternFunction(device: MTLDevice, coreSize: PixelSize) -> MTLFunction? {
+    do {
+        guard let libUrl = Bundle.module.url(forResource: "MatchPattern", withExtension: "metal", subdirectory: "Metal") else {
+            assert(false, "Failed to get library.")
+            return nil
+        }
+        let source = try String(contentsOf: libUrl)
+        let library = try device.makeLibrary(source: source, options: nil)
+        let functionLabel = "\(coreSize.width)x\(coreSize.height)"
+        guard let function = library.makeFunction(name: "combinePatterns\(functionLabel)") else {
             assert(false, "Failed to get library.")
             return nil
         }

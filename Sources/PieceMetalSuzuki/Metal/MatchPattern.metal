@@ -475,6 +475,26 @@ kernel void matchPatterns4x2(
             runs[idx+i].headTriadTo   = startRun.to;
         }
     }
+}
+
+kernel void combinePatterns4x2(
+    texture2d<half, access::read>  tex               [[ texture(0) ]],
+    device PixelPoint*             points            [[ buffer (0) ]],
+    device Run*                    runs              [[ buffer (1) ]],
+    uint2                          gid               [[thread_position_in_grid]]
+) {
+    const uint32_t coreWidth = 2;
+    const uint32_t coreHeight = 2;
+    const uint8_t TableWidth = 8;
+    const uint8_t pointsPerPixel = 2;
+    
+    const uint32_t texWidth = tex.get_width();
+    const uint32_t texHeight = tex.get_height();
+    const uint32_t roundWidth  = roundedUp(texWidth, coreWidth);
+    
+    // This is the pattern's core's top left pixel.
+    // To get the column offset, multiply the pixels to the left by core height.
+    const int32_t idx = ((roundWidth * gid.y) + (gid.x * coreHeight)) * pointsPerPixel;
 
     // ============================================
     // Join adjacent 2x2 regions into a 4x2 region.
