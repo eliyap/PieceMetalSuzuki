@@ -527,7 +527,9 @@ struct Grid {
 /// ```
 /// C's offset is
 /// - 1 grid row above x 2 pixel rows per grid cell x 3 pixels per image row
-/// - 1 grid cell left      x 2 pixel rows per grid cell x 2 pixels per grid cell row
+/// - 1 grid cell left      x 1 pixel rows per grid cell x 2 pixels per grid cell row
+///   - C is on the bottom row, so its height is 1 instead of 2
+///   - this prevents accessing past the buffer end as grid size grows
 ///
 /// Notice that B's offset "encroaches" on A's memory.
 /// Since while combining,
@@ -536,6 +538,10 @@ struct Grid {
 /// - data is left aligned
 /// A's memory usage can be no larger than equivalent usage for 1x1 regions.
 /// i.e. blank pixels = blank memory, no worries about writing into it.
+///
+/// If we calculated offset using `grid count * grid width` instead of image width,
+/// larger grid sizes would cause regions to have greater offsets, resulting in trying to write past the end of the buffer.
+/// e.g. C, with 3 2x2 regions "before" it, would have offset 12, exceeding the allocated buffer of size 9.
 ///
 /// Lastly, all values are scaled by `pointsPerPixel`, to account for multiple triads in the same pixel.
 func baseOffset(imageSize: PixelSize, gridSize: PixelSize, regionSize: PixelSize, gridPos: GridPosition, patternSize: PatternSize) -> UInt32 {
