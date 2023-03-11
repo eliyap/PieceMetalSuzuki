@@ -1,14 +1,10 @@
-//
-//  File.swift
-//  
-//
+//  MTLMatchPattern.swift
 //  Created by Secret Asian Man Dev on 16/2/23.
-//
 
 import Metal
 
 /// - Returns: `true` if no error occurred.
-func matchPatterns(
+internal func matchPatterns(
     device: MTLDevice,
     commandQueue: MTLCommandQueue,
     texture: MTLTexture,
@@ -83,7 +79,7 @@ func matchPatterns(
 }
 
 /// Load and compile the `.metal` code which ships with the package.
-func loadMatchPatternFunction(device: MTLDevice, coreSize: PixelSize) -> MTLFunction? {
+fileprivate func loadMatchPatternFunction(device: MTLDevice, coreSize: PixelSize) -> MTLFunction? {
     do {
         guard let libUrl = Bundle.module.url(forResource: "MatchPattern", withExtension: "metal", subdirectory: "Metal") else {
             assert(false, "Failed to get library.")
