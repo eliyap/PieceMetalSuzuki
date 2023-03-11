@@ -571,24 +571,23 @@ kernel void combinePatterns4x2(
      * Goal: each iteration, either 
      * - start a new sequence (beginning with a tail-less run), or 
      * - continue an existing sequence (by adding the head for the previous run).
+     *
+     * Iteration Count: Each cycle should start or continue a run.
+     * However, if all sequences start in A, and the first iteration checks B, we'd miss one run.
+     * Hence, +1 iteration.
      */
-
-    // Iteration Count: Each cycle should start or continue a run.
-    // However, if all starts are in A, and the first iteration is checks B, we'd miss one run.
-    // Hence, +1 iteration.
     Run newRun;
     bool isNewSequence;
-    for (int x = 0; x < TableWidth + TableWidth + 1; x++) {
+    for (uint8_t x = 0; x < TableWidth + TableWidth + 1; x++) {
         isA = !isA;
         if (isA) {
-            int aOffset = -1; // Find next a offset.
+            int8_t aOffset = -1; // Find next a offset.
             
             if (nextOffset >= 0) {
                 aOffset = nextOffset;
                 isNewSequence = false;
-            } else { 
+            } else { // Find a run that is not done and doesn't have a tail. 
                 for (int offset = 0; offset < TableWidth; offset++) {
-                    // Find a run that is not done and doesn't have a tail.
                     if (!(aIsDone[offset]) && (bHeadForATail[offset] < 0)) {
                         aOffset = offset;
                         isNewSequence = true;
@@ -608,21 +607,20 @@ kernel void combinePatterns4x2(
             if (isNewSequence) { // Start new run.
                 newRun = aRun;
             } else {             // Extend run.
-                newRun.oldTail += aRun.oldTail - aRun.oldHead;
+                newRun.oldHead += aRun.oldHead - aRun.oldTail;
                 newRun.headTriadTo = aRun.headTriadTo;
             }
             
             nextOffset = bTailForAHead[aOffset];
             aIsDone[aOffset] = true;
         } else { 
-            int bOffset = -1; // Find next b offset.
+            int8_t bOffset = -1; // Find next b offset.
             
             if (nextOffset >= 0) {
                 bOffset = nextOffset;
                 isNewSequence = false;
-            } else { 
+            } else { // Find a run that is not done and doesn't have a tail.
                 for (int offset = 0; offset < TableWidth; offset++) {
-                    // Find a run that is not done and doesn't have a tail.
                     if (!(bIsDone[offset]) && (aHeadForBTail[offset] < 0)) {
                         bOffset = offset;
                         isNewSequence = true;
