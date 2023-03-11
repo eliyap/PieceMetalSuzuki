@@ -588,7 +588,8 @@ extension Grid {
                 (srcPts, dstPts) = (pointsVertical.array, pointsHorizontal.array)
 
                 if numCols.isMultiple(of: 2) == false {
-                    /// Request last column blit.
+                    /// Last of an odd number of columns cannot be combined with anything.
+                    /// Just copy the points over.
                     for row in regions {
                         let region = row.last!
                         for runIdx in region.runIndices(imageSize: imageSize, gridSize: gridSize) {
@@ -604,6 +605,9 @@ extension Grid {
                 
                 let newGridSize = PixelSize(width: gridSize.width * 2, height: gridSize.height)
                 var indices: [(Int, Int)] = []
+                /// Iterate over even columns with a corresponding odd column.
+                /// For 6 columns, iterates `0, 2, 4` (stop before 5).
+                /// For 7 columns, iterates `0, 2, 4` (stop before 6).
                 for col in stride(from: 0, to: numCols - 1, by: 2).reversed() {
                     for row in 0..<numRows {
                         indices.append((row, col))
@@ -618,9 +622,9 @@ extension Grid {
                             srcPts: srcPts, srcRuns: srcRuns,
                             dstRuns: dstRuns)
                     cpuBlit(runIndices: newRequests, srcPts: srcPts, srcRuns: srcRuns, dstPts: dstPts)
-                    /// Update grid position for remaining regions.
                 }
 
+                /// Update grid position for remaining regions.
                 DispatchQueue.concurrentPerform(iterations: numRows) { rowIdx in
                     for region in regions[rowIdx] {
                         region.gridPos.col /= 2
@@ -639,7 +643,8 @@ extension Grid {
                 (srcPts, dstPts) = (pointsHorizontal.array, pointsVertical.array)
 
                 if numRows.isMultiple(of: 2) == false {
-                    /// Request last column blit.
+                    /// Last of an odd number of rows cannot be combined with anything.
+                    /// Just copy the points over.
                     for region in regions.last! {
                         for runIdx in region.runIndices(imageSize: imageSize, gridSize: gridSize) {
                             dstRuns[runIdx] = srcRuns[runIdx]
@@ -655,6 +660,9 @@ extension Grid {
                 let newGridSize = PixelSize(width: gridSize.width, height: gridSize.height * 2)
                 var indices: [(Int, Int)] = []
                 for col in 0..<numCols {
+                    /// Iterate over even rows with a corresponding odd row.
+                    /// For 6 columns, iterates `0, 2, 4` (stop before 5).
+                    /// For 7 columns, iterates `0, 2, 4` (stop before 6).
                     for row in stride(from: 0, to: numRows - 1, by: 2).reversed() {
                         indices.append((row, col))
                     }
