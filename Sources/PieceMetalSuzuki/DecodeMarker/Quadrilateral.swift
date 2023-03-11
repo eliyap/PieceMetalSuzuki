@@ -51,6 +51,10 @@ public struct Quadrilateral {
         return yPixelMin..<yPixelMax
     }
     
+    var corners: [DoublePoint] {
+        [corner1, corner2, corner3, corner4]
+    }
+    
     func scaled(by scale: Double) -> Self {
         Self.init(
             corner1: DoublePoint(x: corner1.x * scale, y: corner1.y * scale),
