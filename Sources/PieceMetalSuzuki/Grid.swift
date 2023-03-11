@@ -270,6 +270,18 @@ struct Grid {
     
     struct Combiner {
         
+        /// Which of the 2 regions the run came from.
+        /// This helps us avoid some work, since the run cannot match a run from the same region.
+        internal enum Source {
+            case a, b
+            var flipped: Self {
+                switch self {
+                case .a: return .b
+                case .b: return .a
+                }
+            }
+        }
+        
         let newBaseOffset: UInt32
         let newRegionSize: PixelSize
         
@@ -343,7 +355,7 @@ struct Grid {
         }
         
         /// Find run, if any, whose tail matches the head at this point, pointing in this direction.
-        private mutating func findTailForHead(point: PixelPoint, direction: ChainDirection) -> Int? {
+        private mutating func findTailForHead(point: PixelPoint, direction: ChainDirection, source: Source) -> Int? {
             precondition(direction != .closed)
 
             /// For the given head pointer, describe the corresponding tail pointer.
@@ -352,18 +364,25 @@ struct Grid {
             func tailDoesMatch(idx: Int) -> Bool {
                 return tail == tailPoint(for: idx) && srcRuns[idx].tailTriadFrom == from
             }
-            if let runIdxIdx = aRunIndices.firstIndex(where: tailDoesMatch) {
-                let runIdx = aRunIndices.remove(at: runIdxIdx)
-                return runIdx
+            
+            switch source.flipped {
+            case .a:
+                if let runIdxIdx = aRunIndices.firstIndex(where: tailDoesMatch) {
+                    let runIdx = aRunIndices.remove(at: runIdxIdx)
+                    return runIdx
+                }
+            
+            case .b:
+                if let runIdxIdx = bRunIndices.firstIndex(where: tailDoesMatch) {
+                    let runIdx = bRunIndices.remove(at: runIdxIdx)
+                    return runIdx
+                }
             }
-            if let runIdxIdx = bRunIndices.firstIndex(where: tailDoesMatch) {
-                let runIdx = bRunIndices.remove(at: runIdxIdx)
-                return runIdx
-            }
+            
             return nil
         }
 
-        private mutating func findHeadForTail(point: PixelPoint, direction: ChainDirection) -> Int? {
+        private mutating func findHeadForTail(point: PixelPoint, direction: ChainDirection, source: Source) -> Int? {
             precondition(direction != .closed)
 
             /// For the given tail pointer, describe the corresponding head pointer.
@@ -372,41 +391,51 @@ struct Grid {
             func headDoesMatch(idx: Int) -> Bool {
                 return head == headPoint(for: idx) && srcRuns[idx].headTriadTo == to
             }
-            if let runIdxIdx = aRunIndices.firstIndex(where: headDoesMatch) {
-                let runIdx = aRunIndices.remove(at: runIdxIdx)
-                return runIdx
+            
+            switch source.flipped {
+            case .a:
+                if let runIdxIdx = aRunIndices.firstIndex(where: headDoesMatch) {
+                    let runIdx = aRunIndices.remove(at: runIdxIdx)
+                    return runIdx
+                }
+            case .b:
+                if let runIdxIdx = bRunIndices.firstIndex(where: headDoesMatch) {
+                    let runIdx = bRunIndices.remove(at: runIdxIdx)
+                    return runIdx
+                }
             }
-            if let runIdxIdx = bRunIndices.firstIndex(where: headDoesMatch) {
-                let runIdx = bRunIndices.remove(at: runIdxIdx)
-                return runIdx
-            }
+            
             return nil
         }
 
-        private mutating func join(runIdx: Int) -> Void {
+        private mutating func join(runIdx: Int, source: Source) -> Void {
             precondition(srcRuns[runIdx].isValid)
             var joinedRunsIndices: [Int] = [runIdx]
             
             var headPt = headPoint(for: runIdx)
             var headDxn = srcRuns[runIdx].headTriadTo
+            var headSrc = source
             while
                 headDxn != ChainDirection.closed.rawValue, /// Skip search if run is closed.
-                let nextRunIdx = findTailForHead(point: headPt, direction: ChainDirection(rawValue: headDxn)!)
+                let nextRunIdx = findTailForHead(point: headPt, direction: ChainDirection(rawValue: headDxn)!, source: headSrc)
             {
                 joinedRunsIndices.append(nextRunIdx)
                 headPt = headPoint(for: nextRunIdx)
                 headDxn = srcRuns[nextRunIdx].headTriadTo
+                headSrc = headSrc.flipped
             }
 
             var tailPt = tailPoint(for: runIdx)
             var tailDxn = srcRuns[runIdx].tailTriadFrom
+            var tailSrc = source
             while
                 tailDxn != ChainDirection.closed.rawValue, /// Skip search if run is closed.
-                let prevRunIdx = findHeadForTail(point: tailPt, direction: ChainDirection(rawValue: tailDxn)!)
+                let prevRunIdx = findHeadForTail(point: tailPt, direction: ChainDirection(rawValue: tailDxn)!, source: tailSrc)
             {
                 joinedRunsIndices.insert(prevRunIdx, at: 0)
                 tailPt = tailPoint(for: prevRunIdx)
                 tailDxn = srcRuns[prevRunIdx].tailTriadFrom
+                tailSrc = tailSrc.flipped
             }
 
             /// At this point, we have an array of connected runs.
@@ -469,14 +498,14 @@ struct Grid {
                 #if SHOW_GRID_WORK
                 debugPrint("joining run @\(runIdx) \(srcRuns[runIdx]) with head \(headPoint(for: runIdx)) and tail \(tailPoint(for: runIdx))")
                 #endif
-                join(runIdx: runIdx)
+                join(runIdx: runIdx, source: .a)
             }
             while bRunIndices.isEmpty == false {
                 let runIdx = bRunIndices.removeLast()
                 #if SHOW_GRID_WORK
                 debugPrint("joining run @\(runIdx) \(srcRuns[runIdx]) with head \(headPoint(for: runIdx)) and tail \(tailPoint(for: runIdx))")
                 #endif
-                join(runIdx: runIdx)
+                join(runIdx: runIdx, source: .b)
             }
         }
     }
