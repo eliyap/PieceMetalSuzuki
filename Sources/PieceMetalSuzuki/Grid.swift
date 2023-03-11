@@ -273,7 +273,8 @@ struct Grid {
         let newBaseOffset: UInt32
         let newRegionSize: PixelSize
         
-        var runIndices: [Int]
+        var aRunIndices: [Int]
+        var bRunIndices: [Int]
         
         var nextPointOffset = Int32.zero
         var nextRunOffset = Int.zero
@@ -301,8 +302,8 @@ struct Grid {
             #endif
             let aBaseOffset = baseOffset(grid: grid, region: a)
             let bBaseOffset = baseOffset(grid: grid, region: b)
-            self.runIndices = (0..<a.runsCount).map { $0 + Int(aBaseOffset) }
-                            + (0..<b.runsCount).map { $0 + Int(bBaseOffset) }
+            self.aRunIndices = (0..<a.runsCount).map { $0 + Int(aBaseOffset) }
+            self.bRunIndices = (0..<b.runsCount).map { $0 + Int(bBaseOffset) }
             
             switch dxn {
             case .vertical:
@@ -351,8 +352,12 @@ struct Grid {
             func tailDoesMatch(idx: Int) -> Bool {
                 return tail == tailPoint(for: idx) && srcRuns[idx].tailTriadFrom == from
             }
-            if let runIdxIdx = runIndices.firstIndex(where: tailDoesMatch) {
-                let runIdx = runIndices.remove(at: runIdxIdx)
+            if let runIdxIdx = aRunIndices.firstIndex(where: tailDoesMatch) {
+                let runIdx = aRunIndices.remove(at: runIdxIdx)
+                return runIdx
+            }
+            if let runIdxIdx = bRunIndices.firstIndex(where: tailDoesMatch) {
+                let runIdx = bRunIndices.remove(at: runIdxIdx)
                 return runIdx
             }
             return nil
@@ -367,8 +372,12 @@ struct Grid {
             func headDoesMatch(idx: Int) -> Bool {
                 return head == headPoint(for: idx) && srcRuns[idx].headTriadTo == to
             }
-            if let runIdxIdx = runIndices.firstIndex(where: headDoesMatch) {
-                let runIdx = runIndices.remove(at: runIdxIdx)
+            if let runIdxIdx = aRunIndices.firstIndex(where: headDoesMatch) {
+                let runIdx = aRunIndices.remove(at: runIdxIdx)
+                return runIdx
+            }
+            if let runIdxIdx = bRunIndices.firstIndex(where: headDoesMatch) {
+                let runIdx = bRunIndices.remove(at: runIdxIdx)
                 return runIdx
             }
             return nil
@@ -455,8 +464,15 @@ struct Grid {
         }
         
         mutating func work() -> Void {
-            while runIndices.isEmpty == false {
-                let runIdx = runIndices.removeLast()
+            while aRunIndices.isEmpty == false {
+                let runIdx = aRunIndices.removeLast()
+                #if SHOW_GRID_WORK
+                debugPrint("joining run @\(runIdx) \(srcRuns[runIdx]) with head \(headPoint(for: runIdx)) and tail \(tailPoint(for: runIdx))")
+                #endif
+                join(runIdx: runIdx)
+            }
+            while bRunIndices.isEmpty == false {
+                let runIdx = bRunIndices.removeLast()
                 #if SHOW_GRID_WORK
                 debugPrint("joining run @\(runIdx) \(srcRuns[runIdx]) with head \(headPoint(for: runIdx)) and tail \(tailPoint(for: runIdx))")
                 #endif
