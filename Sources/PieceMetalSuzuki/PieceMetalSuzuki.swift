@@ -14,7 +14,7 @@ public final class MarkerDetector {
     
     /// Linear ratio by which to downscale image.
     /// e.g. a 10x10 image downscaled by 2 is 5x5.
-    public var scale: Double = 3.5
+    public var scale: Double = 1.0
     
     /// The type of Lookup Table used to kickstart contour detection.
     private let patternSize: PatternSize
@@ -72,8 +72,6 @@ public final class MarkerDetector {
             return
         }
         
-        delegate?.didBinarizeImage(result: filteredBuffer)
-        
         /// Obtain a Metal Texture from the image.
         guard let texture = SuzukiProfiler.time(.makeTexture, {
             makeTextureFromCVPixelBuffer(pixelBuffer: filteredBuffer, textureFormat: .bgra8Unorm, textureCache: textureCache)
@@ -104,9 +102,12 @@ public final class MarkerDetector {
             return
         }
         let imageSize = CGSize(width: CVPixelBufferGetWidth(pixelBuffer), height: CVPixelBufferGetHeight(pixelBuffer))
-        let quads = findCandidateQuadrilaterals(pointBuffer: pointsFilled, runBuffer: runsFilled, runIndices: runIndices, parameters: self.rdpParameters, scale: self.scale)
-        delegate?.didFind(quadrilaterals: quads, imageSize: imageSize)
-        decodeMarkers(pixelBuffer: pixelBuffer, quadrilaterals: quads)
+        let parallelograms = findParallelograms(pointBuffer: pointsFilled, runBuffer: runsFilled, runIndices: runIndices, parameters: self.rdpParameters, scale: self.scale)
+        delegate?.didFind(parallelograms: parallelograms, imageSize: imageSize)
+        // DEBUG – Building
+        if let found = findDoubleDiamond(parallelograms: parallelograms, parameters: .starter) {
+            delegate?.didFind(doubleDiamond: found, imageSize: imageSize)
+        }
     }
     
     private func allocateBuffers(ofSize count: Int) -> Bool {
@@ -129,11 +130,11 @@ public final class MarkerDetector {
 }
 
 public protocol MarkerDetectorDelegate: AnyObject {
-    /// Applied the binarization filter to make a black and white image.
-    func didBinarizeImage(result: CVPixelBuffer) -> Void
-    
     /// Found a set of square-ish shapes among the contours in the image.
-    func didFind(quadrilaterals: [Quadrilateral], imageSize: CGSize) -> Void
+    func didFind(parallelograms: [Parallelogram], imageSize: CGSize) -> Void
+    
+    /// Found a pair of markers.
+    func didFind(doubleDiamond: DoubleDiamond, imageSize: CGSize) -> Void
 }
 
 internal struct PieceMetalSuzuki {

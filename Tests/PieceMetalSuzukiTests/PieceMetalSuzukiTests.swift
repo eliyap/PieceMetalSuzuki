@@ -17,7 +17,7 @@ final class PieceMetalSuzukiTests: XCTestCase {
             let runIndices = applyMetalSuzuki_LUT(device: device, commandQueue: queue, texture: texture, pointsFilled: pointsFilled, runsFilled: runsFilled, pointsUnfilled: pointsUnfilled, runsUnfilled: runsUnfilled, patternSize: patternSize)!
             let scale = 1.0
             measure {
-                let quads = findCandidateQuadrilaterals(
+                let quads = findParallelograms(
                     pointBuffer: pointsFilled,
                     runBuffer: runsFilled,
                     runIndices: runIndices,
@@ -30,7 +30,8 @@ final class PieceMetalSuzukiTests: XCTestCase {
                 )
                 
                 debugPrint("\(quads.count) quads")
-                decodeMarkers(pixelBuffer: pixelBuffer, quadrilaterals: quads)
+                let found = findDoubleDiamond(parallelograms: quads)
+                print("Found \(String(describing: found))")
             }
             saveBufferToPng(buffer: pixelBuffer, format: .BGRA8)
         }

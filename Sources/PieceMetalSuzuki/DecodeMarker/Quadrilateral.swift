@@ -3,6 +3,25 @@
 
 import Foundation
 
+/**
+ ```
+   -----
+  /    /
+ /    /
+ -----
+ ```
+ The contour we expect to find in images is a *parallelogram*.
+ The small, square markers can be
+ - tilted away from the camera, making rectangles
+ - rotated, making rhombi
+ - both, making parallelograms.
+ 
+ This excludes certain quadrilaterals which we will reject, such as
+ - kites
+ - trapezoids
+ */
+public typealias Parallelogram = Quadrilateral
+
 public struct Quadrilateral { 
     public let corner1: DoublePoint
     public let corner2: DoublePoint
@@ -32,6 +51,10 @@ public struct Quadrilateral {
         return yPixelMin..<yPixelMax
     }
     
+    var corners: [DoublePoint] {
+        [corner1, corner2, corner3, corner4]
+    }
+    
     func scaled(by scale: Double) -> Self {
         Self.init(
             corner1: DoublePoint(x: corner1.x * scale, y: corner1.y * scale),
@@ -42,11 +65,29 @@ public struct Quadrilateral {
     }
 }
 
+public extension Quadrilateral {
+    var center: DoublePoint {
+        DoublePoint(
+            x: (corner1.x + corner2.x + corner3.x + corner4.x) / 4.0,
+            y: (corner1.y + corner2.y + corner3.y + corner4.y) / 4.0
+        )
+    }
+
+    var sides: [DoubleVector] {
+        [
+            DoubleVector(start: corner1, end: corner2),
+            DoubleVector(start: corner2, end: corner3),
+            DoubleVector(start: corner3, end: corner4),
+            DoubleVector(start: corner4, end: corner1),
+        ]
+    }
+}
+
 /// Based on a version of Ramer-Douglas-Peucker
 /// https://en.wikipedia.org/wiki/Ramer%E2%80%93Douglas%E2%80%93Peucker_algorithm
-/// Adapted from OpenCV's implementation.
+/// Loosely inspired by OpenCV's implementation.
 public struct RDPParameters {
-    public let minPoints: Int
+    public var minPoints: Int
     
     /// Maximum allowed deviation of points, relative to the length of the diagonal.
     /// For a quadrangle with straight sides, that distance would be zero.
@@ -56,16 +97,16 @@ public struct RDPParameters {
     public let aspectRatioErrorLimit: Double
     
     public static let starter = RDPParameters(
-        minPoints: 100,
+        minPoints: 10,
         sideErrorLimit: 0.10,
-        aspectRatioErrorLimit: 0.5
+        aspectRatioErrorLimit: 0.15
     )
 }
 
-internal func checkQuadrilateral(
+internal func reduceToParallelogram(
     polyline: [DoublePoint],
     parameters: RDPParameters
-) -> Quadrilateral? {
+) -> Parallelogram? {
     guard polyline.count > parameters.minPoints else {
         #if SHOW_RDP_WORK
         debugPrint("[RDP] Too few points")
@@ -177,9 +218,12 @@ internal func checkQuadrilateral(
         return nil
     }
     
-    /// Check aspect ratio is reasonable.
-    let aspRatio = corner1.distance(to: corner2) / corner2.distance(to: corner3)
-    let aspRatioError = abs(1.0 - aspRatio)
+    /// Check whether quadrilateral is parallelogram-y enough.
+    /// This means opposite sides should be approximately equal in length.
+    let aspRatioError = max(
+        abs(1.0 - (corner1.distance(to: corner2) / corner3.distance(to: corner4))),
+        abs(1.0 - (corner2.distance(to: corner3) / corner1.distance(to: corner4)))
+    )
     guard aspRatioError < parameters.aspectRatioErrorLimit else {
         #if SHOW_RDP_WORK
         debugPrint("[RDP] Failed due to aspect ratio error \(aspRatioError)")
