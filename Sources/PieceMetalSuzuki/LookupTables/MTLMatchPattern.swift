@@ -7,6 +7,7 @@
 
 import Metal
 
+/// - Returns: `true` if no error occurred.
 func matchPatterns(
     device: MTLDevice,
     commandQueue: MTLCommandQueue,
@@ -32,6 +33,7 @@ func matchPatterns(
     cmdEncoder.setBuffer(pointBuffer.mtlBuffer, offset: 0, index: 0)
     cmdEncoder.setBuffer(runBuffer.mtlBuffer, offset: 0, index: 1)
 
+    /// Copy lookup tables to GPU.
     let runTableBuffer = device.makeBuffer(
         bytes: &StartRun.lookupTable,
         length: MemoryLayout<StartRun>.stride * StartRun.lookupTable.count,
@@ -80,6 +82,7 @@ func matchPatterns(
     return true
 }
 
+/// Load and compile the `.metal` code which ships with the package.
 func loadMatchPatternFunction(device: MTLDevice, coreSize: PixelSize) -> MTLFunction? {
     do {
         guard let libUrl = Bundle.module.url(forResource: "MatchPattern", withExtension: "metal", subdirectory: "Metal") else {

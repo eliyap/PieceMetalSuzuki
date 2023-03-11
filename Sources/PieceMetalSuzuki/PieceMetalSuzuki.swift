@@ -407,6 +407,7 @@ internal func saveBufferToPng(buffer: CVPixelBuffer, format: CIFormat) -> Void {
     }
 }
 
+/// Load and compile the `.metal` code which ships with the package.
 internal func loadChainStarterFunction(device: MTLDevice) -> MTLFunction? {
     do {
         guard let libUrl = Bundle.module.url(forResource: "PieceSuzukiKernel", withExtension: "metal", subdirectory: "Metal") else {
@@ -426,6 +427,8 @@ internal func loadChainStarterFunction(device: MTLDevice) -> MTLFunction? {
     }
 }
 
+/// Uses GPU to initialize regions by running the provided `.metal` function.
+/// - Returns: `true` if no error occurred.
 internal func createChainStarters(
     device: MTLDevice,
     function: MTLFunction,
@@ -433,7 +436,7 @@ internal func createChainStarters(
     texture: MTLTexture,
     runBuffer: Buffer<Run>,
     pointBuffer: Buffer<PixelPoint>,
-    /// `autoreleasepool` prevents mem-leaks in
+    /// Calling this function from within an `autoreleasepool` prevents memory-leaks in
     /// - the `MTLCommandBuffer` and `MTLComputeCommandEncoder`
     /// - the allocated Lookup Table buffers
     releaseToken: AutoReleasePoolToken
