@@ -599,7 +599,7 @@ kernel void combinePatterns4x2(
             if (aOffset < 0) continue;
             
             Run aRun = runs[aIdx + aOffset];
-            for (int i = aRun.oldHead; i < aRun.oldTail; i++) { // Copy points.
+            for (int32_t i = aRun.oldTail; i < aRun.oldHead; i++) { // Copy points.
                 newPoints[newPointCount] = points[i];
                 newPointCount++;
             }
@@ -632,7 +632,7 @@ kernel void combinePatterns4x2(
             if (bOffset < 0) continue;
             
             Run bRun = runs[bIdx + bOffset];
-            for (int i = bRun.oldHead; i < bRun.oldTail; i++) { // Copy points.
+            for (int32_t i = bRun.oldTail; i < bRun.oldHead; i++) { // Copy points.
                 newPoints[newPointCount] = points[i];
                 newPointCount++;
             }
