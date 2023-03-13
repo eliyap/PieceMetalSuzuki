@@ -505,7 +505,7 @@ kernel void combinePatterns4x2(
     
     // Let the regions be "a" and "b".
     const int32_t aIdx = idx;
-    const int32_t bIdx = idx + (coreWidth * pointsPerPixel);
+    const int32_t bIdx = idx + TableWidth;
     
     // Find pairwise relationships between runs.
     // e.g. if `bTailForAHead[3] = 4`, run a[3]'s head matches run b[4]'s tail.
@@ -513,13 +513,13 @@ kernel void combinePatterns4x2(
     int8_t bHeadForATail[TableWidth] = {-1, -1, -1, -1, -1, -1, -1, -1};
     int8_t aTailForBHead[TableWidth] = {-1, -1, -1, -1, -1, -1, -1, -1};
     int8_t aHeadForBTail[TableWidth] = {-1, -1, -1, -1, -1, -1, -1, -1};
-    for (int aOffset = 0; aOffset < TableWidth; aOffset++) {
+    for (uint8_t aOffset = 0; aOffset < TableWidth; aOffset++) {
         Run aRun = runs[aIdx + aOffset];
         if (aRun.oldHead < 0) {
             continue;
         }
         
-        for (int bOffset = 0; bOffset < TableWidth; bOffset++) {
+        for (uint8_t bOffset = 0; bOffset < TableWidth; bOffset++) {
             Run bRun = runs[bIdx + bOffset];
             if (bRun.oldHead < 0) {
                 continue;
