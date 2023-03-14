@@ -58,50 +58,13 @@ extension Region: CustomStringConvertible {
 
 /**
  After using a metal kernel to deposit triad information in each pixel of `texture`,
- we start the algorithm with the smallest possible region: a 1x1 covering just one pixel.
+ we start the algorithm with `Region`s whose size matches the lookup table pattern size.
  
  This uses 2 optimizations when creating rows.
  - reserves uninitialized capacity
  - initializes capacity in parallel
  */
 func initializeRegions(
-    runBuffer: Buffer<Run>,
-    texture: MTLTexture,
-    patternSize: PatternSize
-) -> [[Region]] {
-    var regions: [[Region]] = []
-    for row in 0..<texture.height {
-        let regionRow = [Region](unsafeUninitializedCapacity: texture.width) { buffer, initializedCount in
-            DispatchQueue.concurrentPerform(iterations: texture.width) { col in
-                /// Count valid elements in each 1x1 region.
-                let bufferBase = ((row * texture.width) + col) * Int(patternSize.pointsPerPixel)
-                var validCount = 0
-                for offset in 0..<Int(patternSize.pointsPerPixel) {
-                    if runBuffer.array[bufferBase + offset].isValid {
-                        validCount += 1
-                    } else {
-                        break
-                    }
-                }
-                
-                /// Cannot use subscript notation to set uninitialized memory.
-                /// https://forums.swift.org/t/how-to-initialize-array-of-class-instances-using-a-buffer-of-uninitialised-memory/39174/5
-                buffer.baseAddress!.advanced(by: col).initialize(to: Region(
-                    origin: PixelPoint(x: UInt32(col), y: UInt32(row)),
-                    size: PixelSize(width: 1, height: 1),
-                    gridPos: GridPosition(row: UInt32(row), col: UInt32(col)),
-                    runsCount: validCount,
-                    patternSize: patternSize
-                ))
-            }
-            initializedCount = texture.width
-        }
-        regions.append(regionRow)
-    }
-    return regions
-}
-
-func initializeRegions_LUT(
     runBuffer: Buffer<Run>,
     texture: MTLTexture,
     patternSize: PatternSize
