@@ -351,12 +351,15 @@ internal func applyMetalSuzuki_LUT(
             )
         }
         
+        /// Export points from buffers.
         let region = grid.regions[0][0]
         let runIndices = region.runIndices(imageSize: grid.imageSize, gridSize: grid.gridSize)
         var result: [[PixelPoint]] = []
         for runIdx in runIndices {
             let run = runsFilled.array[runIdx]
             let pointCount = Int(run.oldHead - run.oldTail)
+            
+            /// Performance critical code. Drop down to fast, unsafe array allocation.
             let points = [PixelPoint](unsafeUninitializedCapacity: pointCount) { ptr, count in
                 memmove(
                     ptr.baseAddress,
@@ -365,6 +368,7 @@ internal func applyMetalSuzuki_LUT(
                 )
                 count = pointCount
             }
+            
             result.append(points)
         }
         return result
