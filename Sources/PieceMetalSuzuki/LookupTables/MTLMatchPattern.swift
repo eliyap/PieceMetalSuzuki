@@ -80,19 +80,27 @@ internal func matchPatterns(
 
 /// Load and compile the `.metal` code which ships with the package.
 fileprivate func loadMatchPatternFunction(device: MTLDevice, coreSize: PixelSize) -> MTLFunction? {
+    guard let library: any MTLLibrary = loadMetalLibrary(named: "MatchPattern", device: device) else {
+        assert(false, "Failed to get library.")
+        return nil
+    }
+    
+    let functionLabel = "\(coreSize.width)x\(coreSize.height)"
+    guard let function = library.makeFunction(name: "matchPatterns\(functionLabel)") else {
+        assert(false, "Failed to get library.")
+        return nil
+    }
+    return function
+}
+
+internal func loadMetalLibrary(named name: String, device: any MTLDevice) -> (any MTLLibrary)? {
     do {
-        guard let libUrl = Bundle.module.url(forResource: "MatchPattern", withExtension: "metal", subdirectory: "Metal") else {
+        guard let libUrl = Bundle.module.url(forResource: name, withExtension: "metal", subdirectory: "Metal") else {
             assert(false, "Failed to get library.")
             return nil
         }
         let source = try String(contentsOf: libUrl)
-        let library = try device.makeLibrary(source: source, options: nil)
-        let functionLabel = "\(coreSize.width)x\(coreSize.height)"
-        guard let function = library.makeFunction(name: "matchPatterns\(functionLabel)") else {
-            assert(false, "Failed to get library.")
-            return nil
-        }
-        return function
+        return try device.makeLibrary(source: source, options: nil)
     } catch {
         debugPrint(error)
         return nil

@@ -409,22 +409,15 @@ internal func saveBufferToPng(buffer: CVPixelBuffer, format: CIFormat) -> Void {
 
 /// Load and compile the `.metal` code which ships with the package.
 internal func loadChainStarterFunction(device: MTLDevice) -> MTLFunction? {
-    do {
-        guard let libUrl = Bundle.module.url(forResource: "PieceSuzukiKernel", withExtension: "metal", subdirectory: "Metal") else {
-            assert(false, "Failed to get library.")
-            return nil
-        }
-        let source = try String(contentsOf: libUrl)
-        let library = try device.makeLibrary(source: source, options: nil)
-        guard let function = library.makeFunction(name: "startChain") else {
-            assert(false, "Failed to get library.")
-            return nil
-        }
-        return function
-    } catch {
-        debugPrint(error)
+    guard let library: any MTLLibrary = loadMetalLibrary(named: "PieceSuzukiKernel", device: device) else {
+        assert(false, "Failed to get library.")
         return nil
     }
+    guard let function = library.makeFunction(name: "startChain") else {
+        assert(false, "Failed to get library.")
+        return nil
+    }
+    return function
 }
 
 /// Uses GPU to initialize regions by running the provided `.metal` function.
