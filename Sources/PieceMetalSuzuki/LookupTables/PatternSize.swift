@@ -34,7 +34,7 @@ import Foundation
  This has 6 triads across the 2 pixels, the most possible.
  Thus, table width is 6, with 3 points per pixel.
  */
-public struct PatternSize {
+public struct PatternSize: Equatable {
     public let coreSize: PixelSize
     public let tableWidth: Int
     public let pointsPerPixel: UInt32
@@ -88,6 +88,12 @@ extension PatternSize {
         /// 1010 < X     0110  ++
         /// 0101  v \    1001 /  \
         /// ```
+        pointsPerPixel: 2
+    )
+    
+    public static let w4h2 = PatternSize(
+        coreSize: PixelSize(width: 4, height: 2),
+        tableWidth: 16,
         pointsPerPixel: 2
     )
 }
