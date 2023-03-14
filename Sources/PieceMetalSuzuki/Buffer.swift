@@ -13,7 +13,7 @@ internal final class Buffer<Element> {
         
     public init?(device: MTLDevice, count: Int, token: AutoReleasePoolToken) {
         self.size = MemoryLayout<Element>.stride * count
-        guard let buffer = device.makeBuffer(length: size) else {
+        guard let buffer = device.makeBuffer(length: size, options: [.storageModeShared]) else {
             assert(false, "Failed to create buffer.")
             return nil
         }
