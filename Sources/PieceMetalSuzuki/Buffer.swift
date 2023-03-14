@@ -6,11 +6,15 @@ import Metal
 /// An typed wrapper around an array which is shared between the CPU and GPU.
 internal final class Buffer<Element> {
     
+    /// Number of `Element`s in the buffer.
     public let count: Int
-    public let array: UnsafeMutablePointer<Element>
-    public let mtlBuffer: MTLBuffer
+    
+    /// Size of the buffer in bytes.
     public let size: Int
         
+    public let array: UnsafeMutablePointer<Element>
+    public let mtlBuffer: MTLBuffer
+    
     public init?(device: MTLDevice, count: Int, token: AutoReleasePoolToken) {
         self.size = MemoryLayout<Element>.stride * count
         guard let buffer = device.makeBuffer(length: size, options: [.storageModeShared]) else {
