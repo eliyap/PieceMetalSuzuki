@@ -1,14 +1,10 @@
-//
 //  Buffer.swift
-//  
-//
 //  Created by Secret Asian Man Dev on 16/2/23.
-//
 
 import Metal
 
 /// An typed wrapper around an array which is shared between the CPU and GPU.
-public final class Buffer<Element> {
+internal final class Buffer<Element> {
     
     public let count: Int
     public let array: UnsafeMutablePointer<Element>
