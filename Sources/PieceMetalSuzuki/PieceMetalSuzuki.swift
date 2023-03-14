@@ -103,7 +103,7 @@ internal struct PieceMetalSuzuki {
         imageUrl: URL,
         patternSize: PatternSize,
         format: OSType,
-        _ block: (MTLDevice, MTLCommandQueue, MTLTexture, CVPixelBuffer, Buffer<PixelPoint>, Buffer<Run>, Buffer<PixelPoint>, Buffer<Run>) -> Void
+        _ block: (MTLDevice, MTLCommandQueue, MTLTexture, CVPixelBuffer) -> Void
     ) {
         guard
             let device = MTLCreateSystemDefaultDevice(),
@@ -158,21 +158,7 @@ internal struct PieceMetalSuzuki {
                 return
             }
             
-            let roundedWidth = UInt32(texture.width).roundedUp(toClosest: patternSize.coreSize.width)
-            let roundedHeight = UInt32(texture.height).roundedUp(toClosest: patternSize.coreSize.height)
-            let count = Int(roundedWidth * roundedHeight * patternSize.pointsPerPixel)
-            
-            guard
-                let pointBuffer = Buffer<PixelPoint>(device: device, count: count),
-                let runBuffer = Buffer<Run>(device: device, count: count),
-                let pointsUnfilled = Buffer<PixelPoint>(device: device, count: count),
-                let runsUnfilled = Buffer<Run>(device: device, count: count)
-            else {
-                assert(false, "Failed to create buffer.")
-                return
-            }
-
-            block(device, commandQueue, texture, pixelBuffer, pointBuffer, runBuffer, pointsUnfilled, runsUnfilled)
+            block(device, commandQueue, texture, pixelBuffer)
         }
         
         //        bufferA = filteredBuffer
@@ -263,22 +249,32 @@ internal func applyMetalFilter(
 internal func applyMetalSuzuki(
     device: MTLDevice,
     commandQueue: MTLCommandQueue,
-    texture: MTLTexture,
-    pointsFilled: Buffer<PixelPoint>,
-    runsFilled: Buffer<Run>,
-    pointsUnfilled: Buffer<PixelPoint>,
-    runsUnfilled: Buffer<Run>
+    texture: MTLTexture
 ) -> Range<Int>? {
     let patternSize = PatternSize.w1h1
-    
     
     guard let kernelFunction = loadMetalFunction(filename: "PieceSuzukiKernel", functionName: "startChain", device: device) else {
         assert(false, "Failed to load function.")
         return nil
     }
-    return withAutoRelease { releaseToken in
+    return withAutoRelease { token in
+        
+        let roundedWidth = UInt32(texture.width).roundedUp(toClosest: patternSize.coreSize.width)
+        let roundedHeight = UInt32(texture.height).roundedUp(toClosest: patternSize.coreSize.height)
+        let count = Int(roundedWidth * roundedHeight * patternSize.pointsPerPixel)
+        
+        guard
+            let pointsFilled = Buffer<PixelPoint>(device: device, count: count, token: token),
+            let runsFilled = Buffer<Run>(device: device, count: count, token: token),
+            let pointsUnfilled = Buffer<PixelPoint>(device: device, count: count, token: token),
+            let runsUnfilled = Buffer<Run>(device: device, count: count, token: token)
+        else {
+            assert(false, "Failed to create buffers.")
+            return nil
+        }
+        
         /// Apply Metal filter to pixel buffer.
-        guard createChainStarters(device: device, function: kernelFunction, commandQueue: commandQueue, texture: texture, runBuffer: runsFilled, pointBuffer: pointsFilled, releaseToken: releaseToken) else {
+        guard createChainStarters(device: device, function: kernelFunction, commandQueue: commandQueue, texture: texture, runBuffer: runsFilled, pointBuffer: pointsFilled, releaseToken: token) else {
             assert(false, "Failed to run chain start kernel.")
             return nil
         }
@@ -320,57 +316,59 @@ internal func applyMetalSuzuki_LUT(
     let roundedHeight = UInt32(texture.height).roundedUp(toClosest: patternSize.coreSize.height)
     let count = Int(roundedWidth * roundedHeight * patternSize.pointsPerPixel)
     
-    guard
-        let pointsFilled = Buffer<PixelPoint>(device: device, count: count),
-        let runsFilled = Buffer<Run>(device: device, count: count),
-        let pointsUnfilled = Buffer<PixelPoint>(device: device, count: count),
-        let runsUnfilled = Buffer<Run>(device: device, count: count)
-    else {
-        assert(false, "Failed to create buffers.")
-        return nil
-    }
-    
-    /// Apply Metal filter to pixel buffer.
-    guard matchPatterns(device: device, commandQueue: commandQueue, texture: texture, runBuffer: runsFilled, pointBuffer: pointsFilled, patternSize: patternSize) else {
-        assert(false, "Failed to run chain start kernel.")
-        return nil
-    }
-        
-    var grid = Grid(
-        imageSize: PixelSize(width: UInt32(texture.width), height: UInt32(texture.height)),
-        regions: SuzukiProfiler.time(.initRegions) {
-            return initializeRegions(runBuffer: runsFilled, texture: texture, patternSize: patternSize)
-        },
-        patternSize: patternSize
-    )
-    
-    SuzukiProfiler.time(.combineAll) {
-        grid.combineAll(
-            device: device,
-            pointsFilled: pointsFilled,
-            runsFilled: runsFilled,
-            pointsUnfilled: pointsUnfilled,
-            runsUnfilled: runsUnfilled
-        )
-    }
-    
-    let region = grid.regions[0][0]
-    let runIndices = region.runIndices(imageSize: grid.imageSize, gridSize: grid.gridSize)
-    var result: [[PixelPoint]] = []
-    for runIdx in runIndices {
-        let run = runsFilled.array[runIdx]
-        let pointCount = Int(run.oldHead - run.oldTail)
-        let points = [PixelPoint](unsafeUninitializedCapacity: pointCount) { ptr, count in
-            memmove(
-                ptr.baseAddress,
-                pointsFilled.array.advanced(by: Int(run.oldTail)),
-                pointCount * MemoryLayout<PixelPoint>.stride
-            )
-            count = pointCount
+    return withAutoRelease { token in
+        guard
+            let pointsFilled = Buffer<PixelPoint>(device: device, count: count, token: token),
+            let runsFilled = Buffer<Run>(device: device, count: count, token: token),
+            let pointsUnfilled = Buffer<PixelPoint>(device: device, count: count, token: token),
+            let runsUnfilled = Buffer<Run>(device: device, count: count, token: token)
+        else {
+            assert(false, "Failed to create buffers.")
+            return nil
         }
-        result.append(points)
+        
+        /// Apply Metal filter to pixel buffer.
+        guard matchPatterns(device: device, commandQueue: commandQueue, texture: texture, runBuffer: runsFilled, pointBuffer: pointsFilled, patternSize: patternSize) else {
+            assert(false, "Failed to run chain start kernel.")
+            return nil
+        }
+            
+        var grid = Grid(
+            imageSize: PixelSize(width: UInt32(texture.width), height: UInt32(texture.height)),
+            regions: SuzukiProfiler.time(.initRegions) {
+                return initializeRegions(runBuffer: runsFilled, texture: texture, patternSize: patternSize)
+            },
+            patternSize: patternSize
+        )
+        
+        SuzukiProfiler.time(.combineAll) {
+            grid.combineAll(
+                device: device,
+                pointsFilled: pointsFilled,
+                runsFilled: runsFilled,
+                pointsUnfilled: pointsUnfilled,
+                runsUnfilled: runsUnfilled
+            )
+        }
+        
+        let region = grid.regions[0][0]
+        let runIndices = region.runIndices(imageSize: grid.imageSize, gridSize: grid.gridSize)
+        var result: [[PixelPoint]] = []
+        for runIdx in runIndices {
+            let run = runsFilled.array[runIdx]
+            let pointCount = Int(run.oldHead - run.oldTail)
+            let points = [PixelPoint](unsafeUninitializedCapacity: pointCount) { ptr, count in
+                memmove(
+                    ptr.baseAddress,
+                    pointsFilled.array.advanced(by: Int(run.oldTail)),
+                    pointCount * MemoryLayout<PixelPoint>.stride
+                )
+                count = pointCount
+            }
+            result.append(points)
+        }
+        return result
     }
-    return result
 }
 
 internal func saveBufferToPng(buffer: CVPixelBuffer, format: CIFormat) -> Void {

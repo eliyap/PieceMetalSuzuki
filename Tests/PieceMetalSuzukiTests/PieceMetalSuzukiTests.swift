@@ -13,7 +13,7 @@ final class PieceMetalSuzukiTests: XCTestCase {
         assert(loadLookupTablesProtoBuf(patternSize))
         
         let imageUrl = url("qrTilt")
-        _ = PieceMetalSuzuki(imageUrl: imageUrl, patternSize: patternSize, format: format) { device, queue, texture, pixelBuffer, pointsFilled, runsFilled, pointsUnfilled, runsUnfilled in
+        _ = PieceMetalSuzuki(imageUrl: imageUrl, patternSize: patternSize, format: format) { device, queue, texture, pixelBuffer in
             let borders = applyMetalSuzuki_LUT(device: device, commandQueue: queue, texture: texture, patternSize: patternSize)!
             let scale = 1.0
             measure {
