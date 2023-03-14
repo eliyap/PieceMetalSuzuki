@@ -289,7 +289,6 @@ internal func applyMetalSuzuki(
         
         SuzukiProfiler.time(.combineAll) {
             grid.combineAll(
-                device: device,
                 pointsFilled: pointsFilled,
                 runsFilled: runsFilled,
                 pointsUnfilled: pointsUnfilled,
@@ -343,7 +342,6 @@ internal func applyMetalSuzuki_LUT(
         
         SuzukiProfiler.time(.combineAll) {
             grid.combineAll(
-                device: device,
                 pointsFilled: pointsFilled,
                 runsFilled: runsFilled,
                 pointsUnfilled: pointsUnfilled,

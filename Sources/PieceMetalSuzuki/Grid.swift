@@ -29,7 +29,6 @@ struct Grid {
     }
     
     mutating func combineAll(
-        device: MTLDevice,
         pointsFilled: Buffer<PixelPoint>,
         runsFilled: Buffer<Run>,
         pointsUnfilled: Buffer<PixelPoint>,
@@ -574,12 +573,10 @@ func baseOffset(grid: Grid, region: Region) -> UInt32 {
 extension Grid {
     mutating func combineAllForLUT(
         coreSize: PixelSize,
-        device: MTLDevice,
         pointsFilled: Buffer<PixelPoint>,
         runsFilled: Buffer<Run>,
         pointsUnfilled: Buffer<PixelPoint>,
-        runsUnfilled: Buffer<Run>,
-        commandQueue: MTLCommandQueue
+        runsUnfilled: Buffer<Run>
     ) -> (Region, [Run], [PixelPoint]) {
         /// First iteration will combine regions with their horizontal neighbors.
         /// Hence we copy from the "vertical" buffers to the "horizontal" buffers.
