@@ -9,8 +9,8 @@ final class SuzukiTimeProfile: XCTestCase {
     
     func testNoLUT() async throws {
         measure {
-            _ = PieceMetalSuzuki(imageUrl: url("input"), patternSize: .w1h1, format: kCVPixelFormatType_32BGRA) { device, queue, texture, pixelBuffer, pointsFilled, runsFilled, pointsUnfilled, runsUnfilled in
-                applyMetalSuzuki(device: device, commandQueue: queue, texture: texture, pointsFilled: pointsFilled, runsFilled: runsFilled, pointsUnfilled: pointsUnfilled, runsUnfilled: runsUnfilled)
+            _ = PieceMetalSuzuki(imageUrl: url("input"), patternSize: .w1h1, format: kCVPixelFormatType_32BGRA) { device, queue, texture, pixelBuffer in
+                applyMetalSuzuki(device: device, commandQueue: queue, texture: texture)
             }
         }
         
@@ -23,8 +23,8 @@ final class SuzukiTimeProfile: XCTestCase {
         let options = SuzukiTimeProfile.defaultMeasureOptions
         options.iterationCount = 10
         measure(options: options) {
-            _ = PieceMetalSuzuki(imageUrl: url("bigDots"), patternSize: patternSize, format: kCVPixelFormatType_32BGRA) { device, queue, texture, pixelBuffer, pointsFilled, runsFilled, pointsUnfilled, runsUnfilled in
-                _ = applyMetalSuzuki_LUT(device: device, commandQueue: queue, texture: texture, pointsFilled: pointsFilled, runsFilled: runsFilled, pointsUnfilled: pointsUnfilled, runsUnfilled: runsUnfilled, patternSize: patternSize)
+            _ = PieceMetalSuzuki(imageUrl: url("bigDots"), patternSize: patternSize, format: kCVPixelFormatType_32BGRA) { device, queue, texture, pixelBuffer in
+                _ = applyMetalSuzuki_LUT(device: device, commandQueue: queue, texture: texture, patternSize: patternSize)
             }
         }
         

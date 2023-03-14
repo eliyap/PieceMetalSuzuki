@@ -139,7 +139,7 @@ internal final class LookupTableBuilder {
             fatalError("Failed to create buffer.")
         }
         
-        guard let kernelFunction = loadChainStarterFunction(device: device) else {
+        guard let kernelFunction = loadMetalFunction(filename: "PieceSuzukiKernel", functionName: "startChain", device: device) else {
             fatalError("Failed to load function.")
         }
             

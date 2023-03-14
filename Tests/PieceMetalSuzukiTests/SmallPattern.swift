@@ -10,8 +10,8 @@ final class SmallPatternTests: XCTestCase {
     }
     
     func checkPatternCountNoLUT(name: String, expectedCount: Int) throws {
-        _ = PieceMetalSuzuki(imageUrl: url(name), patternSize: .w1h1, format: kCVPixelFormatType_32BGRA) { device, queue, texture, pixelBuffer, pointsFilled, runsFilled, pointsUnfilled, runsUnfilled in
-            let ranges = applyMetalSuzuki(device: device, commandQueue: queue, texture: texture, pointsFilled: pointsFilled, runsFilled: runsFilled, pointsUnfilled: pointsUnfilled, runsUnfilled: runsUnfilled)
+        _ = PieceMetalSuzuki(imageUrl: url(name), patternSize: .w1h1, format: kCVPixelFormatType_32BGRA) { device, queue, texture, pixelBuffer in
+            let ranges = applyMetalSuzuki(device: device, commandQueue: queue, texture: texture)
             XCTAssertNotNil(ranges)
             XCTAssertEqual(ranges!.count, expectedCount)
         }
@@ -19,19 +19,19 @@ final class SmallPatternTests: XCTestCase {
     
     func checkPatternCountProtoBuf(name: String, expectedCount: Int, patternSize: PatternSize) throws {
         assert(loadLookupTablesProtoBuf(patternSize))
-        _ = PieceMetalSuzuki(imageUrl: url(name), patternSize: patternSize, format: kCVPixelFormatType_32BGRA) { device, queue, texture, pixelBuffer, pointsFilled, runsFilled, pointsUnfilled, runsUnfilled in
-            let ranges = applyMetalSuzuki_LUT(device: device, commandQueue: queue, texture: texture, pointsFilled: pointsFilled, runsFilled: runsFilled, pointsUnfilled: pointsUnfilled, runsUnfilled: runsUnfilled, patternSize: patternSize)
-            XCTAssertNotNil(ranges)
-            XCTAssertEqual(ranges!.count, expectedCount)
+        _ = PieceMetalSuzuki(imageUrl: url(name), patternSize: patternSize, format: kCVPixelFormatType_32BGRA) { device, queue, texture, pixelBuffer in
+            let borders = applyMetalSuzuki_LUT(device: device, commandQueue: queue, texture: texture, patternSize: patternSize)
+            XCTAssertNotNil(borders)
+            XCTAssertEqual(borders!.count, expectedCount)
         }
     }
     
     func checkPatternCountData(name: String, expectedCount: Int, patternSize: PatternSize) throws {
         assert(loadLookupTablesData(patternSize))
-        _ = PieceMetalSuzuki(imageUrl: url(name), patternSize: patternSize, format: kCVPixelFormatType_32BGRA) { device, queue, texture, pixelBuffer, pointsFilled, runsFilled, pointsUnfilled, runsUnfilled in
-            let ranges = applyMetalSuzuki_LUT(device: device, commandQueue: queue, texture: texture, pointsFilled: pointsFilled, runsFilled: runsFilled, pointsUnfilled: pointsUnfilled, runsUnfilled: runsUnfilled, patternSize: patternSize)
-            XCTAssertNotNil(ranges)
-            XCTAssertEqual(ranges!.count, expectedCount)
+        _ = PieceMetalSuzuki(imageUrl: url(name), patternSize: patternSize, format: kCVPixelFormatType_32BGRA) { device, queue, texture, pixelBuffer in
+            let borders = applyMetalSuzuki_LUT(device: device, commandQueue: queue, texture: texture, patternSize: patternSize)
+            XCTAssertNotNil(borders)
+            XCTAssertEqual(borders!.count, expectedCount)
         }
     }
     

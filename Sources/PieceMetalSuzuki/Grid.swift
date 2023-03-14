@@ -35,11 +35,11 @@ struct Grid {
         pointsUnfilled: Buffer<PixelPoint>,
         runsUnfilled: Buffer<Run>
     ) -> Void {
-        var dxn = ReduceDirection.vertical
-        let pointsHorizontal = pointsFilled
-        let runsHorizontal = runsFilled
-        let pointsVertical = pointsUnfilled
-        let runsVertical = runsUnfilled
+        var dxn = ReduceDirection.horizontal
+        let pointsVertical = pointsFilled
+        let runsVertical = runsFilled
+        let pointsHorizontal = pointsUnfilled
+        let runsHorizontal = runsUnfilled
         
         var srcPts: UnsafeMutablePointer<PixelPoint>
         var dstPts: UnsafeMutablePointer<PixelPoint>
@@ -85,7 +85,7 @@ struct Grid {
                             indices.append((row, col))
                         }
                     }
-                    DispatchQueue.concurrentPerform(iterations: indices.count) { indicesIdx in
+                    let combineWork = { (indicesIdx: Int) in
                         let (row, col) = indices[indicesIdx]
                         let a = regions[row][col]
                         let b = regions[row][col + 1]
@@ -94,9 +94,16 @@ struct Grid {
                                 srcPts: srcPts, srcRuns: srcRuns,
                                 dstRuns: dstRuns)
                         cpuBlit(runIndices: newRequests, srcPts: srcPts, srcRuns: srcRuns, dstPts: dstPts)
-                        /// Update grid position for remaining regions.
                     }
+                    
+                    /// Serialize work when debugging.
+                    #if SHOW_GRID_WORK
+                    (0..<indices.count).forEach(combineWork)
+                    #else
+                    DispatchQueue.concurrentPerform(iterations: indices.count, execute: combineWork)
+                    #endif
 
+                    /// Update grid position for remaining regions.
                     DispatchQueue.concurrentPerform(iterations: numRows) { rowIdx in
                         for region in regions[rowIdx] {
                             region.gridPos.col /= 2
@@ -141,7 +148,8 @@ struct Grid {
                             indices.append((row, col))
                         }
                     }
-                    DispatchQueue.concurrentPerform(iterations: indices.count) { indicesIdx in
+                    
+                    let combineWork = { (indicesIdx: Int) in
                         let (row, col) = indices[indicesIdx]
                         let a = regions[row][col]
                         let b = regions[row+1][col]
@@ -151,11 +159,20 @@ struct Grid {
                                 dstRuns: dstRuns)
                         cpuBlit(runIndices: newRequests, srcPts: srcPts, srcRuns: srcRuns, dstPts: dstPts)
                     }
+                    
+                    /// Serialize work when debugging.
+                    #if SHOW_GRID_WORK
+                    (0..<indices.count).forEach(combineWork)
+                    #else
+                    DispatchQueue.concurrentPerform(iterations: indices.count, execute: combineWork)
+                    #endif
+                    
                     for rowIdx in stride(from: 0, to: numRows - 1, by: 2).reversed() {
                         /// Remove entire row at once.
                         regions.remove(at: rowIdx + 1)
                     }
                 }
+                
                 /// Update grid position for remaining regions.
                 for rowIdx in 0..<regions.count {
                     for colIdx in 0..<numCols {
@@ -511,6 +528,39 @@ struct Grid {
     }
 }
 
+/// Calculate where a region resides in buffer memory.
+/// Conceptually, this is equal to the number of pixels "before" the region.
+/// - rows above
+/// - regions to the left
+///
+/// Consider a grid with 2x2 regions, covering a 3x3 image
+/// ```
+///   -----   <- width and height aren't clean multiples of grid size
+/// | +--+--+
+/// | |  |A |
+/// | +--+--+
+/// | |B |C | <- What is the offset here?
+///   +--+--+
+/// ```
+/// C's offset is
+/// - 1 grid row above x 2 pixel rows per grid cell x 3 pixels per image row
+/// - 1 grid cell left      x 1 pixel rows per grid cell x 2 pixels per grid cell row
+///   - C is on the bottom row, so its height is 1 instead of 2
+///   - this prevents accessing past the buffer end as grid size grows
+///
+/// Notice that B's offset "encroaches" on A's memory.
+/// Since while combining,
+/// - number of points remains constant
+/// - number of runs strictly decreases
+/// - data is left aligned
+/// A's memory usage can be no larger than equivalent usage for 1x1 regions.
+/// i.e. blank pixels = blank memory, no worries about writing into it.
+///
+/// If we calculated offset using `grid count * grid width` instead of image width,
+/// larger grid sizes would cause regions to have greater offsets, resulting in trying to write past the end of the buffer.
+/// e.g. C, with 3 2x2 regions "before" it, would have offset 12, exceeding the allocated buffer of size 9.
+///
+/// Lastly, all values are scaled by `pointsPerPixel`, to account for multiple triads in the same pixel.
 func baseOffset(imageSize: PixelSize, gridSize: PixelSize, regionSize: PixelSize, gridPos: GridPosition, patternSize: PatternSize) -> UInt32 {
     let rowOffset = imageSize.width.roundedUp(toClosest: patternSize.coreSize.width) * gridSize.height * gridPos.row
     let colOffset = gridSize.width * regionSize.height * gridPos.col
@@ -555,7 +605,8 @@ extension Grid {
                 (srcPts, dstPts) = (pointsVertical.array, pointsHorizontal.array)
 
                 if numCols.isMultiple(of: 2) == false {
-                    /// Request last column blit.
+                    /// Last of an odd number of columns cannot be combined with anything.
+                    /// Just copy the points over.
                     for row in regions {
                         let region = row.last!
                         for runIdx in region.runIndices(imageSize: imageSize, gridSize: gridSize) {
@@ -571,6 +622,9 @@ extension Grid {
                 
                 let newGridSize = PixelSize(width: gridSize.width * 2, height: gridSize.height)
                 var indices: [(Int, Int)] = []
+                /// Iterate over even columns with a corresponding odd column.
+                /// For 6 columns, iterates `0, 2, 4` (stop before 5).
+                /// For 7 columns, iterates `0, 2, 4` (stop before 6).
                 for col in stride(from: 0, to: numCols - 1, by: 2).reversed() {
                     for row in 0..<numRows {
                         indices.append((row, col))
@@ -585,9 +639,9 @@ extension Grid {
                             srcPts: srcPts, srcRuns: srcRuns,
                             dstRuns: dstRuns)
                     cpuBlit(runIndices: newRequests, srcPts: srcPts, srcRuns: srcRuns, dstPts: dstPts)
-                    /// Update grid position for remaining regions.
                 }
 
+                /// Update grid position for remaining regions.
                 DispatchQueue.concurrentPerform(iterations: numRows) { rowIdx in
                     for region in regions[rowIdx] {
                         region.gridPos.col /= 2
@@ -606,7 +660,8 @@ extension Grid {
                 (srcPts, dstPts) = (pointsHorizontal.array, pointsVertical.array)
 
                 if numRows.isMultiple(of: 2) == false {
-                    /// Request last column blit.
+                    /// Last of an odd number of rows cannot be combined with anything.
+                    /// Just copy the points over.
                     for region in regions.last! {
                         for runIdx in region.runIndices(imageSize: imageSize, gridSize: gridSize) {
                             dstRuns[runIdx] = srcRuns[runIdx]
@@ -622,6 +677,9 @@ extension Grid {
                 let newGridSize = PixelSize(width: gridSize.width, height: gridSize.height * 2)
                 var indices: [(Int, Int)] = []
                 for col in 0..<numCols {
+                    /// Iterate over even rows with a corresponding odd row.
+                    /// For 6 columns, iterates `0, 2, 4` (stop before 5).
+                    /// For 7 columns, iterates `0, 2, 4` (stop before 6).
                     for row in stride(from: 0, to: numRows - 1, by: 2).reversed() {
                         indices.append((row, col))
                     }

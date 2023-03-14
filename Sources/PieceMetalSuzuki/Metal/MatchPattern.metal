@@ -143,16 +143,15 @@ kernel void matchPatterns2x1(
     device const table_index_t*    startPointIndices [[ buffer (5) ]],
     uint2                          gid               [[thread_position_in_grid]]
 ) {
-    uint32_t coreWidth = 2;
-    uint32_t coreHeight = 1;
-    uint8_t TableWidth = 6;
-    uint8_t pointsPerPixel = 3;
+    const uint32_t coreWidth = 2;
+    const uint32_t coreHeight = 1;
+    const uint8_t TableWidth = 6;
+    const uint8_t pointsPerPixel = 3;
     
-    uint32_t texWidth = tex.get_width();
-    uint32_t texHeight = tex.get_height();
-    uint32_t roundWidth  = roundedUp(texWidth, coreWidth);
-    uint32_t roundHeight = roundedUp(texHeight, coreHeight);
-    int32_t idx = ((roundWidth * gid.y) + gid.x) * pointsPerPixel;
+    const uint32_t texWidth = tex.get_width();
+    const uint32_t texHeight = tex.get_height();
+    const uint32_t roundWidth  = roundedUp(texWidth, coreWidth);
+    const int32_t idx = ((roundWidth * gid.y) + gid.x) * pointsPerPixel;
     
     // Don't exit the texture.
     if ((gid.x >= texWidth) || (gid.y >= texHeight)) {
@@ -174,41 +173,41 @@ kernel void matchPatterns2x1(
     }
     
     // Define boundaries.
-    uint32_t minCol = 0;
-    uint32_t maxCol = tex.get_width() - 1;
-    uint32_t minRow = 0;
-    uint32_t maxRow = tex.get_height() - 1;
+    const uint32_t minCol = 0;
+    const uint32_t maxCol = tex.get_width() - 1;
+    const uint32_t minRow = 0;
+    const uint32_t maxRow = tex.get_height() - 1;
     
     // Find the values in a 2x1 kernel, and its border.
     //  0123
     // 0+--+
     // 1|XX|
     // 2+--+
-    bool p00 = readPixel(tex, uint2(gid.x - 1, gid.y - 1), minCol, maxCol, minRow, maxRow);
-    bool p01 = readPixel(tex, uint2(gid.x + 0, gid.y - 1), minCol, maxCol, minRow, maxRow);
-    bool p02 = readPixel(tex, uint2(gid.x + 1, gid.y - 1), minCol, maxCol, minRow, maxRow);
-    bool p03 = readPixel(tex, uint2(gid.x + 2, gid.y - 1), minCol, maxCol, minRow, maxRow);
-    bool p10 = readPixel(tex, uint2(gid.x - 1, gid.y + 0), minCol, maxCol, minRow, maxRow);
-    bool p11 = readPixel(tex, uint2(gid.x + 0, gid.y + 0), minCol, maxCol, minRow, maxRow);
-    bool p12 = readPixel(tex, uint2(gid.x + 1, gid.y + 0), minCol, maxCol, minRow, maxRow);
-    bool p13 = readPixel(tex, uint2(gid.x + 2, gid.y + 0), minCol, maxCol, minRow, maxRow);
-    bool p20 = readPixel(tex, uint2(gid.x - 1, gid.y + 1), minCol, maxCol, minRow, maxRow);
-    bool p21 = readPixel(tex, uint2(gid.x + 0, gid.y + 1), minCol, maxCol, minRow, maxRow);
-    bool p22 = readPixel(tex, uint2(gid.x + 1, gid.y + 1), minCol, maxCol, minRow, maxRow);
-    bool p23 = readPixel(tex, uint2(gid.x + 2, gid.y + 1), minCol, maxCol, minRow, maxRow);
+    const bool p00 = readPixel(tex, uint2(gid.x - 1, gid.y - 1), minCol, maxCol, minRow, maxRow);
+    const bool p01 = readPixel(tex, uint2(gid.x + 0, gid.y - 1), minCol, maxCol, minRow, maxRow);
+    const bool p02 = readPixel(tex, uint2(gid.x + 1, gid.y - 1), minCol, maxCol, minRow, maxRow);
+    const bool p03 = readPixel(tex, uint2(gid.x + 2, gid.y - 1), minCol, maxCol, minRow, maxRow);
+    const bool p10 = readPixel(tex, uint2(gid.x - 1, gid.y + 0), minCol, maxCol, minRow, maxRow);
+    const bool p11 = readPixel(tex, uint2(gid.x + 0, gid.y + 0), minCol, maxCol, minRow, maxRow);
+    const bool p12 = readPixel(tex, uint2(gid.x + 1, gid.y + 0), minCol, maxCol, minRow, maxRow);
+    const bool p13 = readPixel(tex, uint2(gid.x + 2, gid.y + 0), minCol, maxCol, minRow, maxRow);
+    const bool p20 = readPixel(tex, uint2(gid.x - 1, gid.y + 1), minCol, maxCol, minRow, maxRow);
+    const bool p21 = readPixel(tex, uint2(gid.x + 0, gid.y + 1), minCol, maxCol, minRow, maxRow);
+    const bool p22 = readPixel(tex, uint2(gid.x + 1, gid.y + 1), minCol, maxCol, minRow, maxRow);
+    const bool p23 = readPixel(tex, uint2(gid.x + 2, gid.y + 1), minCol, maxCol, minRow, maxRow);
     
     // Compose the lookup table row address.
-    uint32_t rowIdx = 0
-        | (p00 << 0)
-        | (p01 << 1)
-        | (p02 << 2)
-        | (p03 << 3)
-        | (p10 << 4)
-        | (p11 << 5)
-        | (p12 << 6)
-        | (p13 << 7)
-        | (p20 << 8)
-        | (p21 << 9)
+    const uint32_t rowIdx = 0
+        | (p00 <<  0)
+        | (p01 <<  1)
+        | (p02 <<  2)
+        | (p03 <<  3)
+        | (p10 <<  4)
+        | (p11 <<  5)
+        | (p12 <<  6)
+        | (p13 <<  7)
+        | (p20 <<  8)
+        | (p21 <<  9)
         | (p22 << 10)
         | (p23 << 11);
         
@@ -243,19 +242,18 @@ kernel void matchPatterns2x2(
     device const table_index_t*    startPointIndices [[ buffer (5) ]],
     uint2                          gid               [[thread_position_in_grid]]
 ) {
-    uint32_t coreWidth = 2;
-    uint32_t coreHeight = 2;
-    uint8_t TableWidth = 8;
-    uint8_t pointsPerPixel = 2;
+    const uint32_t coreWidth = 2;
+    const uint32_t coreHeight = 2;
+    const uint8_t TableWidth = 8;
+    const uint8_t pointsPerPixel = 2;
     
-    uint32_t texWidth = tex.get_width();
-    uint32_t texHeight = tex.get_height();
-    uint32_t roundWidth  = roundedUp(texWidth, coreWidth);
-    uint32_t roundHeight = roundedUp(texHeight, coreHeight);
+    const uint32_t texWidth = tex.get_width();
+    const uint32_t texHeight = tex.get_height();
+    const uint32_t roundWidth  = roundedUp(texWidth, coreWidth);
     
     // This is the pattern's core's top left pixel.
     // To get the column offset, multiply the pixels to the left by core height.
-    int32_t idx = ((roundWidth * gid.y) + (gid.x * coreHeight)) * pointsPerPixel;
+    const int32_t idx = ((roundWidth * gid.y) + (gid.x * coreHeight)) * pointsPerPixel;
     
     // Don't exit the texture.
     if ((gid.x >= texWidth) || (gid.y >= texHeight)) {
@@ -277,10 +275,10 @@ kernel void matchPatterns2x2(
     }
     
     // Define boundaries.
-    uint32_t minCol = 0;
-    uint32_t maxCol = tex.get_width() - 1;
-    uint32_t minRow = 0;
-    uint32_t maxRow = tex.get_height() - 1;
+    const uint32_t minCol = 0;
+    const uint32_t maxCol = tex.get_width() - 1;
+    const uint32_t minRow = 0;
+    const uint32_t maxRow = tex.get_height() - 1;
     
     // Find the values in a 2x2 kernel, and its border.
     //  0123
@@ -288,35 +286,35 @@ kernel void matchPatterns2x2(
     // 1|XX|
     // 2|XX|
     // 3+--+
-    bool p00 = readPixel(tex, uint2(gid.x - 1, gid.y - 1), minCol, maxCol, minRow, maxRow);
-    bool p01 = readPixel(tex, uint2(gid.x + 0, gid.y - 1), minCol, maxCol, minRow, maxRow);
-    bool p02 = readPixel(tex, uint2(gid.x + 1, gid.y - 1), minCol, maxCol, minRow, maxRow);
-    bool p03 = readPixel(tex, uint2(gid.x + 2, gid.y - 1), minCol, maxCol, minRow, maxRow);
-    bool p10 = readPixel(tex, uint2(gid.x - 1, gid.y + 0), minCol, maxCol, minRow, maxRow);
-    bool p11 = readPixel(tex, uint2(gid.x + 0, gid.y + 0), minCol, maxCol, minRow, maxRow);
-    bool p12 = readPixel(tex, uint2(gid.x + 1, gid.y + 0), minCol, maxCol, minRow, maxRow);
-    bool p13 = readPixel(tex, uint2(gid.x + 2, gid.y + 0), minCol, maxCol, minRow, maxRow);
-    bool p20 = readPixel(tex, uint2(gid.x - 1, gid.y + 1), minCol, maxCol, minRow, maxRow);
-    bool p21 = readPixel(tex, uint2(gid.x + 0, gid.y + 1), minCol, maxCol, minRow, maxRow);
-    bool p22 = readPixel(tex, uint2(gid.x + 1, gid.y + 1), minCol, maxCol, minRow, maxRow);
-    bool p23 = readPixel(tex, uint2(gid.x + 2, gid.y + 1), minCol, maxCol, minRow, maxRow);
-    bool p30 = readPixel(tex, uint2(gid.x - 1, gid.y + 2), minCol, maxCol, minRow, maxRow);
-    bool p31 = readPixel(tex, uint2(gid.x + 0, gid.y + 2), minCol, maxCol, minRow, maxRow);
-    bool p32 = readPixel(tex, uint2(gid.x + 1, gid.y + 2), minCol, maxCol, minRow, maxRow);
-    bool p33 = readPixel(tex, uint2(gid.x + 2, gid.y + 2), minCol, maxCol, minRow, maxRow);
+    const bool p00 = readPixel(tex, uint2(gid.x - 1, gid.y - 1), minCol, maxCol, minRow, maxRow);
+    const bool p01 = readPixel(tex, uint2(gid.x + 0, gid.y - 1), minCol, maxCol, minRow, maxRow);
+    const bool p02 = readPixel(tex, uint2(gid.x + 1, gid.y - 1), minCol, maxCol, minRow, maxRow);
+    const bool p03 = readPixel(tex, uint2(gid.x + 2, gid.y - 1), minCol, maxCol, minRow, maxRow);
+    const bool p10 = readPixel(tex, uint2(gid.x - 1, gid.y + 0), minCol, maxCol, minRow, maxRow);
+    const bool p11 = readPixel(tex, uint2(gid.x + 0, gid.y + 0), minCol, maxCol, minRow, maxRow);
+    const bool p12 = readPixel(tex, uint2(gid.x + 1, gid.y + 0), minCol, maxCol, minRow, maxRow);
+    const bool p13 = readPixel(tex, uint2(gid.x + 2, gid.y + 0), minCol, maxCol, minRow, maxRow);
+    const bool p20 = readPixel(tex, uint2(gid.x - 1, gid.y + 1), minCol, maxCol, minRow, maxRow);
+    const bool p21 = readPixel(tex, uint2(gid.x + 0, gid.y + 1), minCol, maxCol, minRow, maxRow);
+    const bool p22 = readPixel(tex, uint2(gid.x + 1, gid.y + 1), minCol, maxCol, minRow, maxRow);
+    const bool p23 = readPixel(tex, uint2(gid.x + 2, gid.y + 1), minCol, maxCol, minRow, maxRow);
+    const bool p30 = readPixel(tex, uint2(gid.x - 1, gid.y + 2), minCol, maxCol, minRow, maxRow);
+    const bool p31 = readPixel(tex, uint2(gid.x + 0, gid.y + 2), minCol, maxCol, minRow, maxRow);
+    const bool p32 = readPixel(tex, uint2(gid.x + 1, gid.y + 2), minCol, maxCol, minRow, maxRow);
+    const bool p33 = readPixel(tex, uint2(gid.x + 2, gid.y + 2), minCol, maxCol, minRow, maxRow);
     
     // Compose the lookup table row address.
-    uint32_t rowIdx = 0
-        | (p00 << 0)
-        | (p01 << 1)
-        | (p02 << 2)
-        | (p03 << 3)
-        | (p10 << 4)
-        | (p11 << 5)
-        | (p12 << 6)
-        | (p13 << 7)
-        | (p20 << 8)
-        | (p21 << 9)
+    const uint32_t rowIdx = 0
+        | (p00 <<  0)
+        | (p01 <<  1)
+        | (p02 <<  2)
+        | (p03 <<  3)
+        | (p10 <<  4)
+        | (p11 <<  5)
+        | (p12 <<  6)
+        | (p13 <<  7)
+        | (p20 <<  8)
+        | (p21 <<  9)
         | (p22 << 10)
         | (p23 << 11)
         | (p30 << 12)

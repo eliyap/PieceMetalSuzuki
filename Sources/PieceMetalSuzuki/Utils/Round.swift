@@ -16,6 +16,9 @@ public extension BinaryInteger {
     }
     
     func dividedByRoundingUp(divisor: Self) -> Self {
+        /// Via https://developer.apple.com/documentation/metal/mtlcomputecommandencoder/1443138-dispatchthreadgroups
+        /// Also seen in https://developer.apple.com/documentation/avfoundation/additional_data_capture/avcamfilter_applying_filters_to_a_capture_stream
+        ///
         /// Divide self by divisor, rounding up to the closest integer.
         /// If not an even multiple, this "pushes us over" to the next multiple of divisor.
         /// If already a multiple, this doesn't "push us over".
