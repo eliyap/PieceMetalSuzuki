@@ -25,12 +25,6 @@ public final class MarkerDetector {
     private static let initialTriadCount = 0
     private var triadCount: Int = MarkerDetector.initialTriadCount
     
-    /// Retained between calls, due to memory leak issue. See `Buffer`.
-    private var pointsFilled: Buffer<PixelPoint>! = nil
-    private var runsFilled: Buffer<Run>! = nil
-    private var pointsUnfilled: Buffer<PixelPoint>! = nil
-    private var runsUnfilled: Buffer<Run>! = nil
-    
     public weak var delegate: (any MarkerDetectorDelegate)? = nil
     
     public init?(device: any MTLDevice, patternSize: PatternSize) {
@@ -80,21 +74,6 @@ public final class MarkerDetector {
             return
         }
         
-        let roundedWidth = UInt32(texture.width).roundedUp(toClosest: patternSize.coreSize.width)
-        let roundedHeight = UInt32(texture.height).roundedUp(toClosest: patternSize.coreSize.height)
-        let count = Int(roundedWidth * roundedHeight * patternSize.pointsPerPixel)
-        if count != self.triadCount {
-            /// Warn myself about possible memory leak.
-            if count != MarkerDetector.initialTriadCount {
-                debugPrint("[Warning] triadCount changed. This may cause a Buffer memory leak.")
-            }
-            self.triadCount = count
-            guard self.allocateBuffers(ofSize: count) else {
-                assertionFailure("Failed to allocate buffers.")
-                return
-            }
-        }
-        
         /// Run core algorithms.
         let borders = applyMetalSuzuki_LUT(device: device, commandQueue: queue, texture: texture, patternSize: patternSize)
         guard let borders else {
@@ -108,24 +87,6 @@ public final class MarkerDetector {
         if let found = findDoubleDiamond(parallelograms: parallelograms, parameters: .starter) {
             delegate?.didFind(doubleDiamond: found, imageSize: imageSize)
         }
-    }
-    
-    private func allocateBuffers(ofSize count: Int) -> Bool {
-        guard
-            let pointsFilled = Buffer<PixelPoint>(device: device, count: count),
-            let runsFilled = Buffer<Run>(device: device, count: count),
-            let pointsUnfilled = Buffer<PixelPoint>(device: device, count: count),
-            let runsUnfilled = Buffer<Run>(device: device, count: count)
-        else {
-            assert(false, "Failed to create buffers.")
-            return false
-        }
-        
-        self.pointsFilled = pointsFilled
-        self.runsFilled = runsFilled
-        self.pointsUnfilled = pointsUnfilled
-        self.runsUnfilled = runsUnfilled
-        return true
     }
 }
 
