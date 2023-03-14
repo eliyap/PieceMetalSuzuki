@@ -14,29 +14,7 @@ public final class Buffer<Element> {
     public let array: UnsafeMutablePointer<Element>
     public let mtlBuffer: MTLBuffer
     public let size: Int
-    
-    public init?(device: MTLDevice, count: Int) {
-        self.size = MemoryLayout<Element>.stride * count
-        guard let buffer = device.makeBuffer(length: size) else {
-            assert(false, "Failed to create buffer.")
-            return nil
-        }
         
-        self.count = count
-        self.mtlBuffer = buffer
-        
-        /** - Warning: 23.02.16
-         `.contents()` causes a memory leak, even if
-         - no `.bindMemory` is called
-         - the return pointer is never assigned to a variable
-         - the `MTLBuffer` has no remaining references.
-         - `.setPurgeableState(.empty)` is called.
-         
-         I am treating this as a bug to be worked around.
-         */
-        self.array = buffer.contents().bindMemory(to: Element.self, capacity: count)
-    }
-    
     public init?(device: MTLDevice, count: Int, token: AutoReleasePoolToken) {
         self.size = MemoryLayout<Element>.stride * count
         guard let buffer = device.makeBuffer(length: size) else {
