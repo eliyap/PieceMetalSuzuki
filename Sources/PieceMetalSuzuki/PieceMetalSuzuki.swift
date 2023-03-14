@@ -364,6 +364,8 @@ internal func applyMetalSuzuki_LUT(
         return nil
     }
     
+        metalCombine(device: device, commandQueue: commandQueue, texture: texture, runBuffer: runsFilled, pointBuffer: pointsFilled)
+    
     var grid = Grid(
         imageSize: PixelSize(width: UInt32(texture.width), height: UInt32(texture.height)),
         regions: SuzukiProfiler.time(.initRegions) {
