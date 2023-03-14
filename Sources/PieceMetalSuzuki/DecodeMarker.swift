@@ -9,29 +9,22 @@ import Foundation
 import CoreVideo
 
 internal func findParallelograms(
-    pointBuffer: Buffer<PixelPoint>,
-    runBuffer: Buffer<Run>,
-    runIndices: Range<Int>,
+    borders: [[PixelPoint]],
     parameters: RDPParameters,
     /// Used to scale quadrilaterals back up to size.
     scale: Double
 ) -> [Parallelogram] {
     return QuadProfiler.time(.overall) {
-        let candidates = [Quadrilateral?].init(unsafeUninitializedCapacity: runIndices.count) { buffer, count in
-            DispatchQueue.concurrentPerform(iterations: runIndices.count) { iteration in
+        let candidates = [Quadrilateral?].init(unsafeUninitializedCapacity: borders.count) { buffer, count in
+            DispatchQueue.concurrentPerform(iterations: borders.count) { iteration in
                 QuadProfiler.time(.overallSerial) {
-                    /// Extract points from buffers.
-                    let run = runBuffer.array[runIndices.startIndex + iteration]
-                    let points = (run.oldTail..<run.oldHead).map { ptIdx in
-                        let pixelPt = pointBuffer.array[Int(ptIdx)]
-                        return DoublePoint(pixelPt)
-                    }
-                    
+                    let points = borders[iteration].map { DoublePoint($0) }
+        
                     /// Check if the contour can be reduced to a nice quadrilateral.
                     buffer[iteration] = reduceToParallelogram(polyline: points, parameters: parameters)
                 }
             }
-            count = runIndices.count
+            count = borders.count
         }
         return candidates
             .compactMap { $0 }

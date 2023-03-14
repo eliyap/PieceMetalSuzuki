@@ -96,13 +96,13 @@ public final class MarkerDetector {
         }
         
         /// Run core algorithms.
-        let runIndices = applyMetalSuzuki_LUT(device: device, commandQueue: queue, texture: texture, pointsFilled: pointsFilled, runsFilled: runsFilled, pointsUnfilled: pointsUnfilled, runsUnfilled: runsUnfilled, patternSize: patternSize)
-        guard let runIndices else {
+        let borders = applyMetalSuzuki_LUT(device: device, commandQueue: queue, texture: texture, pointsFilled: pointsFilled, runsFilled: runsFilled, pointsUnfilled: pointsUnfilled, runsUnfilled: runsUnfilled, patternSize: patternSize)
+        guard let borders else {
             assertionFailure("Failed to get image contours")
             return
         }
         let imageSize = CGSize(width: CVPixelBufferGetWidth(pixelBuffer), height: CVPixelBufferGetHeight(pixelBuffer))
-        let parallelograms = findParallelograms(pointBuffer: pointsFilled, runBuffer: runsFilled, runIndices: runIndices, parameters: self.rdpParameters, scale: self.scale)
+        let parallelograms = findParallelograms(borders: borders, parameters: self.rdpParameters, scale: self.scale)
         delegate?.didFind(parallelograms: parallelograms, imageSize: imageSize)
         // DEBUG – Building
         if let found = findDoubleDiamond(parallelograms: parallelograms, parameters: .starter) {
@@ -345,8 +345,8 @@ internal func applyMetalSuzuki(
 }
 
 /**
- By convention, this loads the final set of runs and points into the "filled" buffers,
- and retuns the array offsets for the run buffer.
+ Retuns the borders found in the binary image.
+ Each border is represented as an array of points.
  */
 internal func applyMetalSuzuki_LUT(
     device: MTLDevice,
@@ -357,7 +357,7 @@ internal func applyMetalSuzuki_LUT(
     pointsUnfilled: Buffer<PixelPoint>,
     runsUnfilled: Buffer<Run>,
     patternSize: PatternSize
-) -> Range<Int>? {
+) -> [[PixelPoint]]? {
     /// Apply Metal filter to pixel buffer.
     guard matchPatterns(device: device, commandQueue: commandQueue, texture: texture, runBuffer: runsFilled, pointBuffer: pointsFilled, patternSize: patternSize) else {
         assert(false, "Failed to run chain start kernel.")
@@ -382,7 +382,23 @@ internal func applyMetalSuzuki_LUT(
         )
     }
     
-    return grid.regions[0][0].runIndices(imageSize: grid.imageSize, gridSize: grid.gridSize)
+    let region = grid.regions[0][0]
+    let runIndices = region.runIndices(imageSize: grid.imageSize, gridSize: grid.gridSize)
+    var result: [[PixelPoint]] = []
+    for runIdx in runIndices {
+        let run = runsFilled.array[runIdx]
+        let pointCount = Int(run.oldHead - run.oldTail)
+        let points = [PixelPoint](unsafeUninitializedCapacity: pointCount) { ptr, count in
+            memmove(
+                ptr.baseAddress,
+                pointsFilled.array.advanced(by: Int(run.oldTail)),
+                pointCount * MemoryLayout<PixelPoint>.stride
+            )
+            count = pointCount
+        }
+        result.append(points)
+    }
+    return result
 }
 
 internal func saveBufferToPng(buffer: CVPixelBuffer, format: CIFormat) -> Void {
