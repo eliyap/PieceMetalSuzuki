@@ -96,7 +96,7 @@ public final class MarkerDetector {
         }
         
         /// Run core algorithms.
-        let borders = applyMetalSuzuki_LUT(device: device, commandQueue: queue, texture: texture, pointsFilled: pointsFilled, runsFilled: runsFilled, pointsUnfilled: pointsUnfilled, runsUnfilled: runsUnfilled, patternSize: patternSize)
+        let borders = applyMetalSuzuki_LUT(device: device, commandQueue: queue, texture: texture, patternSize: patternSize)
         guard let borders else {
             assertionFailure("Failed to get image contours")
             return
@@ -352,12 +352,23 @@ internal func applyMetalSuzuki_LUT(
     device: MTLDevice,
     commandQueue: MTLCommandQueue,
     texture: MTLTexture,
-    pointsFilled: Buffer<PixelPoint>,
-    runsFilled: Buffer<Run>,
-    pointsUnfilled: Buffer<PixelPoint>,
-    runsUnfilled: Buffer<Run>,
     patternSize: PatternSize
 ) -> [[PixelPoint]]? {
+    
+    let roundedWidth = UInt32(texture.width).roundedUp(toClosest: patternSize.coreSize.width)
+    let roundedHeight = UInt32(texture.height).roundedUp(toClosest: patternSize.coreSize.height)
+    let count = Int(roundedWidth * roundedHeight * patternSize.pointsPerPixel)
+    
+    guard
+        let pointsFilled = Buffer<PixelPoint>(device: device, count: count),
+        let runsFilled = Buffer<Run>(device: device, count: count),
+        let pointsUnfilled = Buffer<PixelPoint>(device: device, count: count),
+        let runsUnfilled = Buffer<Run>(device: device, count: count)
+    else {
+        assert(false, "Failed to create buffers.")
+        return nil
+    }
+    
     /// Apply Metal filter to pixel buffer.
     guard matchPatterns(device: device, commandQueue: commandQueue, texture: texture, runBuffer: runsFilled, pointBuffer: pointsFilled, patternSize: patternSize) else {
         assert(false, "Failed to run chain start kernel.")
