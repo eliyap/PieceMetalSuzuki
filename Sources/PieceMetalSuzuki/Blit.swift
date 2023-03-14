@@ -51,7 +51,7 @@ func cpuBlit(
     srcPts: UnsafeMutablePointer<PixelPoint>, srcRuns: UnsafeMutablePointer<Run>,
     dstPts: UnsafeMutablePointer<PixelPoint>
 ) -> Void {
-    DispatchQueue.concurrentPerform(iterations: runIndices.count) { runIdxIdx in
+    let work = { (runIdxIdx: Int) in
         let runIdx = runIndices[runIdxIdx]
         let run = srcRuns[runIdx]
         #if SHOW_GRID_WORK
@@ -63,4 +63,11 @@ func cpuBlit(
             MemoryLayout<PixelPoint>.stride * Int(run.oldHead - run.oldTail)
         )
     }
+    
+    /// Serialize work when debugging.
+    #if SHOW_GRID_WORK
+    (0..<runIndices.count).forEach(work)
+    #else
+    DispatchQueue.concurrentPerform(iterations: runIndices.count, execute: work)
+    #endif
 }

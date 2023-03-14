@@ -85,7 +85,7 @@ struct Grid {
                             indices.append((row, col))
                         }
                     }
-                    DispatchQueue.concurrentPerform(iterations: indices.count) { indicesIdx in
+                    let combineWork = { (indicesIdx: Int) in
                         let (row, col) = indices[indicesIdx]
                         let a = regions[row][col]
                         let b = regions[row][col + 1]
@@ -94,9 +94,16 @@ struct Grid {
                                 srcPts: srcPts, srcRuns: srcRuns,
                                 dstRuns: dstRuns)
                         cpuBlit(runIndices: newRequests, srcPts: srcPts, srcRuns: srcRuns, dstPts: dstPts)
-                        /// Update grid position for remaining regions.
                     }
+                    
+                    /// Serialize work when debugging.
+                    #if SHOW_GRID_WORK
+                    (0..<indices.count).forEach(combineWork)
+                    #else
+                    DispatchQueue.concurrentPerform(iterations: indices.count, execute: combineWork)
+                    #endif
 
+                    /// Update grid position for remaining regions.
                     DispatchQueue.concurrentPerform(iterations: numRows) { rowIdx in
                         for region in regions[rowIdx] {
                             region.gridPos.col /= 2
@@ -141,7 +148,8 @@ struct Grid {
                             indices.append((row, col))
                         }
                     }
-                    DispatchQueue.concurrentPerform(iterations: indices.count) { indicesIdx in
+                    
+                    let combineWork = { (indicesIdx: Int) in
                         let (row, col) = indices[indicesIdx]
                         let a = regions[row][col]
                         let b = regions[row+1][col]
@@ -151,11 +159,20 @@ struct Grid {
                                 dstRuns: dstRuns)
                         cpuBlit(runIndices: newRequests, srcPts: srcPts, srcRuns: srcRuns, dstPts: dstPts)
                     }
+                    
+                    /// Serialize work when debugging.
+                    #if SHOW_GRID_WORK
+                    (0..<indices.count).forEach(combineWork)
+                    #else
+                    DispatchQueue.concurrentPerform(iterations: indices.count, execute: combineWork)
+                    #endif
+                    
                     for rowIdx in stride(from: 0, to: numRows - 1, by: 2).reversed() {
                         /// Remove entire row at once.
                         regions.remove(at: rowIdx + 1)
                     }
                 }
+                
                 /// Update grid position for remaining regions.
                 for rowIdx in 0..<regions.count {
                     for colIdx in 0..<numCols {
