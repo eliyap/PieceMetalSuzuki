@@ -363,13 +363,11 @@ internal func applyMetalSuzuki_LUT(
         assert(false, "Failed to run chain start kernel.")
         return nil
     }
-    
-        metalCombine(device: device, commandQueue: commandQueue, texture: texture, runBuffer: runsFilled, pointBuffer: pointsFilled)
-    
+        
     var grid = Grid(
         imageSize: PixelSize(width: UInt32(texture.width), height: UInt32(texture.height)),
         regions: SuzukiProfiler.time(.initRegions) {
-            return initializeRegions_LUT(runBuffer: runsFilled, texture: texture, patternSize: patternSize)
+            return initializeRegions(runBuffer: runsFilled, texture: texture, patternSize: patternSize)
         },
         patternSize: patternSize
     )

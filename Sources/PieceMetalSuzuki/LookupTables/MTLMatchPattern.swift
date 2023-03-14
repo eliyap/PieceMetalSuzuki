@@ -103,34 +103,3 @@ internal func loadMetalLibrary(named name: String, device: any MTLDevice) -> (an
         return nil
     }
 }
-
-func metalCombine(
-    device: any MTLDevice,
-    commandQueue: any MTLCommandQueue,
-    texture: any MTLTexture,
-    runBuffer: Buffer<Run>,
-    pointBuffer: Buffer<PixelPoint>
-) -> Bool {
-    guard
-        let kernelFunction = loadMetalFunction(filename: "Combine", functionName: "combine", device: device),
-        let pipelineState = try? device.makeComputePipelineState(function: kernelFunction),
-        let cmdBuffer = commandQueue.makeCommandBuffer(),
-        let cmdEncoder = cmdBuffer.makeComputeCommandEncoder()
-    else {
-        assert(false, "Failed to setup pipeline.")
-        return false
-    }
-    
-    cmdEncoder.setComputePipelineState(pipelineState)
-    cmdEncoder.setTexture(texture, index: 0)
-    cmdEncoder.setBuffer(pointBuffer.mtlBuffer, offset: 0, index: 0)
-    cmdEncoder.setBuffer(runBuffer.mtlBuffer, offset: 0, index: 1)
-    
-    let (tPerTG, tgPerGrid) = pipelineState.threadgroupParameters(texture: texture)
-    cmdEncoder.dispatchThreadgroups(tgPerGrid, threadsPerThreadgroup: tPerTG)
-    cmdEncoder.endEncoding()
-    cmdBuffer.commit()
-    cmdBuffer.waitUntilCompleted()
-    
-    return true
-}
