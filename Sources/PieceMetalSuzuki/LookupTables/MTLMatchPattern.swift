@@ -13,7 +13,7 @@ internal func matchPatterns(
     patternSize: PatternSize
 ) -> Bool {
     guard
-        let kernelFunction = loadMatchPatternFunction(device: device, coreSize: patternSize.coreSize),
+        let kernelFunction = loadMetalFunction(filename: "MatchPattern", functionName: "matchPatterns\(patternSize.patternCode)", device: device),
         let pipelineState = try? device.makeComputePipelineState(function: kernelFunction),
         let cmdBuffer = commandQueue.makeCommandBuffer(),
         let cmdEncoder = cmdBuffer.makeComputeCommandEncoder()
@@ -79,15 +79,14 @@ internal func matchPatterns(
 }
 
 /// Load and compile the `.metal` code which ships with the package.
-fileprivate func loadMatchPatternFunction(device: MTLDevice, coreSize: PixelSize) -> MTLFunction? {
-    guard let library: any MTLLibrary = loadMetalLibrary(named: "MatchPattern", device: device) else {
+internal func loadMetalFunction(filename: String, functionName: String, device: any MTLDevice) -> (any MTLFunction)? {
+    guard let library: any MTLLibrary = loadMetalLibrary(named: filename, device: device) else {
         assert(false, "Failed to get library.")
         return nil
     }
     
-    let functionLabel = "\(coreSize.width)x\(coreSize.height)"
-    guard let function = library.makeFunction(name: "matchPatterns\(functionLabel)") else {
-        assert(false, "Failed to get library.")
+    guard let function = library.makeFunction(name: functionName) else {
+        assert(false, "Failed to make function.")
         return nil
     }
     return function

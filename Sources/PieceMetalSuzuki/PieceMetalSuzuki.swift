@@ -311,7 +311,7 @@ internal func applyMetalSuzuki(
     let patternSize = PatternSize.w1h1
     
     
-    guard let kernelFunction = loadChainStarterFunction(device: device) else {
+    guard let kernelFunction = loadMetalFunction(filename: "PieceSuzukiKernel", functionName: "startChain", device: device) else {
         assert(false, "Failed to load function.")
         return nil
     }
@@ -405,19 +405,6 @@ internal func saveBufferToPng(buffer: CVPixelBuffer, format: CIFormat) -> Void {
         assert(false, "Couldn't write file.")
         return
     }
-}
-
-/// Load and compile the `.metal` code which ships with the package.
-internal func loadChainStarterFunction(device: MTLDevice) -> MTLFunction? {
-    guard let library: any MTLLibrary = loadMetalLibrary(named: "PieceSuzukiKernel", device: device) else {
-        assert(false, "Failed to get library.")
-        return nil
-    }
-    guard let function = library.makeFunction(name: "startChain") else {
-        assert(false, "Failed to get library.")
-        return nil
-    }
-    return function
 }
 
 /// Uses GPU to initialize regions by running the provided `.metal` function.
