@@ -35,11 +35,11 @@ struct Grid {
         pointsUnfilled: Buffer<PixelPoint>,
         runsUnfilled: Buffer<Run>
     ) -> Void {
-        var dxn = ReduceDirection.vertical
-        let pointsHorizontal = pointsFilled
-        let runsHorizontal = runsFilled
-        let pointsVertical = pointsUnfilled
-        let runsVertical = runsUnfilled
+        var dxn = ReduceDirection.horizontal
+        let pointsVertical = pointsFilled
+        let runsVertical = runsFilled
+        let pointsHorizontal = pointsUnfilled
+        let runsHorizontal = runsUnfilled
         
         var srcPts: UnsafeMutablePointer<PixelPoint>
         var dstPts: UnsafeMutablePointer<PixelPoint>
