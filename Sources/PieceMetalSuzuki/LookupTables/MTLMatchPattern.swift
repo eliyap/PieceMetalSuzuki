@@ -147,8 +147,6 @@ internal func combinePatterns(
     cmdBuffer.commit()
     cmdBuffer.waitUntilCompleted()
     
-    memmove(pointBuffer.array.baseAddress, tempPoints.array.baseAddress, tempPoints.size)
-    
     #if SHOW_GRID_WORK
     debugPrint("[Combined Points]")
     for idx in 0..<runBuffer.count {
