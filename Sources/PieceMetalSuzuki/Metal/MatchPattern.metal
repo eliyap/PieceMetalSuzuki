@@ -306,6 +306,9 @@ kernel void matchPatterns4x2(
     const uint32_t subCoreHeight = 2;
     const uint8_t subTableWidth = subCoreWidth * subCoreHeight * pointsPerPixel;
     
+    // Position in the texture.
+    const uint32_t texX = gid.x;
+    const uint32_t texY = gid.y;
     const uint32_t texWidth = tex.get_width();
     const uint32_t texHeight = tex.get_height();
     const uint32_t roundWidth = roundedUp(texWidth, coreWidth);
@@ -323,8 +326,8 @@ kernel void matchPatterns4x2(
     
     // Don't exit the texture.
     // Skip pixels that aren't the root of a 2x2 sub-pattern.
-    const bool sub00 = (gid.x < texWidth               ) && (gid.y < texHeight) && ((gid.x % coreWidth) == 0           ) && ((gid.y % coreHeight) == 0);
-    const bool sub01 = (gid.x < texWidth + subCoreWidth) && (gid.y < texHeight) && ((gid.x % coreWidth) == subCoreWidth) && ((gid.y % coreHeight) == 0);
+    const bool sub00 = (texX < texWidth               ) && (texY < texHeight) && ((texX % coreWidth) == 0           ) && ((texY % coreHeight) == 0);
+    const bool sub01 = (texX < texWidth + subCoreWidth) && (texY < texHeight) && ((texX % coreWidth) == subCoreWidth) && ((texY % coreHeight) == 0);
     if (!sub00 && !sub01) {
         return;
     }
@@ -335,22 +338,22 @@ kernel void matchPatterns4x2(
     // 1|XX|
     // 2|XX|
     // 3+--+
-    const bool p00 = readPixel(tex, uint2(gid.x - 1, gid.y - 1), minCol, maxCol, minRow, maxRow);
-    const bool p01 = readPixel(tex, uint2(gid.x + 0, gid.y - 1), minCol, maxCol, minRow, maxRow);
-    const bool p02 = readPixel(tex, uint2(gid.x + 1, gid.y - 1), minCol, maxCol, minRow, maxRow);
-    const bool p03 = readPixel(tex, uint2(gid.x + 2, gid.y - 1), minCol, maxCol, minRow, maxRow);
-    const bool p10 = readPixel(tex, uint2(gid.x - 1, gid.y + 0), minCol, maxCol, minRow, maxRow);
-    const bool p11 = readPixel(tex, uint2(gid.x + 0, gid.y + 0), minCol, maxCol, minRow, maxRow);
-    const bool p12 = readPixel(tex, uint2(gid.x + 1, gid.y + 0), minCol, maxCol, minRow, maxRow);
-    const bool p13 = readPixel(tex, uint2(gid.x + 2, gid.y + 0), minCol, maxCol, minRow, maxRow);
-    const bool p20 = readPixel(tex, uint2(gid.x - 1, gid.y + 1), minCol, maxCol, minRow, maxRow);
-    const bool p21 = readPixel(tex, uint2(gid.x + 0, gid.y + 1), minCol, maxCol, minRow, maxRow);
-    const bool p22 = readPixel(tex, uint2(gid.x + 1, gid.y + 1), minCol, maxCol, minRow, maxRow);
-    const bool p23 = readPixel(tex, uint2(gid.x + 2, gid.y + 1), minCol, maxCol, minRow, maxRow);
-    const bool p30 = readPixel(tex, uint2(gid.x - 1, gid.y + 2), minCol, maxCol, minRow, maxRow);
-    const bool p31 = readPixel(tex, uint2(gid.x + 0, gid.y + 2), minCol, maxCol, minRow, maxRow);
-    const bool p32 = readPixel(tex, uint2(gid.x + 1, gid.y + 2), minCol, maxCol, minRow, maxRow);
-    const bool p33 = readPixel(tex, uint2(gid.x + 2, gid.y + 2), minCol, maxCol, minRow, maxRow);
+    const bool p00 = readPixel(tex, uint2(texX - 1, texY - 1), minCol, maxCol, minRow, maxRow);
+    const bool p01 = readPixel(tex, uint2(texX + 0, texY - 1), minCol, maxCol, minRow, maxRow);
+    const bool p02 = readPixel(tex, uint2(texX + 1, texY - 1), minCol, maxCol, minRow, maxRow);
+    const bool p03 = readPixel(tex, uint2(texX + 2, texY - 1), minCol, maxCol, minRow, maxRow);
+    const bool p10 = readPixel(tex, uint2(texX - 1, texY + 0), minCol, maxCol, minRow, maxRow);
+    const bool p11 = readPixel(tex, uint2(texX + 0, texY + 0), minCol, maxCol, minRow, maxRow);
+    const bool p12 = readPixel(tex, uint2(texX + 1, texY + 0), minCol, maxCol, minRow, maxRow);
+    const bool p13 = readPixel(tex, uint2(texX + 2, texY + 0), minCol, maxCol, minRow, maxRow);
+    const bool p20 = readPixel(tex, uint2(texX - 1, texY + 1), minCol, maxCol, minRow, maxRow);
+    const bool p21 = readPixel(tex, uint2(texX + 0, texY + 1), minCol, maxCol, minRow, maxRow);
+    const bool p22 = readPixel(tex, uint2(texX + 1, texY + 1), minCol, maxCol, minRow, maxRow);
+    const bool p23 = readPixel(tex, uint2(texX + 2, texY + 1), minCol, maxCol, minRow, maxRow);
+    const bool p30 = readPixel(tex, uint2(texX - 1, texY + 2), minCol, maxCol, minRow, maxRow);
+    const bool p31 = readPixel(tex, uint2(texX + 0, texY + 2), minCol, maxCol, minRow, maxRow);
+    const bool p32 = readPixel(tex, uint2(texX + 1, texY + 2), minCol, maxCol, minRow, maxRow);
+    const bool p33 = readPixel(tex, uint2(texX + 2, texY + 2), minCol, maxCol, minRow, maxRow);
     
     // Compose the lookup table row address.
     const uint32_t rowIdx = 0
