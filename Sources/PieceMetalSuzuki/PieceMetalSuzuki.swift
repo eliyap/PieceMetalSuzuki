@@ -496,13 +496,6 @@ internal func applyMetalSuzuki_LUT(
                     }
                 }
             }
-            
-            debugPrint("[Combined Points]")
-            for idx in 0..<runsFilled.count {
-                let run = runsFilled.array[idx]
-                guard run.isValid else { continue}
-                print(idx, run, (run.oldTail..<run.oldHead).map { pointsFilled.array[Int($0)] })
-            }
         }
         
         var grid = Grid(
