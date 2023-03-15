@@ -335,8 +335,8 @@ internal func applyMetalSuzuki_LUT(
                         continue
                     }
                     
-                    let roundWidth: Int = texture.width.roundedUp(toClosest: 2)
-                    let aBase: Int = ((roundWidth * y) + (x * Int(PatternSize.w2h2.coreSize.width))) * Int(PatternSize.w2h2.pointsPerPixel)
+                    let roundWidth: Int = texture.width.roundedUp(toClosest: Int(PatternSize.w4h2.coreSize.width))
+                    let aBase: Int = ((roundWidth * y) + (x * Int(PatternSize.w2h2.coreSize.height))) * Int(PatternSize.w2h2.pointsPerPixel)
                     let bBase = aBase + tableWidth2x2
                     
 //                    if (x + 2) >= texture.width {
