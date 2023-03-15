@@ -136,5 +136,14 @@ internal func combinePatterns(
     cmdBuffer.commit()
     cmdBuffer.waitUntilCompleted()
     
+    #if SHOW_GRID_WORK
+    debugPrint("[Combined Points]")
+    for idx in 0..<runBuffer.count {
+        let run = runBuffer.array[idx]
+        guard run.isValid else { continue}
+        print(idx, run, (run.oldTail..<run.oldHead).map { pointBuffer.array[Int($0)] })
+    }
+    #endif
+    
     return true
 }
