@@ -20,7 +20,7 @@ extension Dictionary where Key: Comparable {
 public protocol CodeRegion: Hashable, CaseIterable { }
 
 enum SuzukiRegion: Hashable, CaseIterable, CodeRegion {
-    case blit, trailingCopy, binarize, startChains, overall, makeTexture, initRegions, bufferInit, blitWait, runIndices
+    case blit, trailingCopy, binarize, matchPatterns, overall, makeTexture, initRegions, bufferInit, blitWait, runIndices
     case combineGPU
     case combineAll, combine, combineFindPartner, combineJoin
     case lutCopy
