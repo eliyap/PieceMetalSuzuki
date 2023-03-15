@@ -327,6 +327,11 @@ internal func applyMetalSuzuki_LUT(
         }
         
         if patternSize == .w4h2 {
+            guard combinePatterns(device: device, commandQueue: commandQueue, texture: texture, runBuffer: runsFilled, pointBuffer: pointsFilled, patternSize: patternSize) else {
+                assert(false, "Failed to run chain start kernel.")
+                return nil
+            }
+            
             // TODO
             let tableWidth2x2 = 8
             for y in 0..<texture.height {

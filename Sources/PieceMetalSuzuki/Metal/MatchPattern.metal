@@ -503,3 +503,11 @@ kernel void matchPatterns4x2(
     
     return;
 }
+
+kernel void combine4x2(
+    texture2d<half, access::read>  tex               [[ texture(0) ]],
+    device PixelPoint*             points            [[ buffer (0) ]],
+    device Run*                    runs              [[ buffer (1) ]],
+    uint2                          gid               [[thread_position_in_grid]]
+) {
+}
