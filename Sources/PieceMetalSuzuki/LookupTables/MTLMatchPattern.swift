@@ -130,7 +130,7 @@ internal func combinePatterns(
     cmdEncoder.setBuffer(pointBuffer.mtlBuffer, offset: 0, index: 0)
     cmdEncoder.setBuffer(runBuffer.mtlBuffer, offset: 0, index: 1)
     
-    let (tPerTG, tgPerGrid) = pipelineState.threadgroupParameters(texture: texture)
+    let (tPerTG, tgPerGrid) = pipelineState.threadgroupParameters(texture: texture, coreSize: patternSize.coreSize)
     cmdEncoder.dispatchThreadgroups(tgPerGrid, threadsPerThreadgroup: tPerTG)
     cmdEncoder.endEncoding()
     cmdBuffer.commit()

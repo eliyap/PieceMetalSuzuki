@@ -462,6 +462,7 @@ kernel void combine4x2(
     texture2d<half, access::read>  tex               [[ texture(0) ]],
     device PixelPoint*             points            [[ buffer (0) ]],
     device Run*                    runs              [[ buffer (1) ]],
+    // Coordinates are pre-divided by core size, so they must be re-scaled to get the position in-texture.
     uint2                          gid               [[thread_position_in_grid]]
 ) {
     const uint32_t coreWidth      = 4;
@@ -476,18 +477,13 @@ kernel void combine4x2(
     const uint32_t texHeight = tex.get_height();
     
     // Don't exit the texture.
-    if ((gid.x >= texWidth) || (gid.y >= texHeight)) {
-        return;
-    }
-    
-    // Skip pixels that aren't the root of the pattern.
-    if ((gid.x % coreWidth) || (gid.y % coreHeight)) {
+    if (((gid.x * coreWidth) >= texWidth) || ((gid.y * coreHeight) >= texHeight)) {
         return;
     }
     
     // Let the regions be `a` and `b`.
     const uint32_t roundWidth = roundedUp(texWidth, coreWidth);
-    const uint32_t aBase = ((roundWidth * gid.y) + (gid.x * subCoreHeight)) * pointsPerPixel;
+    const uint32_t aBase = ((roundWidth * gid.y * coreHeight) + (gid.x * coreWidth * subCoreHeight)) * pointsPerPixel;
     const uint32_t bBase = aBase + subTableWidth;
 
     // Find pairwise relationships between runs.

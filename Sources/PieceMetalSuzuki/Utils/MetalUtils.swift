@@ -43,4 +43,22 @@ extension MTLComputePipelineState {
             )
         )
     }
+    
+    func threadgroupParameters(texture: MTLTexture, coreSize: PixelSize) -> (threadgroupsPerGrid: MTLSize, threadsPerThreadgroup: MTLSize) {
+        let threadHeight = maxTotalThreadsPerThreadgroup / threadExecutionWidth
+        return (
+            /// Subdivide grid as far as possible.
+            /// https://developer.apple.com/documentation/metal/mtlcomputecommandencoder/1443138-dispatchthreadgroups
+            MTLSizeMake(threadExecutionWidth, threadHeight, 1),
+            MTLSizeMake(
+                texture.width
+                    .dividedByRoundingUp(divisor: Int(coreSize.width))
+                    .dividedByRoundingUp(divisor: threadExecutionWidth),
+                texture.height
+                    .dividedByRoundingUp(divisor: Int(coreSize.height))
+                    .dividedByRoundingUp(divisor: threadHeight),
+                1
+            )
+        )
+    }
 }
