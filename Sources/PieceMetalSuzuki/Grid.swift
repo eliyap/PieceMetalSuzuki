@@ -587,6 +587,19 @@ extension Grid {
     mutating func combineAllForLUT(
         coreSize: PixelSize,
         pointsFilled: UnsafeMutableBufferPointer<PixelPoint>,
+        runsFilled: UnsafeMutableBufferPointer<Run>
+    ) -> (Region, [Run], [PixelPoint]) {
+        var tempPoints = [PixelPoint](repeating: .invalid, count: pointsFilled.count)
+        var tempRuns = [Run](repeating: .invalid, count: runsFilled.count)
+        return tempPoints.withUnsafeMutableBufferPointer { pointsUnfilled in
+            return tempRuns.withUnsafeMutableBufferPointer { runsUnfilled in
+                combineAllForLUT(coreSize: coreSize, pointsFilled: pointsFilled, runsFilled: runsFilled, pointsUnfilled: pointsUnfilled, runsUnfilled: runsUnfilled)
+            }
+        }
+    }
+    mutating private func combineAllForLUT(
+        coreSize: PixelSize,
+        pointsFilled: UnsafeMutableBufferPointer<PixelPoint>,
         runsFilled: UnsafeMutableBufferPointer<Run>,
         pointsUnfilled: UnsafeMutableBufferPointer<PixelPoint>,
         runsUnfilled: UnsafeMutableBufferPointer<Run>

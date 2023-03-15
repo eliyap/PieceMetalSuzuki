@@ -265,9 +265,7 @@ internal func applyMetalSuzuki(
         
         guard
             let pointsFilled = Buffer<PixelPoint>(device: device, count: count, token: token),
-            let runsFilled = Buffer<Run>(device: device, count: count, token: token),
-            let pointsUnfilled = Buffer<PixelPoint>(device: device, count: count, token: token),
-            let runsUnfilled = Buffer<Run>(device: device, count: count, token: token)
+            let runsFilled = Buffer<Run>(device: device, count: count, token: token)
         else {
             assert(false, "Failed to create buffers.")
             return nil
@@ -316,9 +314,7 @@ internal func applyMetalSuzuki_LUT(
     return withAutoRelease { token in
         guard
             let pointsFilled = Buffer<PixelPoint>(device: device, count: count, token: token),
-            let runsFilled = Buffer<Run>(device: device, count: count, token: token),
-            let pointsUnfilled = Buffer<PixelPoint>(device: device, count: count, token: token),
-            let runsUnfilled = Buffer<Run>(device: device, count: count, token: token)
+            let runsFilled = Buffer<Run>(device: device, count: count, token: token)
         else {
             assert(false, "Failed to create buffers.")
             return nil
