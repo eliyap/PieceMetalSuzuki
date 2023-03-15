@@ -321,7 +321,9 @@ internal func applyMetalSuzuki_LUT(
         }
         
         /// Apply Metal filter to pixel buffer.
-        guard matchPatterns(device: device, commandQueue: commandQueue, texture: texture, runBuffer: runsFilled, pointBuffer: pointsFilled, patternSize: patternSize) else {
+        guard SuzukiProfiler.time(.matchPatterns, {
+            matchPatterns(device: device, commandQueue: commandQueue, texture: texture, runBuffer: runsFilled, pointBuffer: pointsFilled, patternSize: patternSize)
+        }) else {
             assert(false, "Failed to run chain start kernel.")
             return nil
         }
@@ -411,7 +413,7 @@ internal func createChainStarters(
     /// - the allocated Lookup Table buffers
     releaseToken: AutoReleasePoolToken
 ) -> Bool {
-    SuzukiProfiler.time(.startChains) {
+    SuzukiProfiler.time(.matchPatterns) {
         guard
             let pipelineState = try? device.makeComputePipelineState(function: function),
             let cmdBuffer = commandQueue.makeCommandBuffer(),

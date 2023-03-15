@@ -90,89 +90,6 @@ static PixelPoint adjust(PixelPoint point, uint8_t direction) {
     }
 }
 
-kernel void matchPatterns1x1(
-    texture2d<half, access::read>  tex               [[ texture(0) ]],
-    device PixelPoint*             points            [[ buffer (0) ]],
-    device Run*                    runs              [[ buffer (1) ]],
-    device const StartRun*         startRuns         [[ buffer (2) ]],
-    device const table_index_t*    startRunIndices   [[ buffer (3) ]],
-    device const StartPoint*       startPoints       [[ buffer (4) ]],
-    device const table_index_t*    startPointIndices [[ buffer (5) ]],
-    uint2                          gid               [[thread_position_in_grid]]
-) {
-    uint8_t TableWidth = 4;
-    int32_t idx = ((tex.get_width() * gid.y) + gid.x) * TableWidth;
-    uint32_t texWidth = tex.get_width();
-    uint32_t texHeight = tex.get_height();
-    
-    // Don't exit the texture.
-    if ((gid.x >= texWidth) || (gid.y >= texHeight)) {
-        return;
-    }
-    
-    // Setting invalid array indices signals a NULL value.
-    // Set before early exit checks.
-    for (int i = 0; i < TableWidth; i++) {
-        runs[idx+i].oldHead = -1;
-        runs[idx+i].oldTail = -1;
-        runs[idx+i].newHead = -1;
-        runs[idx+i].newTail = -1;
-    }
-    
-    // Define boundaries.
-    uint32_t minCol = 0;
-    uint32_t maxCol = tex.get_width() - 1;
-    uint32_t minRow = 0;
-    uint32_t maxRow = tex.get_height() - 1;
-    
-    // Find the values in a 2x1 kernel, and its border.
-    //  012
-    // 0+-+
-    // 1|X|
-    // 2+-+
-    bool p00 = readPixel(tex, uint2(gid.x - 1, gid.y - 1), minCol, maxCol, minRow, maxRow);
-    bool p01 = readPixel(tex, uint2(gid.x + 0, gid.y - 1), minCol, maxCol, minRow, maxRow);
-    bool p02 = readPixel(tex, uint2(gid.x + 1, gid.y - 1), minCol, maxCol, minRow, maxRow);
-    bool p10 = readPixel(tex, uint2(gid.x - 1, gid.y + 0), minCol, maxCol, minRow, maxRow);
-    bool p11 = readPixel(tex, uint2(gid.x + 0, gid.y + 0), minCol, maxCol, minRow, maxRow);
-    bool p12 = readPixel(tex, uint2(gid.x + 1, gid.y + 0), minCol, maxCol, minRow, maxRow);
-    bool p20 = readPixel(tex, uint2(gid.x - 1, gid.y + 1), minCol, maxCol, minRow, maxRow);
-    bool p21 = readPixel(tex, uint2(gid.x + 0, gid.y + 1), minCol, maxCol, minRow, maxRow);
-    bool p22 = readPixel(tex, uint2(gid.x + 1, gid.y + 1), minCol, maxCol, minRow, maxRow);
-    
-    // Compose the lookup table row address.
-    uint32_t rowIdx = 0
-        | (p00 << 0)
-        | (p01 << 1)
-        | (p02 << 2)
-        | (p10 << 3)
-        | (p11 << 4)
-        | (p12 << 5)
-        | (p20 << 6)
-        | (p21 << 7)
-        | (p22 << 8);
-        
-    uint32_t runRow = startRunIndices[rowIdx];
-    uint32_t pointRow = startPointIndices[rowIdx];
-
-    // Loop over the table's columns.
-    for (uint32_t i = 0; i < TableWidth; i++) {
-        uint32_t runIdx = runRow * TableWidth + i;
-        uint32_t pointIdx = pointRow * TableWidth + i;
-        struct StartRun startRun = startRuns[runIdx];
-        struct StartPoint startPoint = startPoints[pointIdx];
-        if (startRun.tail != -1) {
-            points[idx+i].x = gid.x + startPoint.x;
-            points[idx+i].y = gid.y + startPoint.y;
-            runs[idx+i].oldTail = idx + startRun.tail;
-            runs[idx+i].oldHead = idx + startRun.head;
-            runs[idx+i].tailTriadFrom = startRun.from;
-            runs[idx+i].headTriadTo   = startRun.to;
-        }
-    }    
-    return;
-}
-
 kernel void matchPatterns2x1(
     texture2d<half, access::read>  tex               [[ texture(0) ]],
     device PixelPoint*             points            [[ buffer (0) ]],
@@ -238,18 +155,10 @@ kernel void matchPatterns2x1(
     
     // Compose the lookup table row address.
     const uint32_t rowIdx = 0
-        | (p00 <<  0)
-        | (p01 <<  1)
-        | (p02 <<  2)
-        | (p03 <<  3)
-        | (p10 <<  4)
-        | (p11 <<  5)
-        | (p12 <<  6)
-        | (p13 <<  7)
-        | (p20 <<  8)
-        | (p21 <<  9)
-        | (p22 << 10)
-        | (p23 << 11);
+        | (p00 <<  0) | (p01 <<  1) | (p02 <<  2) | (p03 <<  3)
+        | (p10 <<  4) | (p11 <<  5) | (p12 <<  6) | (p13 <<  7)
+        | (p20 <<  8) | (p21 <<  9) | (p22 << 10) | (p23 << 11)
+        ;
         
     uint32_t runRow = startRunIndices[rowIdx];
     uint32_t pointRow = startPointIndices[rowIdx];
@@ -345,22 +254,10 @@ kernel void matchPatterns2x2(
     
     // Compose the lookup table row address.
     const uint32_t rowIdx = 0
-        | (p00 <<  0)
-        | (p01 <<  1)
-        | (p02 <<  2)
-        | (p03 <<  3)
-        | (p10 <<  4)
-        | (p11 <<  5)
-        | (p12 <<  6)
-        | (p13 <<  7)
-        | (p20 <<  8)
-        | (p21 <<  9)
-        | (p22 << 10)
-        | (p23 << 11)
-        | (p30 << 12)
-        | (p31 << 13)
-        | (p32 << 14)
-        | (p33 << 15)
+        | (p00 <<  0) | (p01 <<  1) | (p02 <<  2) | (p03 <<  3)
+        | (p10 <<  4) | (p11 <<  5) | (p12 <<  6) | (p13 <<  7)
+        | (p20 <<  8) | (p21 <<  9) | (p22 << 10) | (p23 << 11)
+        | (p30 << 12) | (p31 << 13) | (p32 << 14) | (p33 << 15)
         ;
         
     uint32_t runRow = startRunIndices[rowIdx];
@@ -487,6 +384,7 @@ kernel void combine4x2(
     texture2d<half, access::read>  tex               [[ texture(0) ]],
     device PixelPoint*             points            [[ buffer (0) ]],
     device Run*                    runs              [[ buffer (1) ]],
+    // Coordinates are pre-divided by core size, so they must be re-scaled to get the position in-texture.
     uint2                          gid               [[thread_position_in_grid]]
 ) {
     const uint32_t coreWidth      = 4;
@@ -501,26 +399,19 @@ kernel void combine4x2(
     const uint32_t texHeight = tex.get_height();
     
     // Don't exit the texture.
-    if ((gid.x >= texWidth) || (gid.y >= texHeight)) {
-        return;
-    }
-    
-    // Skip pixels that aren't the root of the pattern.
-    if ((gid.x % coreWidth) || (gid.y % coreHeight)) {
+    if (((gid.x * coreWidth) >= texWidth) || ((gid.y * coreHeight) >= texHeight)) {
         return;
     }
     
     // Let the regions be `a` and `b`.
     const uint32_t roundWidth = roundedUp(texWidth, coreWidth);
-    const uint32_t aBase = ((roundWidth * gid.y) + (gid.x * subCoreHeight)) * pointsPerPixel;
+    const uint32_t aBase = ((roundWidth * gid.y * coreHeight) + (gid.x * coreWidth * subCoreHeight)) * pointsPerPixel;
     const uint32_t bBase = aBase + subTableWidth;
 
     // Find pairwise relationships between runs.
     // e.g. if `bTailForAHead[3] = 4`, run a[3]'s head matches run b[4]'s tail. 
-    int8_t bTailForAHead[subTableWidth];
-    int8_t bHeadForATail[subTableWidth];
-    int8_t aTailForBHead[subTableWidth];
-    int8_t aHeadForBTail[subTableWidth];
+    int8_t bTailForAHead[subTableWidth], bHeadForATail[subTableWidth];
+    int8_t aTailForBHead[subTableWidth], aHeadForBTail[subTableWidth];
     for (size_t i = 0; i < subTableWidth; i++) {
         bTailForAHead[i] = -1;
         bHeadForATail[i] = -1;
@@ -530,26 +421,26 @@ kernel void combine4x2(
 
     for (size_t aOffset = 0; aOffset < subTableWidth; aOffset++) {
         Run aRun = runs[aBase + aOffset];
+        if (aRun.oldHead < 0) continue;
+        
+        PixelPoint aTail = points[aRun.oldTail];
+        PixelPoint aHead = points[aRun.oldHead - 1];
+        PixelPoint aTailPointee = adjust(aTail, aRun.tailTriadFrom);
+        PixelPoint aHeadPointee = adjust(aHead, aRun.headTriadTo);
+        
         for (size_t bOffset = 0; bOffset < subTableWidth; bOffset++) {
             Run bRun = runs[bBase + bOffset];
-
-            if ((aRun.oldHead < 0) || (bRun.oldHead < 0)) {
-                continue;
-            }
-
-            PixelPoint aTail = points[aRun.oldTail];
-            PixelPoint aHead = points[aRun.oldHead - 1];
+            if (bRun.oldHead < 0) continue;
+            
             PixelPoint bTail = points[bRun.oldTail];
             PixelPoint bHead = points[bRun.oldHead - 1];
 
-            PixelPoint aTailPointee = adjust(aTail, aRun.tailTriadFrom);
             if (isInverse(aRun.tailTriadFrom, bRun.headTriadTo) && (aTailPointee.x == bHead.x) && (aTailPointee.y == bHead.y)) {
                 // B head -> A tail
                 aTailForBHead[bOffset] = aOffset;
                 bHeadForATail[aOffset] = bOffset;
             } 
             
-            PixelPoint aHeadPointee = adjust(aHead, aRun.headTriadTo);
             if (isInverse(aRun.headTriadTo, bRun.tailTriadFrom) && (aHeadPointee.x == bTail.x) && (aHeadPointee.y == bTail.y)) {
                 // A head -> B tail
                 bTailForAHead[aOffset] = bOffset;
@@ -560,12 +451,9 @@ kernel void combine4x2(
 
     // Find starter runs.
     // We increment count as we append, and increment next as we consume.
-    int8_t aStarters[subTableWidth];
-    int8_t aStarterCount = 0;
-    int8_t aStarterNext = 0;
-    int8_t bStarters[subTableWidth];
-    int8_t bStarterCount = 0;
-    int8_t bStarterNext = 0;
+    int8_t aStarters[subTableWidth], bStarters[subTableWidth];
+    int8_t aStarterCount = 0,        bStarterCount = 0;
+    int8_t aStarterNext = 0,         bStarterNext = 0;
     
     for (size_t offset = 0; offset < subTableWidth; offset++) {
         // Find valid runs that don't have tails.
@@ -583,8 +471,7 @@ kernel void combine4x2(
     }
 
     // Ignore invalid runs.
-    bool aDone[subTableWidth];
-    bool bDone[subTableWidth];
+    bool aDone[subTableWidth], bDone[subTableWidth];
     for (size_t offset = 0; offset < subTableWidth; offset++) {
         aDone[offset] = runs[aBase + offset].oldHead < 0;
         bDone[offset] = runs[bBase + offset].oldHead < 0;
@@ -656,13 +543,12 @@ kernel void combine4x2(
     
         if (isNewSequence) { // Start new sequence.
             newRun.oldTail = newBase;
-            newRun.oldHead = newBase;
             newRun.tailTriadFrom = currRun.tailTriadFrom;
         }
 
         // Extend new or existing sequence.
-        newRun.oldHead += currRun.oldHead - currRun.oldTail;
         newBase        += currRun.oldHead - currRun.oldTail;
+        newRun.oldHead = newBase;
         newRun.headTriadTo = currRun.headTriadTo;
         
         if (isA) {
