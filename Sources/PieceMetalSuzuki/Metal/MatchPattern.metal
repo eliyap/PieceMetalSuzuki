@@ -407,6 +407,10 @@ kernel void matchPatterns4x2(
     const uint32_t texHeight = tex.get_height();
     const uint32_t roundWidth = roundedUp(texWidth, coreWidth);
     
+    uint32_t subX;
+    uint32_t subY;
+    int32_t subBase;
+
     // This is the pattern's core's top left pixel.
     // To get the column offset, multiply the pixels to the left by core height.
     const int32_t idx = ((roundWidth * gid.y) + (gid.x * coreHeight)) * pointsPerPixel;
@@ -442,8 +446,8 @@ kernel void matchPatterns4x2(
     // 1|XX|
     // 2|XX|
     // 3+--+
-    uint32_t subX = gid.x;
-    uint32_t subY = gid.y;
+    subX = gid.x;
+    subY = gid.y;
     bool p00 = readPixel(tex, uint2(subX - 1, subY - 1), minCol, maxCol, minRow, maxRow);
     bool p01 = readPixel(tex, uint2(subX + 0, subY - 1), minCol, maxCol, minRow, maxRow);
     bool p02 = readPixel(tex, uint2(subX + 1, subY - 1), minCol, maxCol, minRow, maxRow);
@@ -473,7 +477,7 @@ kernel void matchPatterns4x2(
     uint32_t pointRow = startPointIndices[rowIdx];
 
     // Loop over the table's columns.
-    int32_t subBase = idx;
+    subBase = idx;
     for (uint32_t col = 0; col < subTableWidth; col++) {
         uint32_t runIdx   = runRow   * subTableWidth + col;
         uint32_t pointIdx = pointRow * subTableWidth + col;
