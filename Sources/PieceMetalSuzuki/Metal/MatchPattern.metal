@@ -558,6 +558,30 @@ kernel void combine4x2(
         }
     }
 
+    // Find starter runs.
+    // We increment count as we append, and increment next as we consume.
+    int8_t aStarters[subTableWidth];
+    int8_t aStarterCount = 0;
+    int8_t aStarterNext = 0;
+    int8_t bStarters[subTableWidth];
+    int8_t bStarterCount = 0;
+    int8_t bStarterNext = 0;
+    
+    for (size_t offset = 0; offset < subTableWidth; offset++) {
+        // Find valid runs that don't have tails.
+        Run aRun = runs[aBase + offset];
+        if ((aRun.oldHead >= 0) && (bHeadForATail[offset] < 0)) {
+            aStarters[aStarterCount] = offset;
+            aStarterCount++;
+        }
+        
+        Run bRun = runs[bBase + offset];
+        if ((bRun.oldHead >= 0) && (aHeadForBTail[offset] < 0)) {
+            bStarters[bStarterCount] = offset;
+            bStarterCount++;
+        }
+    }
+
     // Ignore invalid runs.
     bool aDone[subTableWidth];
     bool bDone[subTableWidth];
@@ -604,14 +628,10 @@ kernel void combine4x2(
             if (nextOffset >= 0) {
                 currOffset = nextOffset;
                 isNewSequence = false;
-            } else {
-                for (int8_t offset = 0; offset < subTableWidth; offset++) {
-                    if (!aDone[offset] && (bHeadForATail[offset] < 0)) {
-                        currOffset = offset;
-                        isNewSequence = true;
-                        break;
-                    }
-                }
+            } else if (aStarterNext < aStarterCount) {
+                currOffset = aStarters[aStarterNext];
+                aStarterNext++;
+                isNewSequence = true;
             }
             if (currOffset < 0) continue;
             currRun = runs[aBase + currOffset];
@@ -619,14 +639,10 @@ kernel void combine4x2(
             if (nextOffset >= 0) {
                 currOffset = nextOffset;
                 isNewSequence = false;
-            } else { // Find a run that is not done and doesn't have a tail.
-                for (int8_t offset = 0; offset < subTableWidth; offset++) {
-                    if (!bDone[offset] && (aHeadForBTail[offset] < 0)) {
-                        currOffset = offset;
-                        isNewSequence = true;
-                        break;
-                    }
-                }
+            } else if (bStarterNext < bStarterCount) {
+                currOffset = bStarters[bStarterNext];
+                bStarterNext++;
+                isNewSequence = true;
             }
             if (currOffset < 0) continue;
             currRun = runs[bBase + currOffset];        
