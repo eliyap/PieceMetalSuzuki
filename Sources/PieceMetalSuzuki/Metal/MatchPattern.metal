@@ -142,15 +142,10 @@ kernel void matchPatterns1x1(
     
     // Compose the lookup table row address.
     uint32_t rowIdx = 0
-        | (p00 << 0)
-        | (p01 << 1)
-        | (p02 << 2)
-        | (p10 << 3)
-        | (p11 << 4)
-        | (p12 << 5)
-        | (p20 << 6)
-        | (p21 << 7)
-        | (p22 << 8);
+        | (p00 << 0) | (p01 << 1) | (p02 << 2)
+        | (p10 << 3) | (p11 << 4) | (p12 << 5)
+        | (p20 << 6) | (p21 << 7) | (p22 << 8)
+        ;
         
     uint32_t runRow = startRunIndices[rowIdx];
     uint32_t pointRow = startPointIndices[rowIdx];
@@ -238,18 +233,10 @@ kernel void matchPatterns2x1(
     
     // Compose the lookup table row address.
     const uint32_t rowIdx = 0
-        | (p00 <<  0)
-        | (p01 <<  1)
-        | (p02 <<  2)
-        | (p03 <<  3)
-        | (p10 <<  4)
-        | (p11 <<  5)
-        | (p12 <<  6)
-        | (p13 <<  7)
-        | (p20 <<  8)
-        | (p21 <<  9)
-        | (p22 << 10)
-        | (p23 << 11);
+        | (p00 <<  0) | (p01 <<  1) | (p02 <<  2) | (p03 <<  3)
+        | (p10 <<  4) | (p11 <<  5) | (p12 <<  6) | (p13 <<  7)
+        | (p20 <<  8) | (p21 <<  9) | (p22 << 10) | (p23 << 11)
+        ;
         
     uint32_t runRow = startRunIndices[rowIdx];
     uint32_t pointRow = startPointIndices[rowIdx];
@@ -345,22 +332,10 @@ kernel void matchPatterns2x2(
     
     // Compose the lookup table row address.
     const uint32_t rowIdx = 0
-        | (p00 <<  0)
-        | (p01 <<  1)
-        | (p02 <<  2)
-        | (p03 <<  3)
-        | (p10 <<  4)
-        | (p11 <<  5)
-        | (p12 <<  6)
-        | (p13 <<  7)
-        | (p20 <<  8)
-        | (p21 <<  9)
-        | (p22 << 10)
-        | (p23 << 11)
-        | (p30 << 12)
-        | (p31 << 13)
-        | (p32 << 14)
-        | (p33 << 15)
+        | (p00 <<  0) | (p01 <<  1) | (p02 <<  2) | (p03 <<  3)
+        | (p10 <<  4) | (p11 <<  5) | (p12 <<  6) | (p13 <<  7)
+        | (p20 <<  8) | (p21 <<  9) | (p22 << 10) | (p23 << 11)
+        | (p30 << 12) | (p31 << 13) | (p32 << 14) | (p33 << 15)
         ;
         
     uint32_t runRow = startRunIndices[rowIdx];
@@ -517,10 +492,8 @@ kernel void combine4x2(
 
     // Find pairwise relationships between runs.
     // e.g. if `bTailForAHead[3] = 4`, run a[3]'s head matches run b[4]'s tail. 
-    int8_t bTailForAHead[subTableWidth];
-    int8_t bHeadForATail[subTableWidth];
-    int8_t aTailForBHead[subTableWidth];
-    int8_t aHeadForBTail[subTableWidth];
+    int8_t bTailForAHead[subTableWidth], bHeadForATail[subTableWidth];
+    int8_t aTailForBHead[subTableWidth], aHeadForBTail[subTableWidth];
     for (size_t i = 0; i < subTableWidth; i++) {
         bTailForAHead[i] = -1;
         bHeadForATail[i] = -1;
@@ -560,12 +533,9 @@ kernel void combine4x2(
 
     // Find starter runs.
     // We increment count as we append, and increment next as we consume.
-    int8_t aStarters[subTableWidth];
-    int8_t aStarterCount = 0;
-    int8_t aStarterNext = 0;
-    int8_t bStarters[subTableWidth];
-    int8_t bStarterCount = 0;
-    int8_t bStarterNext = 0;
+    int8_t aStarters[subTableWidth], bStarters[subTableWidth];
+    int8_t aStarterCount = 0,        bStarterCount = 0;
+    int8_t aStarterNext = 0,         bStarterNext = 0;
     
     for (size_t offset = 0; offset < subTableWidth; offset++) {
         // Find valid runs that don't have tails.
@@ -583,8 +553,7 @@ kernel void combine4x2(
     }
 
     // Ignore invalid runs.
-    bool aDone[subTableWidth];
-    bool bDone[subTableWidth];
+    bool aDone[subTableWidth], bDone[subTableWidth];
     for (size_t offset = 0; offset < subTableWidth; offset++) {
         aDone[offset] = runs[aBase + offset].oldHead < 0;
         bDone[offset] = runs[bBase + offset].oldHead < 0;
