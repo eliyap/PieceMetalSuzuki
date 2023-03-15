@@ -406,6 +406,7 @@ internal func applyMetalSuzuki_LUT(
                     * Hence, +1 iteration.
                     */
                     var newRun: Run = .invalid
+                    var run: Run = .invalid
                     var isNewSequence: Bool = false
                     var newBase = aBase // Where points are counted from.
                     for _ in 0..<(PatternSize.w2h2.tableWidth + PatternSize.w2h2.tableWidth + 1) {
@@ -428,19 +429,19 @@ internal func applyMetalSuzuki_LUT(
                             
                             if aOffset < 0 { continue }
                             
-                            let aRun = runsFilled.array[aBase + aOffset]
-                            for i in aRun.oldTail..<aRun.oldHead { // Copy points.
+                            run = runsFilled.array[aBase + aOffset]
+                            for i in run.oldTail..<run.oldHead { // Copy points.
                                 newPoints.append(pointsFilled.array[Int(i)])
                             }
                             
                             if isNewSequence { // Start new run.
                                 newRun.oldTail = Int32(newBase)
                                 newRun.oldHead = Int32(newBase)
-                                newRun.tailTriadFrom = aRun.tailTriadFrom
+                                newRun.tailTriadFrom = run.tailTriadFrom
                             }
-                            newRun.headTriadTo = aRun.headTriadTo
-                            newRun.oldHead += aRun.oldHead - aRun.oldTail
-                            newBase += Int(aRun.oldHead - aRun.oldTail)
+                            newRun.headTriadTo = run.headTriadTo
+                            newRun.oldHead += run.oldHead - run.oldTail
+                            newBase += Int(run.oldHead - run.oldTail)
                             
                             nextOffset = bTailForAHead[aOffset]
                             aDone[aOffset] = true
@@ -462,20 +463,20 @@ internal func applyMetalSuzuki_LUT(
                             
                             if bOffset < 0 { continue }
                             
-                            let bRun = runsFilled.array[bBase + bOffset]
-                            for i in bRun.oldTail..<bRun.oldHead { // Copy points.
+                            run = runsFilled.array[bBase + bOffset]
+                            for i in run.oldTail..<run.oldHead { // Copy points.
                                 newPoints.append(pointsFilled.array[Int(i)])
                             }
                             
                             if isNewSequence { // Start new run.
                                 newRun.oldTail = Int32(newBase)
                                 newRun.oldHead = Int32(newBase)
-                                newRun.tailTriadFrom = bRun.tailTriadFrom
+                                newRun.tailTriadFrom = run.tailTriadFrom
                             }
 
-                            newRun.headTriadTo = bRun.headTriadTo
-                            newRun.oldHead += bRun.oldHead - bRun.oldTail
-                            newBase += Int(bRun.oldHead - bRun.oldTail)
+                            newRun.headTriadTo = run.headTriadTo
+                            newRun.oldHead += run.oldHead - run.oldTail
+                            newBase += Int(run.oldHead - run.oldTail)
                             
                             nextOffset = aTailForBHead[bOffset]
                             bDone[bOffset] = true
