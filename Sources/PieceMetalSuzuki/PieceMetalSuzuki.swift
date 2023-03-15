@@ -406,82 +406,71 @@ internal func applyMetalSuzuki_LUT(
                     * Hence, +1 iteration.
                     */
                     var newRun: Run = .invalid
-                    var run: Run = .invalid
                     var isNewSequence: Bool = false
                     var newBase = aBase // Where points are counted from.
                     for _ in 0..<(PatternSize.w2h2.tableWidth + PatternSize.w2h2.tableWidth + 1) {
                         isA = !isA
+                        
+                        var currRun: Run = .invalid
+                        var currOffset = -1 // Find next offset.
+                        
                         if isA {
-                            var aOffset = -1 // Find next a offset.
-                            
                             if nextOffset >= 0 {
-                                aOffset = nextOffset
+                                currOffset = nextOffset
                                 isNewSequence = false
                             } else { // Find a run that is not done and doesn't have a tail.
                                 for offset in 0..<PatternSize.w2h2.tableWidth {
                                     if !(aDone[offset]) && (bHeadForATail[offset] < 0) {
-                                        aOffset = offset
+                                        currOffset = offset
                                         isNewSequence = true
                                         break
                                     }
                                 }
                             }
                             
-                            if aOffset < 0 { continue }
+                            if currOffset < 0 { continue }
                             
-                            run = runsFilled.array[aBase + aOffset]
-                            for i in run.oldTail..<run.oldHead { // Copy points.
-                                newPoints.append(pointsFilled.array[Int(i)])
-                            }
-                            
-                            if isNewSequence { // Start new run.
-                                newRun.oldTail = Int32(newBase)
-                                newRun.oldHead = Int32(newBase)
-                                newRun.tailTriadFrom = run.tailTriadFrom
-                            }
-                            newRun.headTriadTo = run.headTriadTo
-                            newRun.oldHead += run.oldHead - run.oldTail
-                            newBase += Int(run.oldHead - run.oldTail)
-                            
-                            nextOffset = bTailForAHead[aOffset]
-                            aDone[aOffset] = true
+                            currRun = runsFilled.array[aBase + currOffset]
                         } else {
-                            var bOffset = -1 // Find next b offset.
-                            
                             if nextOffset >= 0 {
-                                bOffset = nextOffset
+                                currOffset = nextOffset
                                 isNewSequence = false
                             } else { // Find a run that is not done and doesn't have a tail.
                                 for offset in 0..<PatternSize.w2h2.tableWidth {
                                     if !(bDone[offset]) && (aHeadForBTail[offset] < 0) {
-                                        bOffset = offset
+                                        currOffset = offset
                                         isNewSequence = true
                                         break
                                     }
                                 }
                             }
                             
-                            if bOffset < 0 { continue }
+                            if currOffset < 0 { continue }
                             
-                            run = runsFilled.array[bBase + bOffset]
-                            for i in run.oldTail..<run.oldHead { // Copy points.
-                                newPoints.append(pointsFilled.array[Int(i)])
-                            }
-                            
-                            if isNewSequence { // Start new run.
-                                newRun.oldTail = Int32(newBase)
-                                newRun.oldHead = Int32(newBase)
-                                newRun.tailTriadFrom = run.tailTriadFrom
-                            }
-
-                            newRun.headTriadTo = run.headTriadTo
-                            newRun.oldHead += run.oldHead - run.oldTail
-                            newBase += Int(run.oldHead - run.oldTail)
-                            
-                            nextOffset = aTailForBHead[bOffset]
-                            bDone[bOffset] = true
+                            currRun = runsFilled.array[bBase + currOffset]
                         }
+                        
+                        for i in currRun.oldTail..<currRun.oldHead { // Copy points.
+                            newPoints.append(pointsFilled.array[Int(i)])
+                        }
+                        
+                        if isNewSequence { // Start new run.
+                            newRun.oldTail = Int32(newBase)
+                            newRun.oldHead = Int32(newBase)
+                            newRun.tailTriadFrom = currRun.tailTriadFrom
+                        }
+                        newRun.headTriadTo = currRun.headTriadTo
+                        newRun.oldHead += currRun.oldHead - currRun.oldTail
+                        newBase += Int(currRun.oldHead - currRun.oldTail)
+                        
 
+                        if isA {
+                            nextOffset = bTailForAHead[currOffset]
+                            aDone[currOffset] = true
+                        } else {
+                            nextOffset = aTailForBHead[currOffset]
+                            bDone[currOffset] = true
+                        }
                         if (nextOffset < 0) { // End of sequence.
                             newRuns.append(newRun)
                         }
