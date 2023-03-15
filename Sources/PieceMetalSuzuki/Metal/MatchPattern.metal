@@ -307,8 +307,8 @@ kernel void matchPatterns4x2(
     const uint8_t subTableWidth = subCoreWidth * subCoreHeight * pointsPerPixel;
     
     // Position in the texture.
-    const uint32_t texX = gid.x;
-    const uint32_t texY = gid.y;
+    const uint32_t texX = gid.x * subCoreWidth;
+    const uint32_t texY = gid.y * subCoreHeight;
     const uint32_t texWidth = tex.get_width();
     const uint32_t texHeight = tex.get_height();
     const uint32_t roundWidth = roundedUp(texWidth, coreWidth);
@@ -316,7 +316,7 @@ kernel void matchPatterns4x2(
 
     // This is the pattern's core's top left pixel.
     // To get the column offset, multiply the pixels to the left by core height.
-    const int32_t idx = ((roundWidth * gid.y) + (gid.x * coreHeight)) * pointsPerPixel;
+    const int32_t idx = ((roundWidth * texY) + (texX * coreHeight)) * pointsPerPixel;
     
     // Define boundaries.
     const uint32_t minCol = 0;
@@ -374,8 +374,8 @@ kernel void matchPatterns4x2(
         StartRun   startRun   = startRuns[runIdx];
         StartPoint startPoint = startPoints[pointIdx];
         
-        points[idx+col].x = gid.x + startPoint.x;
-        points[idx+col].y = gid.y + startPoint.y;
+        points[idx+col].x = texX + startPoint.x;
+        points[idx+col].y = texY + startPoint.y;
         if (startRun.tail != -1) {
             runs[idx+col].oldTail = idx + startRun.tail;
             runs[idx+col].oldHead = idx + startRun.head;
