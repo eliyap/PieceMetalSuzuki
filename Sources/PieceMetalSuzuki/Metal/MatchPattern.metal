@@ -343,3 +343,163 @@ kernel void matchPatterns2x2(
     }
     return;
 }
+
+kernel void matchPatterns4x2(
+    texture2d<half, access::read>  tex               [[ texture(0) ]],
+    device PixelPoint*             points            [[ buffer (0) ]],
+    device Run*                    runs              [[ buffer (1) ]],
+    device const StartRun*         startRuns         [[ buffer (2) ]],
+    device const table_index_t*    startRunIndices   [[ buffer (3) ]],
+    device const StartPoint*       startPoints       [[ buffer (4) ]],
+    device const table_index_t*    startPointIndices [[ buffer (5) ]],
+    uint2                          gid               [[thread_position_in_grid]]
+) {
+    const uint32_t coreWidth = 4;
+    const uint32_t coreHeight = 2;
+    const uint8_t TableWidth = 16;
+    const uint8_t pointsPerPixel = 2;
+    
+    const uint32_t subCoreWidth = 2;
+    const uint32_t subCoreHeight = 2;
+    const uint8_t subTableWidth = 8;
+    
+    const uint32_t texWidth = tex.get_width();
+    const uint32_t texHeight = tex.get_height();
+    const uint32_t roundWidth = roundedUp(texWidth, coreWidth);
+    
+    // This is the pattern's core's top left pixel.
+    // To get the column offset, multiply the pixels to the left by core height.
+    const int32_t idx = ((roundWidth * gid.y) + (gid.x * coreHeight)) * pointsPerPixel;
+    
+    // Don't exit the texture.
+    if ((gid.x >= texWidth) || (gid.y >= texHeight)) {
+        return;
+    }
+    
+    // Skip pixels that aren't the root of the pattern.
+    if ((gid.x % coreWidth) || (gid.y % coreHeight)) {
+        return;
+    }
+    
+    // Setting invalid array indices signals a NULL value.
+    // Set before early exit checks.
+    for (int i = 0; i < TableWidth; i++) {
+        runs[idx+i].oldHead = -1;
+        runs[idx+i].oldTail = -1;
+        runs[idx+i].newHead = -1;
+        runs[idx+i].newTail = -1;
+    }
+    
+    // Define boundaries.
+    const uint32_t minCol = 0;
+    const uint32_t maxCol = tex.get_width() - 1;
+    const uint32_t minRow = 0;
+    const uint32_t maxRow = tex.get_height() - 1;
+    
+    // Find the values in a 2x2 kernel, and its border.
+    //  0123
+    // 0+--+
+    // 1|XX|
+    // 2|XX|
+    // 3+--+
+    uint32_t subX = gid.x;
+    uint32_t subY = gid.y;
+    bool p00 = readPixel(tex, uint2(subX - 1, subY - 1), minCol, maxCol, minRow, maxRow);
+    bool p01 = readPixel(tex, uint2(subX + 0, subY - 1), minCol, maxCol, minRow, maxRow);
+    bool p02 = readPixel(tex, uint2(subX + 1, subY - 1), minCol, maxCol, minRow, maxRow);
+    bool p03 = readPixel(tex, uint2(subX + 2, subY - 1), minCol, maxCol, minRow, maxRow);
+    bool p10 = readPixel(tex, uint2(subX - 1, subY + 0), minCol, maxCol, minRow, maxRow);
+    bool p11 = readPixel(tex, uint2(subX + 0, subY + 0), minCol, maxCol, minRow, maxRow);
+    bool p12 = readPixel(tex, uint2(subX + 1, subY + 0), minCol, maxCol, minRow, maxRow);
+    bool p13 = readPixel(tex, uint2(subX + 2, subY + 0), minCol, maxCol, minRow, maxRow);
+    bool p20 = readPixel(tex, uint2(subX - 1, subY + 1), minCol, maxCol, minRow, maxRow);
+    bool p21 = readPixel(tex, uint2(subX + 0, subY + 1), minCol, maxCol, minRow, maxRow);
+    bool p22 = readPixel(tex, uint2(subX + 1, subY + 1), minCol, maxCol, minRow, maxRow);
+    bool p23 = readPixel(tex, uint2(subX + 2, subY + 1), minCol, maxCol, minRow, maxRow);
+    bool p30 = readPixel(tex, uint2(subX - 1, subY + 2), minCol, maxCol, minRow, maxRow);
+    bool p31 = readPixel(tex, uint2(subX + 0, subY + 2), minCol, maxCol, minRow, maxRow);
+    bool p32 = readPixel(tex, uint2(subX + 1, subY + 2), minCol, maxCol, minRow, maxRow);
+    bool p33 = readPixel(tex, uint2(subX + 2, subY + 2), minCol, maxCol, minRow, maxRow);
+    
+    // Compose the lookup table row address.
+    uint32_t rowIdx = 0
+        | (p00 <<  0) | (p01 <<  1) | (p02 <<  2) | (p03 <<  3)
+        | (p10 <<  4) | (p11 <<  5) | (p12 <<  6) | (p13 <<  7)
+        | (p20 <<  8) | (p21 <<  9) | (p22 << 10) | (p23 << 11)
+        | (p30 << 12) | (p31 << 13) | (p32 << 14) | (p33 << 15)
+        ;
+        
+    uint32_t runRow = startRunIndices[rowIdx];
+    uint32_t pointRow = startPointIndices[rowIdx];
+
+    // Loop over the table's columns.
+    int32_t subBase = idx;
+    for (uint32_t col = 0; col < subTableWidth; col++) {
+        uint32_t runIdx   = runRow   * subTableWidth + col;
+        uint32_t pointIdx = pointRow * subTableWidth + col;
+        
+        struct StartRun   startRun   = startRuns[runIdx];
+        struct StartPoint startPoint = startPoints[pointIdx];
+        
+        points[subBase+col].x = gid.x + startPoint.x;
+        points[subBase+col].y = gid.y + startPoint.y;
+        if (startRun.tail != -1) {
+            runs[subBase+col].oldTail = subBase + startRun.tail;
+            runs[subBase+col].oldHead = subBase + startRun.head;
+            runs[subBase+col].tailTriadFrom = startRun.from;
+            runs[subBase+col].headTriadTo   = startRun.to;
+        }
+    }
+    
+    // ITERATION 2
+    subX = gid.x + subCoreWidth;
+    subY = gid.y;
+    p00 = readPixel(tex, uint2(subX - 1, subY - 1), minCol, maxCol, minRow, maxRow);
+    p01 = readPixel(tex, uint2(subX + 0, subY - 1), minCol, maxCol, minRow, maxRow);
+    p02 = readPixel(tex, uint2(subX + 1, subY - 1), minCol, maxCol, minRow, maxRow);
+    p03 = readPixel(tex, uint2(subX + 2, subY - 1), minCol, maxCol, minRow, maxRow);
+    p10 = readPixel(tex, uint2(subX - 1, subY + 0), minCol, maxCol, minRow, maxRow);
+    p11 = readPixel(tex, uint2(subX + 0, subY + 0), minCol, maxCol, minRow, maxRow);
+    p12 = readPixel(tex, uint2(subX + 1, subY + 0), minCol, maxCol, minRow, maxRow);
+    p13 = readPixel(tex, uint2(subX + 2, subY + 0), minCol, maxCol, minRow, maxRow);
+    p20 = readPixel(tex, uint2(subX - 1, subY + 1), minCol, maxCol, minRow, maxRow);
+    p21 = readPixel(tex, uint2(subX + 0, subY + 1), minCol, maxCol, minRow, maxRow);
+    p22 = readPixel(tex, uint2(subX + 1, subY + 1), minCol, maxCol, minRow, maxRow);
+    p23 = readPixel(tex, uint2(subX + 2, subY + 1), minCol, maxCol, minRow, maxRow);
+    p30 = readPixel(tex, uint2(subX - 1, subY + 2), minCol, maxCol, minRow, maxRow);
+    p31 = readPixel(tex, uint2(subX + 0, subY + 2), minCol, maxCol, minRow, maxRow);
+    p32 = readPixel(tex, uint2(subX + 1, subY + 2), minCol, maxCol, minRow, maxRow);
+    p33 = readPixel(tex, uint2(subX + 2, subY + 2), minCol, maxCol, minRow, maxRow);
+    
+    // Compose the lookup table row address.
+    rowIdx = 0
+        | (p00 <<  0) | (p01 <<  1) | (p02 <<  2) | (p03 <<  3)
+        | (p10 <<  4) | (p11 <<  5) | (p12 <<  6) | (p13 <<  7)
+        | (p20 <<  8) | (p21 <<  9) | (p22 << 10) | (p23 << 11)
+        | (p30 << 12) | (p31 << 13) | (p32 << 14) | (p33 << 15)
+        ;
+    
+    runRow = startRunIndices[rowIdx];
+    pointRow = startPointIndices[rowIdx];
+
+    // Loop over the table's columns.
+    subBase = idx + subTableWidth;
+    for (uint32_t col = 0; col < subTableWidth; col++) {
+        uint32_t runIdx   = runRow   * subTableWidth + col;
+        uint32_t pointIdx = pointRow * subTableWidth + col;
+        
+        struct StartRun   startRun   = startRuns[runIdx];
+        struct StartPoint startPoint = startPoints[pointIdx];
+        
+        points[subBase+col].x = gid.x + startPoint.x + subCoreWidth;
+        points[subBase+col].y = gid.y + startPoint.y;
+        if (startRun.tail != -1) {
+            runs[subBase+col].oldTail = subBase + startRun.tail;
+            runs[subBase+col].oldHead = subBase + startRun.head;
+            runs[subBase+col].tailTriadFrom = startRun.from;
+            runs[subBase+col].headTriadTo   = startRun.to;
+        }
+    }
+    
+    return;
+}

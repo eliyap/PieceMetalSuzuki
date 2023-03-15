@@ -325,7 +325,196 @@ internal func applyMetalSuzuki_LUT(
             assert(false, "Failed to run chain start kernel.")
             return nil
         }
+        
+        if patternSize == .w4h2 {
+            // TODO
+            let tableWidth2x2 = 8
+            for y in 0..<texture.height {
+                for x in 0..<texture.width {
+                    if (y % 2) != 0 || (x % 4) != 0 {
+                        continue
+                    }
+                    
+                    let roundWidth: Int = texture.width.roundedUp(toClosest: 2)
+                    let aBase: Int = ((roundWidth * y) + (x * Int(PatternSize.w2h2.coreSize.width))) * Int(PatternSize.w2h2.pointsPerPixel)
+                    let bBase = aBase + tableWidth2x2
+                    
+//                    if (x + 2) >= texture.width {
+//                        // Runs and points are fine where they are.
+//                        // But need to pad zeroed memory with invalid runs.
+//                        for bOffset in 0..<PatternSize.w2h2.tableWidth {
+//                            runsFilled.array[bBase + bOffset].oldHead = -1
+//                            runsFilled.array[bBase + bOffset].oldTail = -1
+//                        }
+//                        continue
+//                    }
+                    
+                    // Find pairwise relationships between runs.
+                    // e.g. if `bTailForAHead[3] = 4`, run a[3]'s head matches run b[4]'s tail.
+                    var bTailForAHead: [Int] = [-1, -1, -1, -1, -1, -1, -1, -1];
+                    var bHeadForATail: [Int] = [-1, -1, -1, -1, -1, -1, -1, -1];
+                    var aTailForBHead: [Int] = [-1, -1, -1, -1, -1, -1, -1, -1];
+                    var aHeadForBTail: [Int] = [-1, -1, -1, -1, -1, -1, -1, -1];
+                    
+                    for aOffset in 0..<PatternSize.w2h2.tableWidth {
+                        let aRun = runsFilled.array[aBase + aOffset]
+                        for bOffset in 0..<PatternSize.w2h2.tableWidth {
+                            let bRun = runsFilled.array[bBase + bOffset]
+                            if (aRun.oldHead >= 0) && (bRun.oldHead >= 0) {
+                                let aTail = pointsFilled.array[Int(aRun.oldTail)]
+                                let aHead = pointsFilled.array[Int(aRun.oldHead - 1)]
+                                let bTail = pointsFilled.array[Int(bRun.oldTail)]
+                                let bHead = pointsFilled.array[Int(bRun.oldHead - 1)]
+
+                                if isInverse(a: aRun.tailTriadFrom, b: bRun.headTriadTo) && adjust(point: aTail, dxn: aRun.tailTriadFrom) == bHead {
+                                    // B head -> A tail
+                                    aTailForBHead[Int(bOffset)] = aOffset
+                                    bHeadForATail[Int(aOffset)] = bOffset
+                                } else if isInverse(a: aRun.headTriadTo, b: bRun.tailTriadFrom) && adjust(point: aHead, dxn: aRun.headTriadTo) == bTail {
+                                    // A head -> B tail
+                                    bTailForAHead[Int(aOffset)] = bOffset
+                                    aHeadForBTail[Int(bOffset)] = aOffset
+                                }
+                            }
+                        }
+                    }
+
+                    var aDone: [Bool] = []
+                    var bDone: [Bool] = []
+
+                    for offset in 0..<PatternSize.w2h2.tableWidth {
+                        aDone.append(runsFilled.array[aBase + offset].oldHead < 0)
+                        bDone.append(runsFilled.array[bBase + offset].oldHead < 0)
+                    }
+
+                    var newPoints: [PixelPoint] = []
+                    var newRuns: [Run] = []
+
+                    var isA = true
+                    var nextOffset = -1
+
+                    /**
+                    * Let a "sequence" of runs be some runs joined head-to-tail.
+                    * Notice that they must follow a[?] -> b[?] -> a[?] -> b[?] -> ...
+                    *
+                    * Closed runs in a 4x2 region are irrevelant to our larger task, discard them.
+                    * Non-closed run sequences must begin with a run which can't find its tail.
+                    * - a sequence can be as short as 1 run
+                    * - a sequence ends when the run can't find its head
+                    * 
+                    * Goal: each iteration, either 
+                    * - start a new sequence (beginning with a tail-less run), or 
+                    * - continue an existing sequence (by adding the head for the previous run).
+                    *
+                    * Iteration Count: Each cycle should start or continue a run.
+                    * However, if all sequences start in A, and the first iteration checks B, we'd miss one run.
+                    * Hence, +1 iteration.
+                    */
+                    var newRun: Run = .invalid
+                    var isNewSequence: Bool = false
+                    var newBase = aBase // Where points are counted from.
+                    for _ in 0..<(PatternSize.w2h2.tableWidth + PatternSize.w2h2.tableWidth + 1) {
+                        isA = !isA
+                        if isA {
+                            var aOffset = -1 // Find next a offset.
+                            
+                            if nextOffset >= 0 {
+                                aOffset = nextOffset
+                                isNewSequence = false
+                            } else { // Find a run that is not done and doesn't have a tail.
+                                for offset in 0..<PatternSize.w2h2.tableWidth {
+                                    if !(aDone[offset]) && (bHeadForATail[offset] < 0) {
+                                        aOffset = offset
+                                        isNewSequence = true
+                                        break
+                                    }
+                                }
+                            }
+                            
+                            if aOffset < 0 { continue }
+                            
+                            let aRun = runsFilled.array[aBase + aOffset]
+                            for i in aRun.oldTail..<aRun.oldHead { // Copy points.
+                                newPoints.append(pointsFilled.array[Int(i)])
+                            }
+                            
+                            if isNewSequence { // Start new run.
+                                newRun.oldTail = Int32(newBase)
+                                newRun.oldHead = Int32(newBase)
+                                newRun.tailTriadFrom = aRun.tailTriadFrom
+                            }
+                            newRun.headTriadTo = aRun.headTriadTo
+                            newRun.oldHead += aRun.oldHead - aRun.oldTail
+                            newBase += Int(aRun.oldHead - aRun.oldTail)
+                            
+                            nextOffset = bTailForAHead[aOffset]
+                            aDone[aOffset] = true
+                        } else {
+                            var bOffset = -1 // Find next b offset.
+                            
+                            if nextOffset >= 0 {
+                                bOffset = nextOffset
+                                isNewSequence = false
+                            } else { // Find a run that is not done and doesn't have a tail.
+                                for offset in 0..<PatternSize.w2h2.tableWidth {
+                                    if !(bDone[offset]) && (aHeadForBTail[offset] < 0) {
+                                        bOffset = offset
+                                        isNewSequence = true
+                                        break
+                                    }
+                                }
+                            }
+                            
+                            if bOffset < 0 { continue }
+                            
+                            let bRun = runsFilled.array[bBase + bOffset]
+                            for i in bRun.oldTail..<bRun.oldHead { // Copy points.
+                                newPoints.append(pointsFilled.array[Int(i)])
+                            }
+                            
+                            if isNewSequence { // Start new run.
+                                newRun.oldTail = Int32(newBase)
+                                newRun.oldHead = Int32(newBase)
+                                newRun.tailTriadFrom = bRun.tailTriadFrom
+                            }
+
+                            newRun.headTriadTo = bRun.headTriadTo
+                            newRun.oldHead += bRun.oldHead - bRun.oldTail
+                            newBase += Int(bRun.oldHead - bRun.oldTail)
+                            
+                            nextOffset = aTailForBHead[bOffset]
+                            bDone[bOffset] = true
+                        }
+
+                        if (nextOffset < 0) { // End of sequence.
+                            newRuns.append(newRun)
+                        }
+                    }
+                    
+                    // Copy points.
+                    for pointOffset in 0..<newPoints.count {
+                        pointsFilled.array[aBase + pointOffset] = newPoints[pointOffset]
+                    }
+                    
+                    // Write new runs.
+                    for runOffset in 0..<(2 * PatternSize.w2h2.tableWidth) {
+                        if runOffset < newRuns.count {
+                            runsFilled.array[aBase + runOffset] = newRuns[runOffset]
+                        } else {
+                            runsFilled.array[aBase + runOffset].oldHead = -1
+                        }
+                    }
+                }
+            }
             
+            debugPrint("[Combined Points]")
+            for idx in 0..<runsFilled.count {
+                let run = runsFilled.array[idx]
+                guard run.isValid else { continue}
+                print(idx, run, (run.oldTail..<run.oldHead).map { pointsFilled.array[Int($0)] })
+            }
+        }
+        
         var grid = Grid(
             imageSize: PixelSize(width: UInt32(texture.width), height: UInt32(texture.height)),
             regions: SuzukiProfiler.time(.initRegions) {
@@ -448,4 +637,50 @@ internal func createChainStarters(
 
         return true
     }
+}
+
+enum MetalDirection: UInt8 { 
+    case closed      = 0 /// Indicates a closed border.
+    case up          = 1
+    case topRight    = 2
+    case right       = 3
+    case bottomRight = 4
+    case down        = 5
+    case bottomLeft  = 6
+    case left        = 7
+    case topLeft     = 8
+}
+
+func adjust(point: PixelPoint, dxn: MetalDirection.RawValue) -> PixelPoint {
+    switch dxn {
+    case MetalDirection.up.rawValue:
+        return PixelPoint(x: point.x + 0, y: point.y - 1)
+    case MetalDirection.topRight.rawValue:
+        return PixelPoint(x: point.x + 1, y: point.y - 1)
+    case MetalDirection.right.rawValue:
+        return PixelPoint(x: point.x + 1, y: point.y + 0)
+    case MetalDirection.bottomRight.rawValue:
+        return PixelPoint(x: point.x + 1, y: point.y + 1)
+    case MetalDirection.down.rawValue:
+        return PixelPoint(x: point.x + 0, y: point.y + 1)
+    case MetalDirection.bottomLeft.rawValue:
+        return PixelPoint(x: point.x - 1, y: point.y + 1)
+    case MetalDirection.left.rawValue:
+        return PixelPoint(x: point.x - 1, y: point.y + 0)
+    case MetalDirection.topLeft.rawValue:
+        return PixelPoint(x: point.x - 1, y: point.y - 1)  
+    default:
+        return point
+    }
+}
+
+func isInverse(a: UInt8, b: UInt8) -> Bool {
+    if ((a == 0) || (b == 0)) {
+        return false;
+    }
+    let aInv = (a + 4) > 8
+        ? (a - 4)
+        : (a + 4)
+        ;
+    return aInv == b;
 }
