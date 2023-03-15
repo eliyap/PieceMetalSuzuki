@@ -12,7 +12,7 @@ internal final class Buffer<Element> {
     /// Size of the buffer in bytes.
     public let size: Int
         
-    public let array: UnsafeMutablePointer<Element>
+    public let array: UnsafeMutableBufferPointer<Element>
     public let mtlBuffer: MTLBuffer
     
     public init?(device: MTLDevice, count: Int, token: AutoReleasePoolToken) {
@@ -32,7 +32,10 @@ internal final class Buffer<Element> {
          - the `MTLBuffer` has no remaining references.
          - `.setPurgeableState(.empty)` is called.
          */
-        self.array = buffer.contents().bindMemory(to: Element.self, capacity: count)
+        self.array = UnsafeMutableBufferPointer<Element>(
+            start: buffer.contents().bindMemory(to: Element.self, capacity: count),
+            count: count
+        )
     }
     
     deinit {

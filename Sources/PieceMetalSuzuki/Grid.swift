@@ -29,10 +29,10 @@ struct Grid {
     }
     
     mutating func combineAll(
-        pointsFilled: Buffer<PixelPoint>,
-        runsFilled: Buffer<Run>,
-        pointsUnfilled: Buffer<PixelPoint>,
-        runsUnfilled: Buffer<Run>
+        pointsFilled: UnsafeMutableBufferPointer<PixelPoint>,
+        runsFilled: UnsafeMutableBufferPointer<Run>,
+        pointsUnfilled: UnsafeMutableBufferPointer<PixelPoint>,
+        runsUnfilled: UnsafeMutableBufferPointer<Run>
     ) -> Void {
         var dxn = ReduceDirection.vertical
         let pointsHorizontal = pointsFilled
@@ -40,10 +40,10 @@ struct Grid {
         let pointsVertical = pointsUnfilled
         let runsVertical = runsUnfilled
         
-        var srcPts: UnsafeMutablePointer<PixelPoint>
-        var dstPts: UnsafeMutablePointer<PixelPoint>
-        var srcRuns: UnsafeMutablePointer<Run>
-        var dstRuns: UnsafeMutablePointer<Run>
+        var srcPts: UnsafeMutableBufferPointer<PixelPoint>
+        var dstPts: UnsafeMutableBufferPointer<PixelPoint>
+        var srcRuns: UnsafeMutableBufferPointer<Run>
+        var dstRuns: UnsafeMutableBufferPointer<Run>
         
         var iteration = 0
         while (regions.count > 1) || (regions[0].count > 1) {
@@ -54,8 +54,8 @@ struct Grid {
             
             switch dxn {
             case .horizontal:
-                (srcRuns, dstRuns) = (runsVertical.array, runsHorizontal.array)
-                (srcPts, dstPts) = (pointsVertical.array, pointsHorizontal.array)
+                (srcRuns, dstRuns) = (runsVertical, runsHorizontal)
+                (srcPts, dstPts) = (pointsVertical, pointsHorizontal)
 
                 if numCols.isMultiple(of: 2) == false {
                     SuzukiProfiler.time(.trailingCopy) {
@@ -118,8 +118,8 @@ struct Grid {
                 gridSize = newGridSize
             
             case .vertical:
-                (srcRuns, dstRuns) = (runsHorizontal.array, runsVertical.array)
-                (srcPts, dstPts) = (pointsHorizontal.array, pointsVertical.array)
+                (srcRuns, dstRuns) = (runsHorizontal, runsVertical)
+                (srcPts, dstPts) = (pointsHorizontal, pointsVertical)
 
                 if numRows.isMultiple(of: 2) == false {
                     SuzukiProfiler.time(.trailingCopy) {
@@ -197,21 +197,21 @@ struct Grid {
         if dxn == .horizontal {
             /// Last iteration was vertical, then flipped.
             /// Move data back to "filled" buffers.
-            memcpy(pointsVertical.array, pointsHorizontal.array, MemoryLayout<PixelPoint>.stride * pointsVertical.count)
-            memcpy(runsVertical.array, runsHorizontal.array, MemoryLayout<Run>.stride * runsVertical.count)
+            memcpy(pointsVertical.baseAddress, pointsHorizontal.baseAddress, MemoryLayout<PixelPoint>.stride * pointsVertical.count)
+            memcpy(runsVertical.baseAddress, runsHorizontal.baseAddress, MemoryLayout<Run>.stride * runsVertical.count)
         }
         
         /// Return final results.
-        let pointBuffer: UnsafeMutablePointer<PixelPoint>
-        let runBuffer: UnsafeMutablePointer<Run>
+        let pointBuffer: UnsafeMutableBufferPointer<PixelPoint>
+        let runBuffer: UnsafeMutableBufferPointer<Run>
         
         switch dxn {
         case .horizontal: /// Last iteration was vertical.
-            pointBuffer = pointsVertical.array
-            runBuffer = runsVertical.array
+            pointBuffer = pointsVertical
+            runBuffer = runsVertical
         case .vertical: /// Last iteration was horizontal.
-            pointBuffer = pointsHorizontal.array
-            runBuffer = runsHorizontal.array
+            pointBuffer = pointsHorizontal
+            runBuffer = runsHorizontal
         }
         
         #if DEBUG
@@ -269,8 +269,8 @@ struct Grid {
     func combine(
         a: Region, b: Region,
         dxn: ReduceDirection, newGridSize: PixelSize,
-        srcPts: UnsafeMutablePointer<PixelPoint>, srcRuns: UnsafeMutablePointer<Run>,
-        dstRuns: UnsafeMutablePointer<Run>
+        srcPts: UnsafeMutableBufferPointer<PixelPoint>, srcRuns: UnsafeMutableBufferPointer<Run>,
+        dstRuns: UnsafeMutableBufferPointer<Run>
     ) -> [Int] {
         var combiner = Combiner(a: a, b: b, dxn: dxn, newGridSize: newGridSize, srcPts: srcPts, srcRuns: srcRuns, dstRuns: dstRuns, grid: self)
         combiner.work()
@@ -307,17 +307,17 @@ struct Grid {
         var nextPointOffset = Int32.zero
         var nextRunOffset = Int.zero
         
-        let srcPts: UnsafeMutablePointer<PixelPoint>
-        let srcRuns: UnsafeMutablePointer<Run>
-        let dstRuns: UnsafeMutablePointer<Run>
+        let srcPts: UnsafeMutableBufferPointer<PixelPoint>
+        let srcRuns: UnsafeMutableBufferPointer<Run>
+        let dstRuns: UnsafeMutableBufferPointer<Run>
         
         let pointsPerPixel: UInt32
         
         init(
             a: Region, b: Region,
             dxn: ReduceDirection, newGridSize: PixelSize,
-            srcPts: UnsafeMutablePointer<PixelPoint>, srcRuns: UnsafeMutablePointer<Run>,
-            dstRuns: UnsafeMutablePointer<Run>,
+            srcPts: UnsafeMutableBufferPointer<PixelPoint>, srcRuns: UnsafeMutableBufferPointer<Run>,
+            dstRuns: UnsafeMutableBufferPointer<Run>,
             grid: Grid
         ) {
             self.srcPts = srcPts
@@ -573,10 +573,10 @@ func baseOffset(grid: Grid, region: Region) -> UInt32 {
 extension Grid {
     mutating func combineAllForLUT(
         coreSize: PixelSize,
-        pointsFilled: Buffer<PixelPoint>,
-        runsFilled: Buffer<Run>,
-        pointsUnfilled: Buffer<PixelPoint>,
-        runsUnfilled: Buffer<Run>
+        pointsFilled: UnsafeMutableBufferPointer<PixelPoint>,
+        runsFilled: UnsafeMutableBufferPointer<Run>,
+        pointsUnfilled: UnsafeMutableBufferPointer<PixelPoint>,
+        runsUnfilled: UnsafeMutableBufferPointer<Run>
     ) -> (Region, [Run], [PixelPoint]) {
         /// First iteration will combine regions with their horizontal neighbors.
         /// Hence we copy from the "vertical" buffers to the "horizontal" buffers.
@@ -586,10 +586,10 @@ extension Grid {
         let pointsHorizontal = pointsUnfilled
         let runsHorizontal = runsUnfilled
         
-        var srcPts: UnsafeMutablePointer<PixelPoint>
-        var dstPts: UnsafeMutablePointer<PixelPoint>
-        var srcRuns: UnsafeMutablePointer<Run>
-        var dstRuns: UnsafeMutablePointer<Run>
+        var srcPts: UnsafeMutableBufferPointer<PixelPoint>
+        var dstPts: UnsafeMutableBufferPointer<PixelPoint>
+        var srcRuns: UnsafeMutableBufferPointer<Run>
+        var dstRuns: UnsafeMutableBufferPointer<Run>
         
         while (gridSize != coreSize) {
             
@@ -598,8 +598,8 @@ extension Grid {
             
             switch dxn {
             case .horizontal:
-                (srcRuns, dstRuns) = (runsVertical.array, runsHorizontal.array)
-                (srcPts, dstPts) = (pointsVertical.array, pointsHorizontal.array)
+                (srcRuns, dstRuns) = (runsVertical, runsHorizontal)
+                (srcPts, dstPts) = (pointsVertical, pointsHorizontal)
 
                 if numCols.isMultiple(of: 2) == false {
                     /// Last of an odd number of columns cannot be combined with anything.
@@ -653,8 +653,8 @@ extension Grid {
                 gridSize = newGridSize
             
             case .vertical:
-                (srcRuns, dstRuns) = (runsHorizontal.array, runsVertical.array)
-                (srcPts, dstPts) = (pointsHorizontal.array, pointsVertical.array)
+                (srcRuns, dstRuns) = (runsHorizontal, runsVertical)
+                (srcPts, dstPts) = (pointsHorizontal, pointsVertical)
 
                 if numRows.isMultiple(of: 2) == false {
                     /// Last of an odd number of rows cannot be combined with anything.
@@ -714,16 +714,16 @@ extension Grid {
         }
         
         /// Return final results.
-        let pointBuffer: UnsafeMutablePointer<PixelPoint>
-        let runBuffer: UnsafeMutablePointer<Run>
+        let pointBuffer: UnsafeMutableBufferPointer<PixelPoint>
+        let runBuffer: UnsafeMutableBufferPointer<Run>
         
         switch dxn {
         case .horizontal: /// Last iteration was vertical.
-            pointBuffer = pointsVertical.array
-            runBuffer = runsVertical.array
+            pointBuffer = pointsVertical
+            runBuffer = runsVertical
         case .vertical: /// Last iteration was horizontal.
-            pointBuffer = pointsHorizontal.array
-            runBuffer = runsHorizontal.array
+            pointBuffer = pointsHorizontal
+            runBuffer = runsHorizontal
         }
         
         #if DEBUG

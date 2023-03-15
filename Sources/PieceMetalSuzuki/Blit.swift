@@ -10,7 +10,7 @@ import Metal
 
 func blit(
     device: MTLDevice, commandQueue: MTLCommandQueue,
-    blitRunIndices: [Int], srcRuns: UnsafeMutablePointer<Run>,
+    blitRunIndices: [Int], srcRuns: UnsafeMutableBufferPointer<Run>,
     srcPts: Buffer<PixelPoint>, dstPts: Buffer<PixelPoint>,
     cpu: Bool = true
 ) -> Bool {
@@ -48,8 +48,8 @@ func blit(
 /// For each source run, copy its points to the destination.
 func cpuBlit(
     runIndices: [Int],
-    srcPts: UnsafeMutablePointer<PixelPoint>, srcRuns: UnsafeMutablePointer<Run>,
-    dstPts: UnsafeMutablePointer<PixelPoint>
+    srcPts: UnsafeMutableBufferPointer<PixelPoint>, srcRuns: UnsafeMutableBufferPointer<Run>,
+    dstPts: UnsafeMutableBufferPointer<PixelPoint>
 ) -> Void {
     let work = { (runIdxIdx: Int) in
         let runIdx = runIndices[runIdxIdx]
@@ -58,8 +58,8 @@ func cpuBlit(
         debugPrint("[BLIT] \(run)")
         #endif
         memmove(
-            dstPts.advanced(by: Int(run.newTail)),
-            srcPts.advanced(by: Int(run.oldTail)),
+            dstPts.baseAddress!.advanced(by: Int(run.newTail)),
+            srcPts.baseAddress!.advanced(by: Int(run.oldTail)),
             MemoryLayout<PixelPoint>.stride * Int(run.oldHead - run.oldTail)
         )
     }

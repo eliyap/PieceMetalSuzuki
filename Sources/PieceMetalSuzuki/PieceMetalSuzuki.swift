@@ -289,10 +289,10 @@ internal func applyMetalSuzuki(
         
         SuzukiProfiler.time(.combineAll) {
             grid.combineAll(
-                pointsFilled: pointsFilled,
-                runsFilled: runsFilled,
-                pointsUnfilled: pointsUnfilled,
-                runsUnfilled: runsUnfilled
+                pointsFilled: pointsFilled.array,
+                runsFilled: runsFilled.array,
+                pointsUnfilled: pointsUnfilled.array,
+                runsUnfilled: runsUnfilled.array
             )
         }
         
@@ -342,10 +342,10 @@ internal func applyMetalSuzuki_LUT(
         
         SuzukiProfiler.time(.combineAll) {
             grid.combineAll(
-                pointsFilled: pointsFilled,
-                runsFilled: runsFilled,
-                pointsUnfilled: pointsUnfilled,
-                runsUnfilled: runsUnfilled
+                pointsFilled: pointsFilled.array,
+                runsFilled: runsFilled.array,
+                pointsUnfilled: pointsUnfilled.array,
+                runsUnfilled: runsUnfilled.array
             )
         }
         
@@ -361,7 +361,7 @@ internal func applyMetalSuzuki_LUT(
             let points = [PixelPoint](unsafeUninitializedCapacity: pointCount) { ptr, count in
                 memmove(
                     ptr.baseAddress,
-                    pointsFilled.array.advanced(by: Int(run.oldTail)),
+                    pointsFilled.array.baseAddress!.advanced(by: Int(run.oldTail)),
                     pointCount * MemoryLayout<PixelPoint>.stride
                 )
                 count = pointCount
@@ -427,13 +427,13 @@ internal func createChainStarters(
             assertionFailure("Failed to create LUT buffer")
             return false
         }
-        memcpy(runLutBuffer.array, Run.LUT, MemoryLayout<Run>.stride * Run.LUT.count)
+        memcpy(runLutBuffer.array.baseAddress, Run.LUT, MemoryLayout<Run>.stride * Run.LUT.count)
 
         guard let pointLutBuffer = Buffer<PixelPoint>.init(device: device, count: PixelPoint.LUT.count, token: releaseToken) else {
             assertionFailure("Failed to create LUT buffer")
             return false
         }
-        memcpy(pointLutBuffer.array, PixelPoint.LUT, MemoryLayout<PixelPoint>.stride * PixelPoint.LUT.count)
+        memcpy(pointLutBuffer.array.baseAddress, PixelPoint.LUT, MemoryLayout<PixelPoint>.stride * PixelPoint.LUT.count)
 
         cmdEncoder.setBuffer(pointBuffer.mtlBuffer, offset: 0, index: 0)
         cmdEncoder.setBuffer(runBuffer.mtlBuffer, offset: 0, index: 1)

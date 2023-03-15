@@ -156,10 +156,10 @@ internal final class LookupTableBuilder {
         
         let (region, runs, points) = grid.combineAllForLUT(
             coreSize: patternSize.coreSize,
-            pointsFilled: pointsFilled,
-            runsFilled: runsFilled,
-            pointsUnfilled: pointsUnfilled,
-            runsUnfilled: runsUnfilled
+            pointsFilled: pointsFilled.array,
+            runsFilled: runsFilled.array,
+            pointsUnfilled: pointsUnfilled.array,
+            runsUnfilled: runsUnfilled.array
         )
         
         assert(runs.count <= patternSize.tableWidth)
