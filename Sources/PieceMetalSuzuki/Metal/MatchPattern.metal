@@ -462,6 +462,8 @@ kernel void combine4x2(
     texture2d<half, access::read>  tex               [[ texture(0) ]],
     device PixelPoint*             points            [[ buffer (0) ]],
     device Run*                    runs              [[ buffer (1) ]],
+    device PixelPoint*             pointsOut         [[ buffer (2) ]],
+    device Run*                    runsOut           [[ buffer (3) ]],
     uint2                          gid               [[thread_position_in_grid]]
 ) {
     const uint32_t coreWidth      = 4;

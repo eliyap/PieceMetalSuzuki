@@ -111,7 +111,8 @@ internal func combinePatterns(
     texture: MTLTexture,
     runBuffer: Buffer<Run>,
     pointBuffer: Buffer<PixelPoint>,
-    patternSize: PatternSize
+    patternSize: PatternSize,
+    token: AutoReleasePoolToken
 ) -> Bool {
     guard
         let kernelFunction = loadMetalFunction(filename: "MatchPattern", functionName: "combine\(patternSize.patternCode)", device: device),
@@ -123,12 +124,22 @@ internal func combinePatterns(
         return false
     }
     
+    guard
+        let tempPoints = Buffer<PixelPoint>(device: device, count: pointBuffer.count, token: token),
+        let tempRuns = Buffer<Run>(device: device, count: runBuffer.count, token: token)
+    else {
+        assert(false, "Failed to create buffers.")
+        return false
+    }
+    
     cmdEncoder.label = "Custom Kernel Encoder"
     cmdEncoder.setComputePipelineState(pipelineState)
     cmdEncoder.setTexture(texture, index: 0)
 
     cmdEncoder.setBuffer(pointBuffer.mtlBuffer, offset: 0, index: 0)
     cmdEncoder.setBuffer(runBuffer.mtlBuffer, offset: 0, index: 1)
+    cmdEncoder.setBuffer(tempPoints.mtlBuffer, offset: 0, index: 2)
+    cmdEncoder.setBuffer(tempRuns.mtlBuffer, offset: 0, index: 3)
     
     let (tPerTG, tgPerGrid) = pipelineState.threadgroupParameters(texture: texture)
     cmdEncoder.dispatchThreadgroups(tgPerGrid, threadsPerThreadgroup: tPerTG)
