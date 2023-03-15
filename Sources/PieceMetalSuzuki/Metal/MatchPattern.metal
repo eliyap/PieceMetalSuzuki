@@ -619,19 +619,18 @@ kernel void combine4x2(
             currRun = runs[bBase + currOffset];        
         }         
         
-        // Copy points.
-        for (int32_t i = currRun.oldTail; i < currRun.oldHead; i++) { 
-            newPoints[newPointCount] = points[i];
-            newPointCount++;
-        }
-    
         if (isNewSequence) { // Start new sequence.
             newRun.oldTail = newBase;
             newRun.tailTriadFrom = currRun.tailTriadFrom;
         }
+    
+        // Copy points.
+        for (int32_t i = currRun.oldTail; i < currRun.oldHead; i++) { 
+            pointsOut[newBase] = points[i];
+            newBase++;
+        }
 
         // Extend new or existing sequence.
-        newBase        += currRun.oldHead - currRun.oldTail;
         newRun.oldHead = newBase;
         newRun.headTriadTo = currRun.headTriadTo;
         
@@ -647,11 +646,6 @@ kernel void combine4x2(
             newRuns[newRunCount] = newRun;
             newRunCount++;
         }
-    }
-
-    // Commit new points.
-    for (size_t newPointIdx = 0; newPointIdx < newPointCount; newPointIdx++) {
-        points[aBase + newPointIdx] = newPoints[newPointIdx];
     }
 
     // Commit new runs.
