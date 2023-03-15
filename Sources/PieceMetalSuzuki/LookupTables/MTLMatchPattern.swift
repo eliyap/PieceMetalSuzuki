@@ -58,13 +58,9 @@ internal func matchPatterns(
     )
     cmdEncoder.setBuffer(pointTableIndicesBuffer, offset: 0, index: 5)
     
-    if patternSize == .w4h2 {
-        let (tPerTG, tgPerGrid) = pipelineState.threadgroupParameters(texture: texture, patternSize: patternSize)
-        cmdEncoder.dispatchThreadgroups(tgPerGrid, threadsPerThreadgroup: tPerTG)
-    } else {
-        let (tPerTG, tgPerGrid) = pipelineState.threadgroupParameters(texture: texture)
-        cmdEncoder.dispatchThreadgroups(tgPerGrid, threadsPerThreadgroup: tPerTG)
-    }
+    let (tPerTG, tgPerGrid) = pipelineState.threadgroupParameters(texture: texture, patternSize: patternSize)
+    cmdEncoder.dispatchThreadgroups(tgPerGrid, threadsPerThreadgroup: tPerTG)
+    
     cmdEncoder.endEncoding()
     cmdBuffer.commit()
     cmdBuffer.waitUntilCompleted()

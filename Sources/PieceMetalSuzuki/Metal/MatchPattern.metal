@@ -106,8 +106,8 @@ kernel void matchPatterns2x1(
     const uint8_t pointsPerPixel = 3;
     
     // Position in the texture.
-    const uint32_t texX = gid.x;
-    const uint32_t texY = gid.y;
+    const uint32_t texX = gid.x * coreWidth;
+    const uint32_t texY = gid.y * coreHeight;
     const uint32_t texWidth = tex.get_width();
     const uint32_t texHeight = tex.get_height();
     const uint32_t roundWidth  = roundedUp(texWidth, coreWidth);
@@ -201,8 +201,8 @@ kernel void matchPatterns2x2(
     const uint8_t pointsPerPixel = 2;
     
     // Position in the texture.
-    const uint32_t texX = gid.x;
-    const uint32_t texY = gid.y;
+    const uint32_t texX = gid.x * coreWidth;
+    const uint32_t texY = gid.y * coreHeight;
     const uint32_t texWidth = tex.get_width();
     const uint32_t texHeight = tex.get_height();
     const uint32_t roundWidth  = roundedUp(texWidth, coreWidth);
