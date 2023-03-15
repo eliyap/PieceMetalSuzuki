@@ -518,10 +518,16 @@ kernel void combine4x2(
 
     // Find pairwise relationships between runs.
     // e.g. if `bTailForAHead[3] = 4`, run a[3]'s head matches run b[4]'s tail. 
-    int bTailForAHead[8] = {-1, -1, -1, -1, -1, -1, -1, -1};
-    int bHeadForATail[8] = {-1, -1, -1, -1, -1, -1, -1, -1};
-    int aTailForBHead[8] = {-1, -1, -1, -1, -1, -1, -1, -1};
-    int aHeadForBTail[8] = {-1, -1, -1, -1, -1, -1, -1, -1};
+    int bTailForAHead[subTableWidth];
+    int bHeadForATail[subTableWidth];
+    int aTailForBHead[subTableWidth];
+    int aHeadForBTail[subTableWidth];
+    for (size_t i = 0; i < subTableWidth; i++) {
+        bTailForAHead[i] = -1;
+        bHeadForATail[i] = -1;
+        aTailForBHead[i] = -1;
+        aHeadForBTail[i] = -1;
+    }
 
     for (size_t aOffset = 0; aOffset < subTableWidth; aOffset++) {
         Run aRun = runs[aBase + aOffset];
