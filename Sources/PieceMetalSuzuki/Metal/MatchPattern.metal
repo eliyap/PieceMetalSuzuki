@@ -627,13 +627,12 @@ kernel void combine4x2(
     
         if (isNewSequence) { // Start new sequence.
             newRun.oldTail = newBase;
-            newRun.oldHead = newBase;
             newRun.tailTriadFrom = currRun.tailTriadFrom;
         }
 
         // Extend new or existing sequence.
-        newRun.oldHead += currRun.oldHead - currRun.oldTail;
         newBase        += currRun.oldHead - currRun.oldTail;
+        newRun.oldHead = newBase;
         newRun.headTriadTo = currRun.headTriadTo;
         
         if (isA) {
