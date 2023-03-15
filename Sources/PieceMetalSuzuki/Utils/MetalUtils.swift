@@ -31,20 +31,14 @@ internal func makeTextureFromCVPixelBuffer(
 
 extension MTLComputePipelineState {
     func threadgroupParameters(texture: MTLTexture) -> (threadgroupsPerGrid: MTLSize, threadsPerThreadgroup: MTLSize) {
-        let threadHeight = maxTotalThreadsPerThreadgroup / threadExecutionWidth
-        return (
-            /// Subdivide grid as far as possible.
-            /// https://developer.apple.com/documentation/metal/mtlcomputecommandencoder/1443138-dispatchthreadgroups
-            MTLSizeMake(threadExecutionWidth, threadHeight, 1),
-            MTLSizeMake(
-                texture.width.dividedByRoundingUp(divisor: threadExecutionWidth),
-                texture.height.dividedByRoundingUp(divisor: threadHeight),
-                1
-            )
-        )
+        threadgroupParameters(texture: texture, width: 1, height: 1)
     }
     
     func threadgroupParameters(texture: MTLTexture, coreSize: PixelSize) -> (threadgroupsPerGrid: MTLSize, threadsPerThreadgroup: MTLSize) {
+        threadgroupParameters(texture: texture, width: Int(coreSize.width), height: Int(coreSize.height))
+    }
+    
+    func threadgroupParameters(texture: MTLTexture, width: Int, height: Int) -> (threadgroupsPerGrid: MTLSize, threadsPerThreadgroup: MTLSize) {
         let threadHeight = maxTotalThreadsPerThreadgroup / threadExecutionWidth
         return (
             /// Subdivide grid as far as possible.
@@ -52,10 +46,10 @@ extension MTLComputePipelineState {
             MTLSizeMake(threadExecutionWidth, threadHeight, 1),
             MTLSizeMake(
                 texture.width
-                    .dividedByRoundingUp(divisor: Int(coreSize.width))
+                    .dividedByRoundingUp(divisor: width)
                     .dividedByRoundingUp(divisor: threadExecutionWidth),
                 texture.height
-                    .dividedByRoundingUp(divisor: Int(coreSize.height))
+                    .dividedByRoundingUp(divisor: height)
                     .dividedByRoundingUp(divisor: threadHeight),
                 1
             )
