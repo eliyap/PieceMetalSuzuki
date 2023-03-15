@@ -415,6 +415,12 @@ kernel void matchPatterns4x2(
     // To get the column offset, multiply the pixels to the left by core height.
     const int32_t idx = ((roundWidth * gid.y) + (gid.x * coreHeight)) * pointsPerPixel;
     
+    // Define boundaries.
+    const uint32_t minCol = 0;
+    const uint32_t maxCol = tex.get_width() - 1;
+    const uint32_t minRow = 0;
+    const uint32_t maxRow = tex.get_height() - 1;
+    
     // Don't exit the texture.
     if ((gid.x >= texWidth) || (gid.y >= texHeight)) {
         return;
@@ -425,11 +431,9 @@ kernel void matchPatterns4x2(
         return;
     }
     
-    // Define boundaries.
-    const uint32_t minCol = 0;
-    const uint32_t maxCol = tex.get_width() - 1;
-    const uint32_t minRow = 0;
-    const uint32_t maxRow = tex.get_height() - 1;
+    subX = gid.x;
+    subY = gid.y;
+    subBase = idx;
     
     // Find the values in a 2x2 kernel, and its border.
     //  0123
@@ -437,8 +441,6 @@ kernel void matchPatterns4x2(
     // 1|XX|
     // 2|XX|
     // 3+--+
-    subX = gid.x;
-    subY = gid.y;
     bool p00 = readPixel(tex, uint2(subX - 1, subY - 1), minCol, maxCol, minRow, maxRow);
     bool p01 = readPixel(tex, uint2(subX + 0, subY - 1), minCol, maxCol, minRow, maxRow);
     bool p02 = readPixel(tex, uint2(subX + 1, subY - 1), minCol, maxCol, minRow, maxRow);
@@ -468,7 +470,6 @@ kernel void matchPatterns4x2(
     uint32_t pointRow = startPointIndices[rowIdx];
 
     // Loop over the table's columns.
-    subBase = idx;
     for (uint32_t col = 0; col < subTableWidth; col++) {
         uint32_t runIdx   = runRow   * subTableWidth + col;
         uint32_t pointIdx = pointRow * subTableWidth + col;
@@ -492,6 +493,8 @@ kernel void matchPatterns4x2(
     // ITERATION 2
     subX = gid.x + subCoreWidth;
     subY = gid.y;
+    subBase = idx + subTableWidth;
+    
     p00 = readPixel(tex, uint2(subX - 1, subY - 1), minCol, maxCol, minRow, maxRow);
     p01 = readPixel(tex, uint2(subX + 0, subY - 1), minCol, maxCol, minRow, maxRow);
     p02 = readPixel(tex, uint2(subX + 1, subY - 1), minCol, maxCol, minRow, maxRow);
@@ -521,7 +524,6 @@ kernel void matchPatterns4x2(
     pointRow = startPointIndices[rowIdx];
 
     // Loop over the table's columns.
-    subBase = idx + subTableWidth;
     for (uint32_t col = 0; col < subTableWidth; col++) {
         uint32_t runIdx   = runRow   * subTableWidth + col;
         uint32_t pointIdx = pointRow * subTableWidth + col;
