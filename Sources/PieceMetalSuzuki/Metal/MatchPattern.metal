@@ -476,8 +476,8 @@ kernel void matchPatterns4x2(
         struct StartRun   startRun   = startRuns[runIdx];
         struct StartPoint startPoint = startPoints[pointIdx];
         
-        points[subBase+col].x = gid.x + startPoint.x;
-        points[subBase+col].y = gid.y + startPoint.y;
+        points[subBase+col].x = subX + startPoint.x;
+        points[subBase+col].y = subY + startPoint.y;
         if (startRun.tail != -1) {
             runs[subBase+col].oldTail = subBase + startRun.tail;
             runs[subBase+col].oldHead = subBase + startRun.head;
@@ -529,8 +529,8 @@ kernel void matchPatterns4x2(
         struct StartRun   startRun   = startRuns[runIdx];
         struct StartPoint startPoint = startPoints[pointIdx];
         
-        points[subBase+col].x = gid.x + startPoint.x + subCoreWidth;
-        points[subBase+col].y = gid.y + startPoint.y;
+        points[subBase+col].x = subX + startPoint.x;
+        points[subBase+col].y = subY + startPoint.y;
         if (startRun.tail != -1) {
             runs[subBase+col].oldTail = subBase + startRun.tail;
             runs[subBase+col].oldHead = subBase + startRun.head;
