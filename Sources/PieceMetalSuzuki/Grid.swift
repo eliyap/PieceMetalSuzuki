@@ -30,10 +30,23 @@ struct Grid {
     
     mutating func combineAll(
         pointsFilled: UnsafeMutableBufferPointer<PixelPoint>,
+        runsFilled: UnsafeMutableBufferPointer<Run>
+    ) -> Void {
+        var tempPoints = [PixelPoint](repeating: .invalid, count: pointsFilled.count)
+        var tempRuns = [Run](repeating: .invalid, count: runsFilled.count)
+        tempPoints.withUnsafeMutableBufferPointer { pointsUnfilled in
+            tempRuns.withUnsafeMutableBufferPointer { runsUnfilled in
+                combineAll(pointsFilled: pointsFilled, runsFilled: runsFilled, pointsUnfilled: pointsUnfilled, runsUnfilled: runsUnfilled)
+            }
+        }
+    }
+    mutating private func combineAll(
+        pointsFilled: UnsafeMutableBufferPointer<PixelPoint>,
         runsFilled: UnsafeMutableBufferPointer<Run>,
         pointsUnfilled: UnsafeMutableBufferPointer<PixelPoint>,
         runsUnfilled: UnsafeMutableBufferPointer<Run>
     ) -> Void {
+        
         var dxn = ReduceDirection.vertical
         let pointsHorizontal = pointsFilled
         let runsHorizontal = runsFilled
