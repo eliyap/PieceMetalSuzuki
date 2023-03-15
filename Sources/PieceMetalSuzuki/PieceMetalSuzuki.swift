@@ -339,16 +339,6 @@ internal func applyMetalSuzuki_LUT(
                     let aBase: Int = ((roundWidth * y) + (x * Int(PatternSize.w2h2.coreSize.height))) * Int(PatternSize.w2h2.pointsPerPixel)
                     let bBase = aBase + tableWidth2x2
                     
-//                    if (x + 2) >= texture.width {
-//                        // Runs and points are fine where they are.
-//                        // But need to pad zeroed memory with invalid runs.
-//                        for bOffset in 0..<PatternSize.w2h2.tableWidth {
-//                            runsFilled.array[bBase + bOffset].oldHead = -1
-//                            runsFilled.array[bBase + bOffset].oldTail = -1
-//                        }
-//                        continue
-//                    }
-                    
                     // Find pairwise relationships between runs.
                     // e.g. if `bTailForAHead[3] = 4`, run a[3]'s head matches run b[4]'s tail.
                     var bTailForAHead: [Int] = [-1, -1, -1, -1, -1, -1, -1, -1];
