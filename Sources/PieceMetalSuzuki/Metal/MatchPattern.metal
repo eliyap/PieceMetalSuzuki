@@ -407,9 +407,6 @@ kernel void matchPatterns4x2(
     const uint32_t texHeight = tex.get_height();
     const uint32_t roundWidth = roundedUp(texWidth, coreWidth);
     
-    uint32_t subX;
-    uint32_t subY;
-    int32_t subBase;
 
     // This is the pattern's core's top left pixel.
     // To get the column offset, multiply the pixels to the left by core height.
@@ -428,9 +425,6 @@ kernel void matchPatterns4x2(
     if (!sub00 && !sub01) {
         return;
     }
-    subX = gid.x;
-    subY = gid.y;
-    subBase = idx;
     
     // Find the values in a 2x2 kernel, and its border.
     //  0123
@@ -438,22 +432,22 @@ kernel void matchPatterns4x2(
     // 1|XX|
     // 2|XX|
     // 3+--+
-    bool p00 = readPixel(tex, uint2(subX - 1, subY - 1), minCol, maxCol, minRow, maxRow);
-    bool p01 = readPixel(tex, uint2(subX + 0, subY - 1), minCol, maxCol, minRow, maxRow);
-    bool p02 = readPixel(tex, uint2(subX + 1, subY - 1), minCol, maxCol, minRow, maxRow);
-    bool p03 = readPixel(tex, uint2(subX + 2, subY - 1), minCol, maxCol, minRow, maxRow);
-    bool p10 = readPixel(tex, uint2(subX - 1, subY + 0), minCol, maxCol, minRow, maxRow);
-    bool p11 = readPixel(tex, uint2(subX + 0, subY + 0), minCol, maxCol, minRow, maxRow);
-    bool p12 = readPixel(tex, uint2(subX + 1, subY + 0), minCol, maxCol, minRow, maxRow);
-    bool p13 = readPixel(tex, uint2(subX + 2, subY + 0), minCol, maxCol, minRow, maxRow);
-    bool p20 = readPixel(tex, uint2(subX - 1, subY + 1), minCol, maxCol, minRow, maxRow);
-    bool p21 = readPixel(tex, uint2(subX + 0, subY + 1), minCol, maxCol, minRow, maxRow);
-    bool p22 = readPixel(tex, uint2(subX + 1, subY + 1), minCol, maxCol, minRow, maxRow);
-    bool p23 = readPixel(tex, uint2(subX + 2, subY + 1), minCol, maxCol, minRow, maxRow);
-    bool p30 = readPixel(tex, uint2(subX - 1, subY + 2), minCol, maxCol, minRow, maxRow);
-    bool p31 = readPixel(tex, uint2(subX + 0, subY + 2), minCol, maxCol, minRow, maxRow);
-    bool p32 = readPixel(tex, uint2(subX + 1, subY + 2), minCol, maxCol, minRow, maxRow);
-    bool p33 = readPixel(tex, uint2(subX + 2, subY + 2), minCol, maxCol, minRow, maxRow);
+    bool p00 = readPixel(tex, uint2(gid.x - 1, gid.y - 1), minCol, maxCol, minRow, maxRow);
+    bool p01 = readPixel(tex, uint2(gid.x + 0, gid.y - 1), minCol, maxCol, minRow, maxRow);
+    bool p02 = readPixel(tex, uint2(gid.x + 1, gid.y - 1), minCol, maxCol, minRow, maxRow);
+    bool p03 = readPixel(tex, uint2(gid.x + 2, gid.y - 1), minCol, maxCol, minRow, maxRow);
+    bool p10 = readPixel(tex, uint2(gid.x - 1, gid.y + 0), minCol, maxCol, minRow, maxRow);
+    bool p11 = readPixel(tex, uint2(gid.x + 0, gid.y + 0), minCol, maxCol, minRow, maxRow);
+    bool p12 = readPixel(tex, uint2(gid.x + 1, gid.y + 0), minCol, maxCol, minRow, maxRow);
+    bool p13 = readPixel(tex, uint2(gid.x + 2, gid.y + 0), minCol, maxCol, minRow, maxRow);
+    bool p20 = readPixel(tex, uint2(gid.x - 1, gid.y + 1), minCol, maxCol, minRow, maxRow);
+    bool p21 = readPixel(tex, uint2(gid.x + 0, gid.y + 1), minCol, maxCol, minRow, maxRow);
+    bool p22 = readPixel(tex, uint2(gid.x + 1, gid.y + 1), minCol, maxCol, minRow, maxRow);
+    bool p23 = readPixel(tex, uint2(gid.x + 2, gid.y + 1), minCol, maxCol, minRow, maxRow);
+    bool p30 = readPixel(tex, uint2(gid.x - 1, gid.y + 2), minCol, maxCol, minRow, maxRow);
+    bool p31 = readPixel(tex, uint2(gid.x + 0, gid.y + 2), minCol, maxCol, minRow, maxRow);
+    bool p32 = readPixel(tex, uint2(gid.x + 1, gid.y + 2), minCol, maxCol, minRow, maxRow);
+    bool p33 = readPixel(tex, uint2(gid.x + 2, gid.y + 2), minCol, maxCol, minRow, maxRow);
     
     // Compose the lookup table row address.
     uint32_t rowIdx = 0
@@ -474,16 +468,16 @@ kernel void matchPatterns4x2(
         struct StartRun   startRun   = startRuns[runIdx];
         struct StartPoint startPoint = startPoints[pointIdx];
         
-        points[subBase+col].x = subX + startPoint.x;
-        points[subBase+col].y = subY + startPoint.y;
+        points[idx+col].x = gid.x + startPoint.x;
+        points[idx+col].y = gid.y + startPoint.y;
         if (startRun.tail != -1) {
-            runs[subBase+col].oldTail = subBase + startRun.tail;
-            runs[subBase+col].oldHead = subBase + startRun.head;
-            runs[subBase+col].tailTriadFrom = startRun.from;
-            runs[subBase+col].headTriadTo   = startRun.to;
+            runs[idx+col].oldTail = idx + startRun.tail;
+            runs[idx+col].oldHead = idx + startRun.head;
+            runs[idx+col].tailTriadFrom = startRun.from;
+            runs[idx+col].headTriadTo   = startRun.to;
         } else { 
-            runs[subBase+col].oldTail = -1;
-            runs[subBase+col].oldHead = -1;
+            runs[idx+col].oldTail = -1;
+            runs[idx+col].oldHead = -1;
         }
     }
     
