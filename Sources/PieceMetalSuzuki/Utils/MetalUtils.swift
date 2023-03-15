@@ -38,6 +38,10 @@ extension MTLComputePipelineState {
         threadgroupParameters(texture: texture, width: Int(coreSize.width), height: Int(coreSize.height))
     }
     
+    func threadgroupParameters(texture: MTLTexture, patternSize: PatternSize) -> (threadgroupsPerGrid: MTLSize, threadsPerThreadgroup: MTLSize) {
+        threadgroupParameters(texture: texture, width: Int(patternSize.subPatternSize.width), height: Int(patternSize.subPatternSize.height))
+    }
+    
     func threadgroupParameters(texture: MTLTexture, width: Int, height: Int) -> (threadgroupsPerGrid: MTLSize, threadsPerThreadgroup: MTLSize) {
         let threadHeight = maxTotalThreadsPerThreadgroup / threadExecutionWidth
         return (

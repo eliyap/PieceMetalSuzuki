@@ -39,6 +39,12 @@ public struct PatternSize: Equatable {
     public let tableWidth: Int
     public let pointsPerPixel: UInt32
     
+    /// Larger patterns have prohibitively large lookup tables.
+    /// A 4x4 core size, or 6x6 table, would be gigabytes in size!
+    ///
+    /// Therefore, a smaller subpattern is matched, and these are combined on the GPU.
+    public let subPatternSize: PixelSize
+    
     public var patternCode: String {
         return "\(coreSize.width)x\(coreSize.height)"
     }
@@ -63,7 +69,8 @@ extension PatternSize {
         /// 010  X
         /// 101 / \
         /// ```
-        pointsPerPixel: 4
+        pointsPerPixel: 4,
+        subPatternSize: PixelSize(width: 1, height: 1)
     )
     
     public static let w2h1 = PatternSize(
@@ -75,7 +82,8 @@ extension PatternSize {
         /// 0110  ><
         /// 1001 /  \
         /// ```
-        pointsPerPixel: 3
+        pointsPerPixel: 3,
+        subPatternSize: PixelSize(width: 2, height: 1)
     )
     
     public static let w2h2 = PatternSize(
@@ -88,12 +96,15 @@ extension PatternSize {
         /// 1010 < X     0110  ++
         /// 0101  v \    1001 /  \
         /// ```
-        pointsPerPixel: 2
+        pointsPerPixel: 2,
+        subPatternSize: PixelSize(width: 2, height: 2)
     )
     
     public static let w4h2 = PatternSize(
         coreSize: PixelSize(width: 4, height: 2),
         tableWidth: 16,
-        pointsPerPixel: 2
+        pointsPerPixel: 2,
+        /// 4x2 is the first size with a too-big LUT.
+        subPatternSize: PixelSize(width: 2, height: 2)
     )
 }
