@@ -103,3 +103,47 @@ internal func loadMetalLibrary(named name: String, device: any MTLDevice) -> (an
         return nil
     }
 }
+
+/// - Returns: `true` if no error occurred.
+internal func combinePatterns(
+    device: MTLDevice,
+    commandQueue: MTLCommandQueue,
+    texture: MTLTexture,
+    runBuffer: Buffer<Run>,
+    pointBuffer: Buffer<PixelPoint>,
+    patternSize: PatternSize
+) -> Bool {
+    guard
+        let kernelFunction = loadMetalFunction(filename: "MatchPattern", functionName: "combine\(patternSize.patternCode)", device: device),
+        let pipelineState = try? device.makeComputePipelineState(function: kernelFunction),
+        let cmdBuffer = commandQueue.makeCommandBuffer(),
+        let cmdEncoder = cmdBuffer.makeComputeCommandEncoder()
+    else {
+        assert(false, "Failed to setup pipeline.")
+        return false
+    }
+    
+    cmdEncoder.label = "Custom Kernel Encoder"
+    cmdEncoder.setComputePipelineState(pipelineState)
+    cmdEncoder.setTexture(texture, index: 0)
+
+    cmdEncoder.setBuffer(pointBuffer.mtlBuffer, offset: 0, index: 0)
+    cmdEncoder.setBuffer(runBuffer.mtlBuffer, offset: 0, index: 1)
+    
+    let (tPerTG, tgPerGrid) = pipelineState.threadgroupParameters(texture: texture)
+    cmdEncoder.dispatchThreadgroups(tgPerGrid, threadsPerThreadgroup: tPerTG)
+    cmdEncoder.endEncoding()
+    cmdBuffer.commit()
+    cmdBuffer.waitUntilCompleted()
+    
+    #if SHOW_GRID_WORK
+    debugPrint("[Combined Points]")
+    for idx in 0..<runBuffer.count {
+        let run = runBuffer.array[idx]
+        guard run.isValid else { continue}
+        print(idx, run, (run.oldTail..<run.oldHead).map { pointBuffer.array[Int($0)] })
+    }
+    #endif
+    
+    return true
+}

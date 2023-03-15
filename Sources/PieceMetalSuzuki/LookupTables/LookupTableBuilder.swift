@@ -132,9 +132,7 @@ internal final class LookupTableBuilder {
         
         guard
             let pointsFilled = Buffer<PixelPoint>(device: device, count: count, token: releaseToken),
-            let runsFilled = Buffer<Run>(device: device, count: count, token: releaseToken),
-            let pointsUnfilled = Buffer<PixelPoint>(device: device, count: count, token: releaseToken),
-            let runsUnfilled = Buffer<Run>(device: device, count: count, token: releaseToken)
+            let runsFilled = Buffer<Run>(device: device, count: count, token: releaseToken)
         else {
             fatalError("Failed to create buffer.")
         }
@@ -156,12 +154,8 @@ internal final class LookupTableBuilder {
         
         let (region, runs, points) = grid.combineAllForLUT(
             coreSize: patternSize.coreSize,
-            device: device,
-            pointsFilled: pointsFilled,
-            runsFilled: runsFilled,
-            pointsUnfilled: pointsUnfilled,
-            runsUnfilled: runsUnfilled,
-            commandQueue: commandQueue
+            pointsFilled: pointsFilled.array,
+            runsFilled: runsFilled.array
         )
         
         assert(runs.count <= patternSize.tableWidth)

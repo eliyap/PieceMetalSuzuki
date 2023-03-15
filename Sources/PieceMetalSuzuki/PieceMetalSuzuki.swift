@@ -265,9 +265,7 @@ internal func applyMetalSuzuki(
         
         guard
             let pointsFilled = Buffer<PixelPoint>(device: device, count: count, token: token),
-            let runsFilled = Buffer<Run>(device: device, count: count, token: token),
-            let pointsUnfilled = Buffer<PixelPoint>(device: device, count: count, token: token),
-            let runsUnfilled = Buffer<Run>(device: device, count: count, token: token)
+            let runsFilled = Buffer<Run>(device: device, count: count, token: token)
         else {
             assert(false, "Failed to create buffers.")
             return nil
@@ -289,11 +287,8 @@ internal func applyMetalSuzuki(
         
         SuzukiProfiler.time(.combineAll) {
             grid.combineAll(
-                device: device,
-                pointsFilled: pointsFilled,
-                runsFilled: runsFilled,
-                pointsUnfilled: pointsUnfilled,
-                runsUnfilled: runsUnfilled
+                pointsFilled: pointsFilled.array,
+                runsFilled: runsFilled.array
             )
         }
         
@@ -319,9 +314,7 @@ internal func applyMetalSuzuki_LUT(
     return withAutoRelease { token in
         guard
             let pointsFilled = Buffer<PixelPoint>(device: device, count: count, token: token),
-            let runsFilled = Buffer<Run>(device: device, count: count, token: token),
-            let pointsUnfilled = Buffer<PixelPoint>(device: device, count: count, token: token),
-            let runsUnfilled = Buffer<Run>(device: device, count: count, token: token)
+            let runsFilled = Buffer<Run>(device: device, count: count, token: token)
         else {
             assert(false, "Failed to create buffers.")
             return nil
@@ -332,7 +325,14 @@ internal func applyMetalSuzuki_LUT(
             assert(false, "Failed to run chain start kernel.")
             return nil
         }
-            
+        
+        if patternSize == .w4h2 {
+            guard combinePatterns(device: device, commandQueue: commandQueue, texture: texture, runBuffer: runsFilled, pointBuffer: pointsFilled, patternSize: patternSize) else {
+                assert(false, "Failed to run chain start kernel.")
+                return nil
+            }
+        }
+                
         var grid = Grid(
             imageSize: PixelSize(width: UInt32(texture.width), height: UInt32(texture.height)),
             regions: SuzukiProfiler.time(.initRegions) {
@@ -343,28 +343,29 @@ internal func applyMetalSuzuki_LUT(
         
         SuzukiProfiler.time(.combineAll) {
             grid.combineAll(
-                device: device,
-                pointsFilled: pointsFilled,
-                runsFilled: runsFilled,
-                pointsUnfilled: pointsUnfilled,
-                runsUnfilled: runsUnfilled
+                pointsFilled: pointsFilled.array,
+                runsFilled: runsFilled.array
             )
         }
         
+        /// Export points from buffers.
         let region = grid.regions[0][0]
         let runIndices = region.runIndices(imageSize: grid.imageSize, gridSize: grid.gridSize)
         var result: [[PixelPoint]] = []
         for runIdx in runIndices {
             let run = runsFilled.array[runIdx]
             let pointCount = Int(run.oldHead - run.oldTail)
+            
+            /// Performance critical code. Drop down to fast, unsafe array allocation.
             let points = [PixelPoint](unsafeUninitializedCapacity: pointCount) { ptr, count in
                 memmove(
                     ptr.baseAddress,
-                    pointsFilled.array.advanced(by: Int(run.oldTail)),
+                    pointsFilled.array.baseAddress!.advanced(by: Int(run.oldTail)),
                     pointCount * MemoryLayout<PixelPoint>.stride
                 )
                 count = pointCount
             }
+            
             result.append(points)
         }
         return result
@@ -425,13 +426,13 @@ internal func createChainStarters(
             assertionFailure("Failed to create LUT buffer")
             return false
         }
-        memcpy(runLutBuffer.array, Run.LUT, MemoryLayout<Run>.stride * Run.LUT.count)
+        memcpy(runLutBuffer.array.baseAddress, Run.LUT, MemoryLayout<Run>.stride * Run.LUT.count)
 
         guard let pointLutBuffer = Buffer<PixelPoint>.init(device: device, count: PixelPoint.LUT.count, token: releaseToken) else {
             assertionFailure("Failed to create LUT buffer")
             return false
         }
-        memcpy(pointLutBuffer.array, PixelPoint.LUT, MemoryLayout<PixelPoint>.stride * PixelPoint.LUT.count)
+        memcpy(pointLutBuffer.array.baseAddress, PixelPoint.LUT, MemoryLayout<PixelPoint>.stride * PixelPoint.LUT.count)
 
         cmdEncoder.setBuffer(pointBuffer.mtlBuffer, offset: 0, index: 0)
         cmdEncoder.setBuffer(runBuffer.mtlBuffer, offset: 0, index: 1)
@@ -454,4 +455,50 @@ internal func createChainStarters(
 
         return true
     }
+}
+
+enum MetalDirection: UInt8 { 
+    case closed      = 0 /// Indicates a closed border.
+    case up          = 1
+    case topRight    = 2
+    case right       = 3
+    case bottomRight = 4
+    case down        = 5
+    case bottomLeft  = 6
+    case left        = 7
+    case topLeft     = 8
+}
+
+func adjust(point: PixelPoint, dxn: MetalDirection.RawValue) -> PixelPoint {
+    switch dxn {
+    case MetalDirection.up.rawValue:
+        return PixelPoint(x: point.x + 0, y: point.y - 1)
+    case MetalDirection.topRight.rawValue:
+        return PixelPoint(x: point.x + 1, y: point.y - 1)
+    case MetalDirection.right.rawValue:
+        return PixelPoint(x: point.x + 1, y: point.y + 0)
+    case MetalDirection.bottomRight.rawValue:
+        return PixelPoint(x: point.x + 1, y: point.y + 1)
+    case MetalDirection.down.rawValue:
+        return PixelPoint(x: point.x + 0, y: point.y + 1)
+    case MetalDirection.bottomLeft.rawValue:
+        return PixelPoint(x: point.x - 1, y: point.y + 1)
+    case MetalDirection.left.rawValue:
+        return PixelPoint(x: point.x - 1, y: point.y + 0)
+    case MetalDirection.topLeft.rawValue:
+        return PixelPoint(x: point.x - 1, y: point.y - 1)  
+    default:
+        return point
+    }
+}
+
+func isInverse(a: UInt8, b: UInt8) -> Bool {
+    if ((a == 0) || (b == 0)) {
+        return false;
+    }
+    let aInv = (a + 4) > 8
+        ? (a - 4)
+        : (a + 4)
+        ;
+    return aInv == b;
 }
