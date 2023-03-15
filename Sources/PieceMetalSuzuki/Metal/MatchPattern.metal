@@ -396,12 +396,11 @@ kernel void matchPatterns4x2(
 ) {
     const uint32_t coreWidth = 4;
     const uint32_t coreHeight = 2;
-    const uint8_t TableWidth = 16;
     const uint8_t pointsPerPixel = 2;
     
     const uint32_t subCoreWidth = 2;
     const uint32_t subCoreHeight = 2;
-    const uint8_t subTableWidth = 8;
+    const uint8_t subTableWidth = subCoreWidth * subCoreHeight * pointsPerPixel;
     
     const uint32_t texWidth = tex.get_width();
     const uint32_t texHeight = tex.get_height();
@@ -496,7 +495,7 @@ kernel void combine4x2(
     const uint32_t pointsPerPixel = 2;
 
     const uint32_t subCoreHeight = 2;
-    const uint32_t subTableWidth = 8;
+    const int8_t   subTableWidth = 8;
 
     const uint32_t texWidth  = tex.get_width();
     const uint32_t texHeight = tex.get_height();
@@ -518,10 +517,10 @@ kernel void combine4x2(
 
     // Find pairwise relationships between runs.
     // e.g. if `bTailForAHead[3] = 4`, run a[3]'s head matches run b[4]'s tail. 
-    int bTailForAHead[subTableWidth];
-    int bHeadForATail[subTableWidth];
-    int aTailForBHead[subTableWidth];
-    int aHeadForBTail[subTableWidth];
+    int8_t bTailForAHead[subTableWidth];
+    int8_t bHeadForATail[subTableWidth];
+    int8_t aTailForBHead[subTableWidth];
+    int8_t aHeadForBTail[subTableWidth];
     for (size_t i = 0; i < subTableWidth; i++) {
         bTailForAHead[i] = -1;
         bHeadForATail[i] = -1;
@@ -590,7 +589,7 @@ kernel void combine4x2(
      * Hence, +1 iteration.
      */
     bool isA = true;
-    int nextOffset = -1;
+    int8_t nextOffset = -1;
     Run newRun;
     bool isNewSequence;
     uint32_t newBase = aBase; // Where points are counted from.
@@ -606,7 +605,7 @@ kernel void combine4x2(
                 currOffset = nextOffset;
                 isNewSequence = false;
             } else {
-                for (size_t offset = 0; offset < subTableWidth; offset++) {
+                for (int8_t offset = 0; offset < subTableWidth; offset++) {
                     if (!aDone[offset] && (bHeadForATail[offset] < 0)) {
                         currOffset = offset;
                         isNewSequence = true;
@@ -621,7 +620,7 @@ kernel void combine4x2(
                 currOffset = nextOffset;
                 isNewSequence = false;
             } else { // Find a run that is not done and doesn't have a tail.
-                for (size_t offset = 0; offset < subTableWidth; offset++) {
+                for (int8_t offset = 0; offset < subTableWidth; offset++) {
                     if (!bDone[offset] && (aHeadForBTail[offset] < 0)) {
                         currOffset = offset;
                         isNewSequence = true;
