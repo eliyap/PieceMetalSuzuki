@@ -503,26 +503,26 @@ kernel void combine4x2(
 
     for (size_t aOffset = 0; aOffset < subTableWidth; aOffset++) {
         Run aRun = runs[aBase + aOffset];
+        if (aRun.oldHead < 0) continue;
+        
+        PixelPoint aTail = points[aRun.oldTail];
+        PixelPoint aHead = points[aRun.oldHead - 1];
+        PixelPoint aTailPointee = adjust(aTail, aRun.tailTriadFrom);
+        PixelPoint aHeadPointee = adjust(aHead, aRun.headTriadTo);
+        
         for (size_t bOffset = 0; bOffset < subTableWidth; bOffset++) {
             Run bRun = runs[bBase + bOffset];
-
-            if ((aRun.oldHead < 0) || (bRun.oldHead < 0)) {
-                continue;
-            }
-
-            PixelPoint aTail = points[aRun.oldTail];
-            PixelPoint aHead = points[aRun.oldHead - 1];
+            if (bRun.oldHead < 0) continue;
+            
             PixelPoint bTail = points[bRun.oldTail];
             PixelPoint bHead = points[bRun.oldHead - 1];
 
-            PixelPoint aTailPointee = adjust(aTail, aRun.tailTriadFrom);
             if (isInverse(aRun.tailTriadFrom, bRun.headTriadTo) && (aTailPointee.x == bHead.x) && (aTailPointee.y == bHead.y)) {
                 // B head -> A tail
                 aTailForBHead[bOffset] = aOffset;
                 bHeadForATail[aOffset] = bOffset;
             } 
             
-            PixelPoint aHeadPointee = adjust(aHead, aRun.headTriadTo);
             if (isInverse(aRun.headTriadTo, bRun.tailTriadFrom) && (aHeadPointee.x == bTail.x) && (aHeadPointee.y == bTail.y)) {
                 // A head -> B tail
                 bTailForAHead[aOffset] = bOffset;
