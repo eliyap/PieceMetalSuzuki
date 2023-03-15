@@ -40,26 +40,21 @@ struct Grid {
             }
         }
     }
+    
     mutating private func combineAll(
         pointsFilled: UnsafeMutableBufferPointer<PixelPoint>,
         runsFilled: UnsafeMutableBufferPointer<Run>,
         pointsUnfilled: UnsafeMutableBufferPointer<PixelPoint>,
         runsUnfilled: UnsafeMutableBufferPointer<Run>
     ) -> Void {
-        
         var dxn = ReduceDirection.vertical
-        let pointsHorizontal = pointsFilled
-        let runsHorizontal = runsFilled
-        let pointsVertical = pointsUnfilled
-        let runsVertical = runsUnfilled
         
-        var srcPts: UnsafeMutableBufferPointer<PixelPoint>
-        var dstPts: UnsafeMutableBufferPointer<PixelPoint>
-        var srcRuns: UnsafeMutableBufferPointer<Run>
-        var dstRuns: UnsafeMutableBufferPointer<Run>
+        /// Data is always `memcpy`-ed or `memmove`-d from the source to the destination.
+        var (srcPts, srcRuns) = (pointsFilled, runsFilled)
+        var (dstPts, dstRuns) = (pointsUnfilled, runsUnfilled)
         
         var iteration = 0
-        while (regions.count > 1) || (regions[0].count > 1) {
+        while true {
             let start = CFAbsoluteTimeGetCurrent()
             
             let numRows = regions.count
@@ -67,9 +62,6 @@ struct Grid {
             
             switch dxn {
             case .horizontal:
-                (srcRuns, dstRuns) = (runsVertical, runsHorizontal)
-                (srcPts, dstPts) = (pointsVertical, pointsHorizontal)
-
                 if numCols.isMultiple(of: 2) == false {
                     SuzukiProfiler.time(.trailingCopy) {
                         /// Request last column blit.
@@ -131,9 +123,6 @@ struct Grid {
                 gridSize = newGridSize
             
             case .vertical:
-                (srcRuns, dstRuns) = (runsHorizontal, runsVertical)
-                (srcPts, dstPts) = (pointsHorizontal, pointsVertical)
-
                 if numRows.isMultiple(of: 2) == false {
                     SuzukiProfiler.time(.trailingCopy) {
                         /// Request last column blit.
@@ -200,36 +189,30 @@ struct Grid {
             }
             #endif
             
-            dxn.flip()
-            
             let end = CFAbsoluteTimeGetCurrent()
             SuzukiProfiler.add(end - start, iteration: iteration)
             iteration += 1
-        }
-        
-        if dxn == .horizontal {
-            /// Last iteration was vertical, then flipped.
-            /// Move data back to "filled" buffers.
-            memcpy(pointsVertical.baseAddress, pointsHorizontal.baseAddress, MemoryLayout<PixelPoint>.stride * pointsVertical.count)
-            memcpy(runsVertical.baseAddress, runsHorizontal.baseAddress, MemoryLayout<Run>.stride * runsVertical.count)
-        }
-        
-        /// Return final results.
-        let pointBuffer: UnsafeMutableBufferPointer<PixelPoint>
-        let runBuffer: UnsafeMutableBufferPointer<Run>
-        
-        switch dxn {
-        case .horizontal: /// Last iteration was vertical.
-            pointBuffer = pointsVertical
-            runBuffer = runsVertical
-        case .vertical: /// Last iteration was horizontal.
-            pointBuffer = pointsHorizontal
-            runBuffer = runsHorizontal
+            
+            /// Loop exit check.
+            if (regions.count > 1) || (regions[0].count > 1) {
+                dxn.flip()
+                (srcPts, dstPts) = (dstPts, srcPts)
+                (srcRuns, dstRuns) = (dstRuns, srcRuns)
+                continue
+            } else {
+                if pointsFilled.baseAddress == srcPts.baseAddress, runsFilled.baseAddress == srcRuns.baseAddress {
+                    /// Move data back to "filled" buffers.
+                    memcpy(pointsFilled.baseAddress, dstPts.baseAddress, MemoryLayout<PixelPoint>.stride * dstPts.count)
+                    memcpy(runsFilled.baseAddress, dstRuns.baseAddress, MemoryLayout<Run>.stride * dstRuns.count)
+                }
+                
+                break
+            }
         }
         
         #if DEBUG
         for runIdx in regions[0][0].runIndices(imageSize: imageSize, gridSize: gridSize) {
-            let run = runBuffer[runIdx]
+            let run = runsFilled[runIdx]
 //            print((run.oldTail..<run.oldHead).map { pointBuffer[Int($0)] })
             assert(run.isValid)
             assert(run.headTriadTo == ChainDirection.closed.rawValue)
