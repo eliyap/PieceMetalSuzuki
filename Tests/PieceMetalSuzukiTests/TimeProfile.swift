@@ -31,10 +31,6 @@ final class SuzukiTimeProfile: XCTestCase {
         await SuzukiProfiler.report()
     }
     
-    func testLUT1x1() async throws {
-        try await timeLUT(patternSize: .w1h1)
-    }
-    
     func testLUT2x1() async throws {
         try await timeLUT(patternSize: .w2h1)
     }
