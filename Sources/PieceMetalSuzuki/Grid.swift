@@ -225,7 +225,7 @@ struct Grid {
     }
     
     #if SHOW_GRID_WORK
-    func dump(region: Region, points: UnsafeMutablePointer<PixelPoint>, runs: UnsafeMutablePointer<Run>) {
+    func dump(region: Region, points: UnsafeMutableBufferPointer<PixelPoint>, runs: UnsafeMutableBufferPointer<Run>) {
         let baseOffset = baseOffset(grid: self, region: region)
         debugPrint("[DUMP]: \(region)")
         for offset in 0..<region.runsCount {
