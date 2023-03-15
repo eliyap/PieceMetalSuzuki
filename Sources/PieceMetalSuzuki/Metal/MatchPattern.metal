@@ -425,15 +425,6 @@ kernel void matchPatterns4x2(
         return;
     }
     
-    // Setting invalid array indices signals a NULL value.
-    // Set before early exit checks.
-    for (int i = 0; i < TableWidth; i++) {
-        runs[idx+i].oldHead = -1;
-        runs[idx+i].oldTail = -1;
-        runs[idx+i].newHead = -1;
-        runs[idx+i].newTail = -1;
-    }
-    
     // Define boundaries.
     const uint32_t minCol = 0;
     const uint32_t maxCol = tex.get_width() - 1;
@@ -492,6 +483,9 @@ kernel void matchPatterns4x2(
             runs[subBase+col].oldHead = subBase + startRun.head;
             runs[subBase+col].tailTriadFrom = startRun.from;
             runs[subBase+col].headTriadTo   = startRun.to;
+        } else { 
+            runs[subBase+col].oldTail = -1;
+            runs[subBase+col].oldHead = -1;
         }
     }
     
@@ -542,6 +536,9 @@ kernel void matchPatterns4x2(
             runs[subBase+col].oldHead = subBase + startRun.head;
             runs[subBase+col].tailTriadFrom = startRun.from;
             runs[subBase+col].headTriadTo   = startRun.to;
+        } else { 
+            runs[subBase+col].oldTail = -1;
+            runs[subBase+col].oldHead = -1;
         }
     }
     
