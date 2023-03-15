@@ -50,6 +50,46 @@ static uint32_t roundedUp(uint32_t number, uint32_t step)
     return (((number-1)/step)*step)+step;
 }
 
+enum Direction {
+    closed      = 0, /// Indicates a closed border.
+    up          = 1,
+    topRight    = 2,
+    right       = 3,
+    bottomRight = 4,
+    down        = 5,
+    bottomLeft  = 6,
+    left        = 7,
+    topLeft     = 8
+};
+
+static bool isInverse(uint8_t lhs, uint8_t rhs)
+{
+    if ((lhs == Direction::closed) || (rhs == Direction::closed)) {
+        return false;
+    }
+    uint8_t lhsInv = (lhs + 4) > 8
+        ? (lhs - 4)
+        : (lhs + 4)
+        ;
+    return lhsInv == rhs;
+}
+
+static PixelPoint adjust(PixelPoint point, uint8_t direction) { 
+    switch (direction) {
+        case Direction::up:          return PixelPoint{point.x + 0, point.y - 1};
+        case Direction::topRight:    return PixelPoint{point.x + 1, point.y - 1};
+        case Direction::right:       return PixelPoint{point.x + 1, point.y + 0};
+        case Direction::bottomRight: return PixelPoint{point.x + 1, point.y + 1};
+        case Direction::down:        return PixelPoint{point.x + 0, point.y + 1};
+        case Direction::bottomLeft:  return PixelPoint{point.x - 1, point.y + 1};
+        case Direction::left:        return PixelPoint{point.x - 1, point.y + 0};
+        case Direction::topLeft:     return PixelPoint{point.x - 1, point.y - 1};
+        
+        // Programmer error, make this obvious.
+        default:                     return PixelPoint{0, 0};
+    }
+}
+
 kernel void matchPatterns1x1(
     texture2d<half, access::read>  tex               [[ texture(0) ]],
     device PixelPoint*             points            [[ buffer (0) ]],
@@ -510,4 +550,185 @@ kernel void combine4x2(
     device Run*                    runs              [[ buffer (1) ]],
     uint2                          gid               [[thread_position_in_grid]]
 ) {
+    const uint32_t coreWidth      = 4;
+    const uint32_t coreHeight     = 2;
+    const uint32_t tableWidth     = 16;
+    const uint32_t pointsPerPixel = 2;
+
+    const uint32_t subCoreHeight = 2;
+    const uint32_t subTableWidth = 8;
+
+    const uint32_t texWidth  = tex.get_width();
+    const uint32_t texHeight = tex.get_height();
+    
+    // Don't exit the texture.
+    if ((gid.x >= texWidth) || (gid.y >= texHeight)) {
+        return;
+    }
+    
+    // Skip pixels that aren't the root of the pattern.
+    if ((gid.x % coreWidth) || (gid.y % coreHeight)) {
+        return;
+    }
+    
+    // Let the regions be `a` and `b`.
+    const uint32_t roundWidth = roundedUp(texWidth, coreWidth);
+    const uint32_t aBase = ((roundWidth * gid.y) + (gid.x * subCoreHeight)) * pointsPerPixel;
+    const uint32_t bBase = aBase + subTableWidth;
+
+    // Find pairwise relationships between runs.
+    // e.g. if `bTailForAHead[3] = 4`, run a[3]'s head matches run b[4]'s tail. 
+    int bTailForAHead[8] = {-1, -1, -1, -1, -1, -1, -1, -1};
+    int bHeadForATail[8] = {-1, -1, -1, -1, -1, -1, -1, -1};
+    int aTailForBHead[8] = {-1, -1, -1, -1, -1, -1, -1, -1};
+    int aHeadForBTail[8] = {-1, -1, -1, -1, -1, -1, -1, -1};
+
+    for (size_t aOffset = 0; aOffset < subTableWidth; aOffset++) {
+        Run aRun = runs[aBase + aOffset];
+        for (size_t bOffset = 0; bOffset < subTableWidth; bOffset++) {
+            Run bRun = runs[bBase + bOffset];
+
+            if ((aRun.oldHead < 0) || (bRun.oldHead < 0)) {
+                continue;
+            }
+
+            PixelPoint aTail = points[aRun.oldTail];
+            PixelPoint aHead = points[aRun.oldHead - 1];
+            PixelPoint bTail = points[bRun.oldTail];
+            PixelPoint bHead = points[bRun.oldHead - 1];
+
+            PixelPoint aTailPointee = adjust(aTail, aRun.tailTriadFrom);
+            if (isInverse(aRun.tailTriadFrom, bRun.headTriadTo) && (aTailPointee.x == bHead.x) && (aTailPointee.y == bHead.y)) {
+                // B head -> A tail
+                aTailForBHead[bOffset] = aOffset;
+                bHeadForATail[aOffset] = bOffset;
+            } 
+            
+            PixelPoint aHeadPointee = adjust(aHead, aRun.headTriadTo);
+            if (isInverse(aRun.headTriadTo, bRun.tailTriadFrom) && (aHeadPointee.x == bTail.x) && (aHeadPointee.y == bTail.y)) {
+                // A head -> B tail
+                bTailForAHead[aOffset] = bOffset;
+                aHeadForBTail[bOffset] = aOffset;
+            }
+        }
+    }
+
+    // Ignore invalid runs.
+    bool aDone[subTableWidth];
+    bool bDone[subTableWidth];
+    for (size_t offset = 0; offset < subTableWidth; offset++) {
+        aDone[offset] = runs[aBase + offset].oldHead < 0;
+        bDone[offset] = runs[bBase + offset].oldHead < 0;
+    }
+
+    PixelPoint newPoints[tableWidth];
+    size_t newPointCount = 0;
+    Run newRuns[tableWidth];
+    size_t newRunCount = 0;
+
+    /*
+     * Let a "sequence" of runs be some runs joined head-to-tail.
+     * Notice that they must follow a[?] -> b[?] -> a[?] -> b[?] -> ...
+     *
+     * Closed runs in a 4x2 region are irrevelant to our larger task, discard them.
+     * Non-closed run sequences must begin with a run which can't find its tail.
+     * - a sequence can be as short as 1 run
+     * - a sequence ends when the run can't find its head
+     * 
+     * Goal: each iteration, either 
+     * - start a new sequence (beginning with a tail-less run), or 
+     * - continue an existing sequence (by adding the head for the previous run).
+     *
+     * Iteration Count: Each cycle should start or continue a run.
+     * However, if all sequences start in A, and the first iteration checks B, we'd miss one run.
+     * Hence, +1 iteration.
+     */
+    bool isA = true;
+    int nextOffset = -1;
+    Run newRun;
+    bool isNewSequence;
+    uint32_t newBase = aBase; // Where points are counted from.
+
+    for (size_t x = 0; x < tableWidth + 1; x++) {
+        isA = !isA;
+
+        Run currRun;
+        int currOffset = -1;
+    
+        if (isA) {
+            if (nextOffset >= 0) {
+                currOffset = nextOffset;
+                isNewSequence = false;
+            } else {
+                for (size_t offset = 0; offset < subTableWidth; offset++) {
+                    if (!aDone[offset] && (bHeadForATail[offset] < 0)) {
+                        currOffset = offset;
+                        isNewSequence = true;
+                        break;
+                    }
+                }
+            }
+            if (currOffset < 0) continue;
+            currRun = runs[aBase + currOffset];
+        } else { 
+            if (nextOffset >= 0) {
+                currOffset = nextOffset;
+                isNewSequence = false;
+            } else { // Find a run that is not done and doesn't have a tail.
+                for (size_t offset = 0; offset < subTableWidth; offset++) {
+                    if (!bDone[offset] && (aHeadForBTail[offset] < 0)) {
+                        currOffset = offset;
+                        isNewSequence = true;
+                        break;
+                    }
+                }
+            }
+            if (currOffset < 0) continue;
+            currRun = runs[bBase + currOffset];        
+        }         
+        
+        // Copy points.
+        for (int32_t i = currRun.oldTail; i < currRun.oldHead; i++) { 
+            newPoints[newPointCount] = points[i];
+            newPointCount++;
+        }
+    
+        if (isNewSequence) { // Start new sequence.
+            newRun.oldTail = newBase;
+            newRun.oldHead = newBase;
+            newRun.tailTriadFrom = currRun.tailTriadFrom;
+        }
+
+        // Extend new or existing sequence.
+        newRun.oldHead += currRun.oldHead - currRun.oldTail;
+        newBase        += currRun.oldHead - currRun.oldTail;
+        newRun.headTriadTo = currRun.headTriadTo;
+        
+        if (isA) {
+            nextOffset = bTailForAHead[currOffset];
+            aDone[currOffset] = true;
+        } else {
+            nextOffset = aTailForBHead[currOffset];
+            bDone[currOffset] = true;
+        }
+
+        if (nextOffset < 0) { // End of sequence.
+            newRuns[newRunCount] = newRun;
+            newRunCount++;
+        }
+    }
+
+    // Commit new points.
+    for (size_t newPointIdx = 0; newPointIdx < newPointCount; newPointIdx++) {
+        points[aBase + newPointIdx] = newPoints[newPointIdx];
+    }
+
+    // Commit new runs.
+    for (size_t newRunIdx = 0; newRunIdx < tableWidth; newRunIdx++) {
+        if (newRunIdx < newRunCount) {
+            runs[aBase + newRunIdx] = newRuns[newRunIdx];
+        } else { // Mark as invalid.
+            runs[aBase + newRunIdx].oldHead = -1;
+        }
+    }
 }
