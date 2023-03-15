@@ -9,29 +9,35 @@ final class SmallPatternTests: XCTestCase {
         Bundle.module.url(forResource: name, withExtension: ".png", subdirectory: "Images")!
     }
     
-    func checkPatternCountNoLUT(name: String, expectedCount: Int) throws {
+    func checkPatternCountNoLUT(name: String, expectedCount: Int?) throws {
         _ = PieceMetalSuzuki(imageUrl: url(name), patternSize: .w1h1, format: kCVPixelFormatType_32BGRA) { device, queue, texture, pixelBuffer in
             let ranges = applyMetalSuzuki(device: device, commandQueue: queue, texture: texture)
             XCTAssertNotNil(ranges)
-            XCTAssertEqual(ranges!.count, expectedCount)
+            if let expectedCount {
+                XCTAssertEqual(ranges!.count, expectedCount)
+            }
         }
     }
     
-    func checkPatternCountProtoBuf(name: String, expectedCount: Int, patternSize: PatternSize) throws {
+    func checkPatternCountProtoBuf(name: String, expectedCount: Int?, patternSize: PatternSize) throws {
         assert(loadLookupTablesProtoBuf(patternSize))
         _ = PieceMetalSuzuki(imageUrl: url(name), patternSize: patternSize, format: kCVPixelFormatType_32BGRA) { device, queue, texture, pixelBuffer in
             let borders = applyMetalSuzuki_LUT(device: device, commandQueue: queue, texture: texture, patternSize: patternSize)
             XCTAssertNotNil(borders)
-            XCTAssertEqual(borders!.count, expectedCount)
+            if let expectedCount {
+                XCTAssertEqual(borders!.count, expectedCount)
+            }
         }
     }
     
-    func checkPatternCountData(name: String, expectedCount: Int, patternSize: PatternSize) throws {
+    func checkPatternCountData(name: String, expectedCount: Int?, patternSize: PatternSize) throws {
         assert(loadLookupTablesData(patternSize))
         _ = PieceMetalSuzuki(imageUrl: url(name), patternSize: patternSize, format: kCVPixelFormatType_32BGRA) { device, queue, texture, pixelBuffer in
             let borders = applyMetalSuzuki_LUT(device: device, commandQueue: queue, texture: texture, patternSize: patternSize)
             XCTAssertNotNil(borders)
-            XCTAssertEqual(borders!.count, expectedCount)
+            if let expectedCount {
+                XCTAssertEqual(borders!.count, expectedCount)
+            }
         }
     }
     
@@ -69,5 +75,11 @@ final class SmallPatternTests: XCTestCase {
         try checkPatternCountNoLUT(name: "donut", expectedCount: 4)
         try checkPatternCountProtoBuf(name: "donut", expectedCount: 4, patternSize: patternSize)
         try checkPatternCountData(name: "donut", expectedCount: 4, patternSize: patternSize)
+    }
+    
+    func testBigDots() throws {
+        try checkPatternCountNoLUT(name: "bigDots", expectedCount: nil)
+        try checkPatternCountProtoBuf(name: "bigDots", expectedCount: nil, patternSize: patternSize)
+        try checkPatternCountData(name: "bigDots", expectedCount: nil, patternSize: patternSize)
     }
 }
