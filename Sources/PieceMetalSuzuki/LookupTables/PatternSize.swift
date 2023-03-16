@@ -36,7 +36,7 @@ import Foundation
  */
 public struct PatternSize: Equatable, Comparable {
     public let coreSize: PixelSize
-    public let tableWidth: Int
+    public let tableWidth: UInt8
     public let pointsPerPixel: UInt32
     
     public var patternCode: String {

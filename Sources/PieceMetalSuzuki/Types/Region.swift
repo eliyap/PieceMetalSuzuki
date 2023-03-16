@@ -79,7 +79,7 @@ func initializeRegions(
                 /// Count valid elements in each 1x1 region.
                 let bufferBase = ((row * regionTableWidth) + col) * Int(patternSize.tableWidth)
                 var validCount = UInt32.zero
-                for offset in 0..<patternSize.tableWidth {
+                for offset in 0..<Int(patternSize.tableWidth) {
                     if runBuffer.array[bufferBase + offset].isValid {
                         validCount += 1
                     } else {
