@@ -31,3 +31,10 @@ struct PatternSize {
     uint32_t pointsPerPixel;
 };
 
+struct Region { 
+    PixelSize size;
+    GridPosition gridPos;
+    uint32_t runsCount;
+    PatternSize patternSize;
+};
+

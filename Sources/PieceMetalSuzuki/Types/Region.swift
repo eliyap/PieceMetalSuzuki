@@ -107,3 +107,11 @@ internal struct GridSize {
     public let width: UInt32
     public let height: UInt32
 }
+
+// @metal 
+internal struct RegionGPU {
+    let size: PixelSize
+    let gridPos: GridPosition
+    let runsCount: UInt32
+    let patternSize: PatternSize
+}
