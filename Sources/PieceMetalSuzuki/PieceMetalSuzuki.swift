@@ -276,7 +276,7 @@ internal func applyMetalSuzuki(
             return nil
         }
         
-        guard let regions = SuzukiProfiler.time(.initRegionsGPU, {
+        guard let regions = SuzukiProfiler.time(.initRegions, {
             initializeRegionsGPU(device: device, commandQueue: commandQueue, runBuffer: runsFilled, texture: texture, patternSize: patternSize, token: token)
         }) else {
             assert(false, "Failed to initialize regions.")
@@ -340,7 +340,7 @@ internal func applyMetalSuzuki_LUT(
             return nil
         }
         
-        guard let regions = SuzukiProfiler.time(.initRegionsGPU, {
+        guard let regions = SuzukiProfiler.time(.initRegions, {
             initializeRegionsGPU(device: device, commandQueue: commandQueue, runBuffer: runsFilled, texture: texture, patternSize: patternSize, token: token)
         }) else {
             assert(false, "Failed to initialize regions.")
