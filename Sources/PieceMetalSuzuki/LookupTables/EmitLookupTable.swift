@@ -91,11 +91,15 @@ internal func loadLookupTablesProtoBuf(_ patternSize: PatternSize) -> Bool {
     /// - Note: the folder is `./LookupTables/ProtocolBuffers` is copied to `./ProtocolBuffers`. The super-directory is not preserved.
     let dir = "ProtocolBuffers"
     let ext = "buf"
+    let suffix = patternSize >= .w2h2
+        ? PatternSize.w2h2.patternCode
+        : patternSize.patternCode
+    
     guard
-        let pointTableURL = Bundle.module.url(forResource: "pointTable\(patternSize.patternCode)", withExtension: ext, subdirectory: dir),
-        let pointIndicesURL = Bundle.module.url(forResource: "pointIndices\(patternSize.patternCode)", withExtension: ext, subdirectory: dir),
-        let runTableURL = Bundle.module.url(forResource: "runTable\(patternSize.patternCode)", withExtension: ext, subdirectory: dir),
-        let runIndicesURL = Bundle.module.url(forResource: "runIndices\(patternSize.patternCode)", withExtension: ext, subdirectory: dir)
+        let pointTableURL   = Bundle.module.url(forResource: "pointTable"   + suffix, withExtension: ext, subdirectory: dir),
+        let pointIndicesURL = Bundle.module.url(forResource: "pointIndices" + suffix, withExtension: ext, subdirectory: dir),
+        let runTableURL     = Bundle.module.url(forResource: "runTable"     + suffix, withExtension: ext, subdirectory: dir),
+        let runIndicesURL   = Bundle.module.url(forResource: "runIndices"   + suffix, withExtension: ext, subdirectory: dir)
     else {
         return false
     }
@@ -132,11 +136,15 @@ internal func loadLookupTablesData(_ patternSize: PatternSize) -> Bool {
     /// - Note: the folder is `./LookupTables/Data` is copied to `./Data`. The super-directory is not preserved.
     let dir = "Data"
     let ext = "data"
+    let suffix = patternSize >= .w2h2
+        ? PatternSize.w2h2.patternCode
+        : patternSize.patternCode
+    
     guard
-        let pointTableURL = Bundle.module.url(forResource: "pointTable\(patternSize.patternCode)", withExtension: ext, subdirectory: dir),
-        let pointIndicesURL = Bundle.module.url(forResource: "pointIndices\(patternSize.patternCode)", withExtension: ext, subdirectory: dir),
-        let runTableURL = Bundle.module.url(forResource: "runTable\(patternSize.patternCode)", withExtension: ext, subdirectory: dir),
-        let runIndicesURL = Bundle.module.url(forResource: "runIndices\(patternSize.patternCode)", withExtension: ext, subdirectory: dir)
+        let pointTableURL   = Bundle.module.url(forResource: "pointTable"   + suffix, withExtension: ext, subdirectory: dir),
+        let pointIndicesURL = Bundle.module.url(forResource: "pointIndices" + suffix, withExtension: ext, subdirectory: dir),
+        let runTableURL     = Bundle.module.url(forResource: "runTable"     + suffix, withExtension: ext, subdirectory: dir),
+        let runIndicesURL   = Bundle.module.url(forResource: "runIndices"   + suffix, withExtension: ext, subdirectory: dir)
     else {
         return false
     }
