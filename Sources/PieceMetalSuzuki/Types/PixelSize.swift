@@ -1,12 +1,9 @@
-//
 //  PixelSize.swift
-//  
-//
 //  Created by Secret Asian Man Dev on 12/2/23.
-//
 
 import Foundation
 
+// @metal
 public struct PixelSize: Equatable, CustomStringConvertible {
     public let width: UInt32
     public let height: UInt32

@@ -20,3 +20,8 @@ struct GridPosition {
     uint32_t col;
 };
 
+struct PixelSize {
+    uint32_t width;
+    uint32_t height;
+};
+
