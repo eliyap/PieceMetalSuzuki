@@ -19,9 +19,6 @@ import Metal
  The memory location of the runs in this region is derived from information in this class and the grid structure.
  */
 internal final class Region {
-    /// Location of the pixel's top left corner in the image.
-    let origin: PixelPoint
-    
     /// Pixel size of the region.
     /// May be smaller than `Grid.gridSize` is this region covers the bottom or right edge of the image.
     var size: PixelSize
@@ -35,8 +32,7 @@ internal final class Region {
     
     let patternSize: PatternSize
 
-    init(origin: PixelPoint, size: PixelSize, gridPos: GridPosition, runsCount: Int, patternSize: PatternSize) {
-        self.origin = origin
+    init(size: PixelSize, gridPos: GridPosition, runsCount: Int, patternSize: PatternSize) {
         self.size = size
         self.gridPos = gridPos
         self.runsCount = runsCount
@@ -52,7 +48,7 @@ internal final class Region {
 
 extension Region: CustomStringConvertible {
     var description: String {
-        return "Region(origin: \(origin), size: \(size), gridPos: \(gridPos), \(runsCount) runs)"
+        return "Region(size: \(size), gridPos: \(gridPos), \(runsCount) runs)"
     }
 }
 
@@ -94,7 +90,6 @@ func initializeRegions(
                 /// Cannot use subscript notation to set uninitialized memory.
                 /// https://forums.swift.org/t/how-to-initialize-array-of-class-instances-using-a-buffer-of-uninitialised-memory/39174/5
                 buffer.baseAddress!.advanced(by: col).initialize(to: Region(
-                    origin: PixelPoint(x: UInt32(col), y: UInt32(row)),
                     size: patternSize.coreSize,
                     gridPos: GridPosition(row: UInt32(row), col: UInt32(col)),
                     runsCount: validCount,
