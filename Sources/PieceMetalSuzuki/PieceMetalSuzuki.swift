@@ -84,9 +84,8 @@ public final class MarkerDetector {
         let parallelograms = findParallelograms(borders: borders, parameters: self.rdpParameters, scale: self.scale)
         delegate?.didFind(parallelograms: parallelograms, imageSize: imageSize)
         // DEBUG – Building
-        if let found = findDoubleDiamond(parallelograms: parallelograms, parameters: .starter) {
-            delegate?.didFind(doubleDiamond: found, imageSize: imageSize)
-        }
+        let found = findDoubleDiamond(parallelograms: parallelograms, parameters: .starter)
+        delegate?.didFind(doubleDiamond: found, imageSize: imageSize)
     }
 }
 
@@ -95,7 +94,7 @@ public protocol MarkerDetectorDelegate: AnyObject {
     func didFind(parallelograms: [Parallelogram], imageSize: CGSize) -> Void
     
     /// Found a pair of markers.
-    func didFind(doubleDiamond: DoubleDiamond, imageSize: CGSize) -> Void
+    func didFind(doubleDiamond: DoubleDiamond?, imageSize: CGSize) -> Void
 }
 
 internal struct PieceMetalSuzuki {
@@ -277,11 +276,16 @@ internal func applyMetalSuzuki(
             return nil
         }
         
+        guard let regions = SuzukiProfiler.time(.initRegions, {
+            initializeRegionsGPU(device: device, commandQueue: commandQueue, runBuffer: runsFilled, texture: texture, patternSize: patternSize, token: token)
+        }) else {
+            assert(false, "Failed to initialize regions.")
+            return nil
+        }
+                
         var grid = Grid(
             imageSize: PixelSize(width: UInt32(texture.width), height: UInt32(texture.height)),
-            regions: SuzukiProfiler.time(.initRegions) {
-                return initializeRegions(runBuffer: runsFilled, texture: texture, patternSize: patternSize)
-            },
+            regions: regions,
             patternSize: patternSize
         )
         
@@ -328,21 +332,24 @@ internal func applyMetalSuzuki_LUT(
             return nil
         }
         
-        if patternSize == .w4h2 {
-            let result = SuzukiProfiler.time(.combineGPU) {
-                combinePatterns(device: device, commandQueue: commandQueue, texture: texture, runBuffer: runsFilled, pointBuffer: pointsFilled, patternSize: patternSize)
-            }
-            guard result else {
-                assert(false, "Failed to run chain start kernel.")
-                return nil
-            }
+        let combineGpuResult = SuzukiProfiler.time(.combineGPU) {
+            combinePatterns(device: device, commandQueue: commandQueue, texture: texture, runBuffer: runsFilled, pointBuffer: pointsFilled, patternSize: patternSize)
+        }
+        guard combineGpuResult else {
+            assert(false, "Failed to run chain start kernel.")
+            return nil
+        }
+        
+        guard let regions = SuzukiProfiler.time(.initRegions, {
+            initializeRegionsGPU(device: device, commandQueue: commandQueue, runBuffer: runsFilled, texture: texture, patternSize: patternSize, token: token)
+        }) else {
+            assert(false, "Failed to initialize regions.")
+            return nil
         }
                 
         var grid = Grid(
             imageSize: PixelSize(width: UInt32(texture.width), height: UInt32(texture.height)),
-            regions: SuzukiProfiler.time(.initRegions) {
-                return initializeRegions(runBuffer: runsFilled, texture: texture, patternSize: patternSize)
-            },
+            regions: regions,
             patternSize: patternSize
         )
         

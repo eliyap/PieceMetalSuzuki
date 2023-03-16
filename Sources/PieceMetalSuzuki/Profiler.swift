@@ -24,6 +24,7 @@ enum SuzukiRegion: Hashable, CaseIterable, CodeRegion {
     case combineGPU
     case combineAll, combine, combineFindPartner, combineJoin
     case lutCopy
+    case loadMetalFunction
 }
 
 enum QuadRegion: Hashable, CaseIterable, CodeRegion {

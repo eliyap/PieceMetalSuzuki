@@ -159,7 +159,7 @@ internal final class LookupTableBuilder {
         )
         
         assert(runs.count <= patternSize.tableWidth)
-        let startRuns = (0..<patternSize.tableWidth).map { runIdx in
+        let startRuns = (0..<Int(patternSize.tableWidth)).map { runIdx in
             if runs.indices.contains(runIdx) {
                 let run = runs[runIdx]
                 let base = Int32(baseOffset(grid: grid, region: region))
@@ -175,7 +175,7 @@ internal final class LookupTableBuilder {
         }
         
         assert(points.count <= patternSize.tableWidth)
-        let startPoints = (0..<patternSize.tableWidth).map { pointIdx in
+        let startPoints = (0..<Int(patternSize.tableWidth)).map { pointIdx in
             if points.indices.contains(pointIdx) {
                 let point = points[pointIdx]
                 return StartPoint(

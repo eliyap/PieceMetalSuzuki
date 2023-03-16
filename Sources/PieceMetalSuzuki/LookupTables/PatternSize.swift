@@ -1,9 +1,5 @@
-//
-//  File.swift
-//  
-//
+//  PatternSize.swift
 //  Created by Secret Asian Man Dev on 18/2/23.
-//
 
 import Foundation
 
@@ -34,13 +30,20 @@ import Foundation
  This has 6 triads across the 2 pixels, the most possible.
  Thus, table width is 6, with 3 points per pixel.
  */
-public struct PatternSize: Equatable {
+// @metal
+public struct PatternSize: Equatable, Comparable {
     public let coreSize: PixelSize
-    public let tableWidth: Int
+    public let tableWidth: UInt8
     public let pointsPerPixel: UInt32
     
     public var patternCode: String {
         return "\(coreSize.width)x\(coreSize.height)"
+    }
+    
+    /// Not a stable ordering, so be careful with usage.
+    /// Makes certain operations easier.
+    public static func < (lhs: PatternSize, rhs: PatternSize) -> Bool {
+        lhs.coreSize.width < rhs.coreSize.width || lhs.coreSize.height < rhs.coreSize.height
     }
 }
 

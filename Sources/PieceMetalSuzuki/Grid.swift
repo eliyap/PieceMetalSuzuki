@@ -301,7 +301,7 @@ struct Grid {
         var bRunIndices: [Int]
         
         var nextPointOffset = Int32.zero
-        var nextRunOffset = Int.zero
+        var nextRunOffset = UInt32.zero
         
         let srcPts: UnsafeMutableBufferPointer<PixelPoint>
         let srcRuns: UnsafeMutableBufferPointer<Run>
@@ -326,8 +326,8 @@ struct Grid {
             #endif
             let aBaseOffset = baseOffset(grid: grid, region: a)
             let bBaseOffset = baseOffset(grid: grid, region: b)
-            self.aRunIndices = (0..<a.runsCount).map { $0 + Int(aBaseOffset) }
-            self.bRunIndices = (0..<b.runsCount).map { $0 + Int(bBaseOffset) }
+            self.aRunIndices = (0..<a.runsCount).map { Int($0 + aBaseOffset) }
+            self.bRunIndices = (0..<b.runsCount).map { Int($0 + bBaseOffset) }
             
             switch dxn {
             case .vertical:
@@ -500,7 +500,7 @@ struct Grid {
             debugPrint("newRun \(newRun) \(__pts)")
             #endif
             
-            dstRuns[Int(newBaseOffset) + nextRunOffset] = newRun
+            dstRuns[Int(newBaseOffset + nextRunOffset)] = newRun
             nextRunOffset += 1
         }
         
