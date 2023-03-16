@@ -30,12 +30,22 @@ internal func makeTextureFromCVPixelBuffer(
 }
 
 extension MTLComputePipelineState {
+    
+    var threadHeight: Int {
+        maxTotalThreadsPerThreadgroup / threadExecutionWidth
+    }
+    
+    /// Subdivide grid as far as possible.
+    /// https://developer.apple.com/documentation/metal/mtlcomputecommandencoder/1443138-dispatchthreadgroups
+    var maxThreads: MTLSize {
+        return MTLSizeMake(threadExecutionWidth, threadHeight, 1)
+    }
+    
     func threadgroupParameters(texture: MTLTexture) -> (threadgroupsPerGrid: MTLSize, threadsPerThreadgroup: MTLSize) {
-        let threadHeight = maxTotalThreadsPerThreadgroup / threadExecutionWidth
         return (
             /// Subdivide grid as far as possible.
             /// https://developer.apple.com/documentation/metal/mtlcomputecommandencoder/1443138-dispatchthreadgroups
-            MTLSizeMake(threadExecutionWidth, threadHeight, 1),
+            maxThreads,
             MTLSizeMake(
                 texture.width.dividedByRoundingUp(divisor: threadExecutionWidth),
                 texture.height.dividedByRoundingUp(divisor: threadHeight),
@@ -45,11 +55,10 @@ extension MTLComputePipelineState {
     }
     
     func threadgroupParameters(texture: MTLTexture, coreSize: PixelSize) -> (threadgroupsPerGrid: MTLSize, threadsPerThreadgroup: MTLSize) {
-        let threadHeight = maxTotalThreadsPerThreadgroup / threadExecutionWidth
         return (
             /// Subdivide grid as far as possible.
             /// https://developer.apple.com/documentation/metal/mtlcomputecommandencoder/1443138-dispatchthreadgroups
-            MTLSizeMake(threadExecutionWidth, threadHeight, 1),
+            maxThreads,
             MTLSizeMake(
                 texture.width
                     .dividedByRoundingUp(divisor: Int(coreSize.width))
