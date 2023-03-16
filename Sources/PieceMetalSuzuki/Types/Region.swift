@@ -137,7 +137,7 @@ func initializeRegionsGPU(
         width: UInt32(texture.width).dividedByRoundingUp(divisor: patternSize.coreSize.width),
         height: UInt32(texture.height).dividedByRoundingUp(divisor: patternSize.coreSize.height)
     )
-    var patternSize = patternSize
+    var tableWidth = patternSize.tableWidth
     
     guard let regionBuffer = Buffer<RegionGPU>(
         device: device,
@@ -150,7 +150,7 @@ func initializeRegionsGPU(
 
     cmdEncoder.setComputePipelineState(pipelineState)
     cmdEncoder.setBytes(&gridSize, length: MemoryLayout<GridSize>.size, index: 0)
-    cmdEncoder.setBytes(&patternSize, length: MemoryLayout<PatternSize>.size, index: 1)
+    cmdEncoder.setBytes(&tableWidth, length: MemoryLayout<UInt8>.size, index: 1)
     cmdEncoder.setBuffer(runBuffer.mtlBuffer, offset: 0, index: 2)
     cmdEncoder.setBuffer(regionBuffer.mtlBuffer, offset: 0, index: 3)
     
