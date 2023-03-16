@@ -84,9 +84,8 @@ public final class MarkerDetector {
         let parallelograms = findParallelograms(borders: borders, parameters: self.rdpParameters, scale: self.scale)
         delegate?.didFind(parallelograms: parallelograms, imageSize: imageSize)
         // DEBUG – Building
-        if let found = findDoubleDiamond(parallelograms: parallelograms, parameters: .starter) {
-            delegate?.didFind(doubleDiamond: found, imageSize: imageSize)
-        }
+        let found = findDoubleDiamond(parallelograms: parallelograms, parameters: .starter)
+        delegate?.didFind(doubleDiamond: found, imageSize: imageSize)
     }
 }
 
@@ -95,7 +94,7 @@ public protocol MarkerDetectorDelegate: AnyObject {
     func didFind(parallelograms: [Parallelogram], imageSize: CGSize) -> Void
     
     /// Found a pair of markers.
-    func didFind(doubleDiamond: DoubleDiamond, imageSize: CGSize) -> Void
+    func didFind(doubleDiamond: DoubleDiamond?, imageSize: CGSize) -> Void
 }
 
 internal struct PieceMetalSuzuki {
