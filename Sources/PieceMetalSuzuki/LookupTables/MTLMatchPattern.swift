@@ -78,16 +78,18 @@ internal func matchPatterns(
 
 /// Load and compile the `.metal` code which ships with the package.
 internal func loadMetalFunction(filename: String, functionName: String, device: any MTLDevice) -> (any MTLFunction)? {
-    guard let library: any MTLLibrary = loadMetalLibrary(named: filename, device: device) else {
-        assert(false, "Failed to get library.")
-        return nil
+    return SuzukiProfiler.time(.loadMetalFunction) {
+        guard let library: any MTLLibrary = loadMetalLibrary(named: filename, device: device) else {
+            assert(false, "Failed to get library.")
+            return nil
+        }
+        
+        guard let function = library.makeFunction(name: functionName) else {
+            assert(false, "Failed to make function.")
+            return nil
+        }
+        return function
     }
-    
-    guard let function = library.makeFunction(name: functionName) else {
-        assert(false, "Failed to make function.")
-        return nil
-    }
-    return function
 }
 
 internal func loadMetalLibrary(named name: String, device: any MTLDevice) -> (any MTLLibrary)? {
