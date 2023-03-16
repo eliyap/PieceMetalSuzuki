@@ -327,14 +327,12 @@ internal func applyMetalSuzuki_LUT(
             return nil
         }
         
-        if patternSize == .w4h2 {
-            let result = SuzukiProfiler.time(.combineGPU) {
-                combinePatterns(device: device, commandQueue: commandQueue, texture: texture, runBuffer: runsFilled, pointBuffer: pointsFilled, patternSize: patternSize)
-            }
-            guard result else {
-                assert(false, "Failed to run chain start kernel.")
-                return nil
-            }
+        let combineGpuResult = SuzukiProfiler.time(.combineGPU) {
+            combinePatterns(device: device, commandQueue: commandQueue, texture: texture, runBuffer: runsFilled, pointBuffer: pointsFilled, patternSize: patternSize)
+        }
+        guard combineGpuResult else {
+            assert(false, "Failed to run chain start kernel.")
+            return nil
         }
                 
         var grid = Grid(

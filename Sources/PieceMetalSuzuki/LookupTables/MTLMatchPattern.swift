@@ -113,9 +113,17 @@ internal func combinePatterns(
     pointBuffer: Buffer<PixelPoint>,
     patternSize: PatternSize
 ) -> Bool {
+    let functionNames: [String]
+    switch patternSize {
+    case .w4h2:
+        functionNames = ["combine4x2"]
+    case .w4h4:
+        functionNames = ["combine4x4_1", "combine4x4_2"]
+    default:
+        return true
+    }
+    
     guard
-        let kernelFunction = loadMetalFunction(filename: "MatchPattern", functionName: "combine\(patternSize.patternCode)", device: device),
-        let pipelineState = try? device.makeComputePipelineState(function: kernelFunction),
         let cmdBuffer = commandQueue.makeCommandBuffer(),
         let cmdEncoder = cmdBuffer.makeComputeCommandEncoder()
     else {
@@ -123,15 +131,26 @@ internal func combinePatterns(
         return false
     }
     
-    cmdEncoder.label = "Custom Kernel Encoder"
-    cmdEncoder.setComputePipelineState(pipelineState)
-    cmdEncoder.setTexture(texture, index: 0)
+    for functionName in functionNames {
+        guard
+            let kernelFunction = loadMetalFunction(filename: "MatchPattern", functionName: functionName, device: device),
+            let pipelineState = try? device.makeComputePipelineState(function: kernelFunction)
+        else {
+            assert(false, "Failed to setup pipeline.")
+            return false
+        }
+        
+        cmdEncoder.label = "Custom Kernel Encoder"
+        cmdEncoder.setComputePipelineState(pipelineState)
+        cmdEncoder.setTexture(texture, index: 0)
 
-    cmdEncoder.setBuffer(pointBuffer.mtlBuffer, offset: 0, index: 0)
-    cmdEncoder.setBuffer(runBuffer.mtlBuffer, offset: 0, index: 1)
+        cmdEncoder.setBuffer(pointBuffer.mtlBuffer, offset: 0, index: 0)
+        cmdEncoder.setBuffer(runBuffer.mtlBuffer, offset: 0, index: 1)
+        
+        let (tPerTG, tgPerGrid) = pipelineState.threadgroupParameters(texture: texture, coreSize: patternSize.coreSize)
+        cmdEncoder.dispatchThreadgroups(tgPerGrid, threadsPerThreadgroup: tPerTG)
+    }
     
-    let (tPerTG, tgPerGrid) = pipelineState.threadgroupParameters(texture: texture, coreSize: patternSize.coreSize)
-    cmdEncoder.dispatchThreadgroups(tgPerGrid, threadsPerThreadgroup: tPerTG)
     cmdEncoder.endEncoding()
     cmdBuffer.commit()
     cmdBuffer.waitUntilCompleted()
