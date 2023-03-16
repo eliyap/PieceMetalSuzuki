@@ -115,3 +115,60 @@ internal struct RegionGPU {
     let runsCount: UInt32
     let patternSize: PatternSize
 }
+
+func initializeRegionsGPU(
+    device: MTLDevice,
+    commandQueue: MTLCommandQueue,
+    runBuffer: Buffer<Run>,
+    texture: MTLTexture,
+    patternSize: PatternSize
+) -> Bool {
+    guard
+        let kernelFunction = loadMetalFunction(filename: "Region", functionName: "initializeRegions", device: device),
+        let pipelineState = try? device.makeComputePipelineState(function: kernelFunction),
+        let cmdBuffer = commandQueue.makeCommandBuffer(),
+        let cmdEncoder = cmdBuffer.makeComputeCommandEncoder()
+    else {
+        assert(false, "Failed to setup pipeline.")
+        return false
+    }
+    
+    /// Divide pixel width by core width, rounding up.
+    var gridSize = GridSize(
+        width: UInt32(texture.width).dividedByRoundingUp(divisor: patternSize.coreSize.width),
+        height: UInt32(texture.height).dividedByRoundingUp(divisor: patternSize.coreSize.height)
+    )
+    var patternSize = patternSize
+    
+    return withAutoRelease { token in 
+        guard let regionBuffer = Buffer<RegionGPU>(
+            device: device,
+            count: Int(gridSize.width * gridSize.height),
+            token: token
+        ) else {
+            assert(false, "Failed to allocate region buffer.")
+            return false
+        }
+
+        cmdEncoder.setComputePipelineState(pipelineState)
+        cmdEncoder.setBytes(&gridSize, length: MemoryLayout<GridSize>.size, index: 0)
+        cmdEncoder.setBytes(&patternSize, length: MemoryLayout<PatternSize>.size, index: 1)
+        cmdEncoder.setBuffer(runBuffer.mtlBuffer, offset: 0, index: 2)
+        cmdEncoder.setBuffer(regionBuffer.mtlBuffer, offset: 0, index: 3)
+        
+        /// Subdivide grid as far as possible.
+        /// https://developer.apple.com/documentation/metal/mtlcomputecommandencoder/1443138-dispatchthreadgroups
+        let tgPerGrid = MTLSizeMake(
+            Int(gridSize.width).dividedByRoundingUp(divisor: pipelineState.threadExecutionWidth),
+            Int(gridSize.height).dividedByRoundingUp(divisor: pipelineState.threadHeight),
+            1
+        )
+        
+        cmdEncoder.dispatchThreadgroups(tgPerGrid, threadsPerThreadgroup: pipelineState.maxThreads)
+        cmdEncoder.endEncoding()
+        cmdBuffer.commit()
+        cmdBuffer.waitUntilCompleted()
+        
+        return true
+    }
+}
