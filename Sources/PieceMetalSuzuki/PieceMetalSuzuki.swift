@@ -276,11 +276,16 @@ internal func applyMetalSuzuki(
             return nil
         }
         
+        guard let regions = SuzukiProfiler.time(.initRegionsGPU, {
+            initializeRegionsGPU(device: device, commandQueue: commandQueue, runBuffer: runsFilled, texture: texture, patternSize: patternSize, token: token)
+        }) else {
+            assert(false, "Failed to initialize regions.")
+            return nil
+        }
+                
         var grid = Grid(
             imageSize: PixelSize(width: UInt32(texture.width), height: UInt32(texture.height)),
-            regions: SuzukiProfiler.time(.initRegions) {
-                return initializeRegions(runBuffer: runsFilled, texture: texture, patternSize: patternSize)
-            },
+            regions: regions,
             patternSize: patternSize
         )
         
@@ -334,12 +339,17 @@ internal func applyMetalSuzuki_LUT(
             assert(false, "Failed to run chain start kernel.")
             return nil
         }
+        
+        guard let regions = SuzukiProfiler.time(.initRegionsGPU, {
+            initializeRegionsGPU(device: device, commandQueue: commandQueue, runBuffer: runsFilled, texture: texture, patternSize: patternSize, token: token)
+        }) else {
+            assert(false, "Failed to initialize regions.")
+            return nil
+        }
                 
         var grid = Grid(
             imageSize: PixelSize(width: UInt32(texture.width), height: UInt32(texture.height)),
-            regions: SuzukiProfiler.time(.initRegions) {
-                return initializeRegions(runBuffer: runsFilled, texture: texture, patternSize: patternSize)
-            },
+            regions: regions,
             patternSize: patternSize
         )
         
