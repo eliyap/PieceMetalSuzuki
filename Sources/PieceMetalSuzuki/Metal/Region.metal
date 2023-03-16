@@ -37,10 +37,10 @@ struct Region {
 };
 
 kernel void initializeRegions(
-    constant GridSize&    gridSize    [[ buffer (0) ]],
-    constant PatternSize& patternSize [[ buffer (1) ]],
-    device   Run*         runs        [[ buffer (2) ]],
-    device   Region*      regions     [[ buffer (3) ]],
+    constant      GridSize&    gridSize    [[ buffer (0) ]],
+    constant      PatternSize& patternSize [[ buffer (1) ]],
+    device const  Run*         runs        [[ buffer (2) ]],
+    device        Region*      regions     [[ buffer (3) ]],
              uint2        gid         [[thread_position_in_grid]]
 ) { 
     if (gid.x >= gridSize.width || gid.y >= gridSize.height) {
