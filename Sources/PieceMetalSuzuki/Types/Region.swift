@@ -101,3 +101,9 @@ func initializeRegions(
     }
     return regions
 }
+
+// @metal
+internal struct GridSize {
+    public let width: UInt32
+    public let height: UInt32
+}
