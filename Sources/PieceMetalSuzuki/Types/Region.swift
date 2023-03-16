@@ -122,7 +122,7 @@ func initializeRegionsGPU(
     runBuffer: Buffer<Run>,
     texture: MTLTexture,
     patternSize: PatternSize
-) -> Bool {
+) -> [[Region]]? {
     guard
         let kernelFunction = loadMetalFunction(filename: "Region", functionName: "initializeRegions", device: device),
         let pipelineState = try? device.makeComputePipelineState(function: kernelFunction),
