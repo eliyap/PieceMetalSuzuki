@@ -130,7 +130,7 @@ func initializeRegionsGPU(
         let cmdEncoder = cmdBuffer.makeComputeCommandEncoder()
     else {
         assert(false, "Failed to setup pipeline.")
-        return false
+        return nil
     }
     
     /// Divide pixel width by core width, rounding up.
@@ -147,7 +147,7 @@ func initializeRegionsGPU(
             token: token
         ) else {
             assert(false, "Failed to allocate region buffer.")
-            return false
+            return nil
         }
 
         cmdEncoder.setComputePipelineState(pipelineState)
@@ -169,6 +169,21 @@ func initializeRegionsGPU(
         cmdBuffer.commit()
         cmdBuffer.waitUntilCompleted()
         
-        return true
+        var result: [[Region]] = []
+        for row in 0..<Int(gridSize.height) {
+            let regionRow = [Region](unsafeUninitializedCapacity: Int(gridSize.width)) { buffer, initializedCount in
+                for col in 0..<Int(gridSize.width) {
+                    let region = regionBuffer.array[(row * Int(gridSize.width)) + col]
+                    buffer.baseAddress!.advanced(by: col).initialize(to: Region(
+                        gridPos: region.gridPos,
+                        runsCount: region.runsCount,
+                        patternSize: region.patternSize
+                    ))
+                }
+                initializedCount = Int(gridSize.width)
+            }
+            result.append(regionRow)
+        }
+        return result
     }
 }
