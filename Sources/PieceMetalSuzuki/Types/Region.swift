@@ -32,8 +32,8 @@ internal final class Region {
     
     let patternSize: PatternSize
 
-    init(size: PixelSize, gridPos: GridPosition, runsCount: UInt32, patternSize: PatternSize) {
-        self.size = size
+    init(gridPos: GridPosition, runsCount: UInt32, patternSize: PatternSize) {
+        self.size = patternSize.coreSize
         self.gridPos = gridPos
         self.runsCount = runsCount
         self.patternSize = patternSize
@@ -90,7 +90,6 @@ func initializeRegions(
                 /// Cannot use subscript notation to set uninitialized memory.
                 /// https://forums.swift.org/t/how-to-initialize-array-of-class-instances-using-a-buffer-of-uninitialised-memory/39174/5
                 buffer.baseAddress!.advanced(by: col).initialize(to: Region(
-                    size: patternSize.coreSize,
                     gridPos: GridPosition(row: UInt32(row), col: UInt32(col)),
                     runsCount: validCount,
                     patternSize: patternSize
