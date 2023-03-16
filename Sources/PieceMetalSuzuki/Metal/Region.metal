@@ -25,3 +25,9 @@ struct PixelSize {
     uint32_t height;
 };
 
+struct PatternSize {
+    PixelSize coreSize;
+    uint8_t tableWidth;
+    uint32_t pointsPerPixel;
+};
+
