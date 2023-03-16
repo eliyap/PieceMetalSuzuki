@@ -32,10 +32,8 @@ struct PatternSize {
 };
 
 struct Region { 
-    PixelSize size;
     GridPosition gridPos;
     uint32_t runsCount;
-    PatternSize patternSize;
 };
 
 kernel void initializeRegions(
@@ -63,10 +61,8 @@ kernel void initializeRegions(
     }
 
     Region region = {
-        .size = patternSize.coreSize,
         .gridPos = { .row = gid.y, .col = gid.x },
         .runsCount = validCount,
-        .patternSize = patternSize
     };
     regions[idx] = region;
 }

@@ -110,10 +110,8 @@ internal struct GridSize {
 
 // @metal 
 internal struct RegionGPU {
-    let size: PixelSize
     let gridPos: GridPosition
     let runsCount: UInt32
-    let patternSize: PatternSize
 }
 
 func initializeRegionsGPU(
@@ -177,7 +175,7 @@ func initializeRegionsGPU(
                     buffer.baseAddress!.advanced(by: col).initialize(to: Region(
                         gridPos: region.gridPos,
                         runsCount: region.runsCount,
-                        patternSize: region.patternSize
+                        patternSize: patternSize
                     ))
                 }
                 initializedCount = Int(gridSize.width)

@@ -1,9 +1,5 @@
-//
 //  GridPosition.swift
-//  
-//
 //  Created by Secret Asian Man Dev on 12/2/23.
-//
 
 import Foundation
 
