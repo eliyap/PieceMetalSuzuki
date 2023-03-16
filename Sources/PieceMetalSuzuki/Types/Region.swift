@@ -28,11 +28,11 @@ internal final class Region {
     var gridPos: GridPosition
 
     /// Number of runs in this region.
-    var runsCount: Int
+    var runsCount: UInt32
     
     let patternSize: PatternSize
 
-    init(size: PixelSize, gridPos: GridPosition, runsCount: Int, patternSize: PatternSize) {
+    init(size: PixelSize, gridPos: GridPosition, runsCount: UInt32, patternSize: PatternSize) {
         self.size = size
         self.gridPos = gridPos
         self.runsCount = runsCount
@@ -41,8 +41,8 @@ internal final class Region {
 
     /// Get run indices, given the present image size and grid size.
     func runIndices(imageSize: PixelSize, gridSize: PixelSize) -> Range<Int> {
-        let base = baseOffset(imageSize: imageSize, gridSize: gridSize, regionSize: self.size, gridPos: self.gridPos, patternSize: patternSize)
-        return Int(base)..<(Int(base) + runsCount)
+        let base = baseOffset(imageSize: imageSize, gridSize: gridSize, regionSize: self.size, gridPos: self.gridPos, patternSize: self.patternSize)
+        return Int(base)..<(Int(base + runsCount))
     }
 }
 
@@ -78,7 +78,7 @@ func initializeRegions(
             DispatchQueue.concurrentPerform(iterations: regionTableWidth) { col in
                 /// Count valid elements in each 1x1 region.
                 let bufferBase = ((row * regionTableWidth) + col) * Int(patternSize.tableWidth)
-                var validCount = 0
+                var validCount = UInt32.zero
                 for offset in 0..<patternSize.tableWidth {
                     if runBuffer.array[bufferBase + offset].isValid {
                         validCount += 1
