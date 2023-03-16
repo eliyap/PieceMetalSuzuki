@@ -119,7 +119,8 @@ func initializeRegionsGPU(
     commandQueue: MTLCommandQueue,
     runBuffer: Buffer<Run>,
     texture: MTLTexture,
-    patternSize: PatternSize
+    patternSize: PatternSize,
+    token: AutoReleasePoolToken
 ) -> [[Region]]? {
     guard
         let kernelFunction = loadMetalFunction(filename: "Region", functionName: "initializeRegions", device: device),
@@ -138,50 +139,48 @@ func initializeRegionsGPU(
     )
     var patternSize = patternSize
     
-    return withAutoRelease { token in 
-        guard let regionBuffer = Buffer<RegionGPU>(
-            device: device,
-            count: Int(gridSize.width * gridSize.height),
-            token: token
-        ) else {
-            assert(false, "Failed to allocate region buffer.")
-            return nil
-        }
-
-        cmdEncoder.setComputePipelineState(pipelineState)
-        cmdEncoder.setBytes(&gridSize, length: MemoryLayout<GridSize>.size, index: 0)
-        cmdEncoder.setBytes(&patternSize, length: MemoryLayout<PatternSize>.size, index: 1)
-        cmdEncoder.setBuffer(runBuffer.mtlBuffer, offset: 0, index: 2)
-        cmdEncoder.setBuffer(regionBuffer.mtlBuffer, offset: 0, index: 3)
-        
-        /// Subdivide grid as far as possible.
-        /// https://developer.apple.com/documentation/metal/mtlcomputecommandencoder/1443138-dispatchthreadgroups
-        let tgPerGrid = MTLSizeMake(
-            Int(gridSize.width).dividedByRoundingUp(divisor: pipelineState.threadExecutionWidth),
-            Int(gridSize.height).dividedByRoundingUp(divisor: pipelineState.threadHeight),
-            1
-        )
-        
-        cmdEncoder.dispatchThreadgroups(tgPerGrid, threadsPerThreadgroup: pipelineState.maxThreads)
-        cmdEncoder.endEncoding()
-        cmdBuffer.commit()
-        cmdBuffer.waitUntilCompleted()
-        
-        var result: [[Region]] = []
-        for row in 0..<Int(gridSize.height) {
-            let regionRow = [Region](unsafeUninitializedCapacity: Int(gridSize.width)) { buffer, initializedCount in
-                for col in 0..<Int(gridSize.width) {
-                    let region = regionBuffer.array[(row * Int(gridSize.width)) + col]
-                    buffer.baseAddress!.advanced(by: col).initialize(to: Region(
-                        gridPos: region.gridPos,
-                        runsCount: region.runsCount,
-                        patternSize: patternSize
-                    ))
-                }
-                initializedCount = Int(gridSize.width)
-            }
-            result.append(regionRow)
-        }
-        return result
+    guard let regionBuffer = Buffer<RegionGPU>(
+        device: device,
+        count: Int(gridSize.width * gridSize.height),
+        token: token
+    ) else {
+        assert(false, "Failed to allocate region buffer.")
+        return nil
     }
+
+    cmdEncoder.setComputePipelineState(pipelineState)
+    cmdEncoder.setBytes(&gridSize, length: MemoryLayout<GridSize>.size, index: 0)
+    cmdEncoder.setBytes(&patternSize, length: MemoryLayout<PatternSize>.size, index: 1)
+    cmdEncoder.setBuffer(runBuffer.mtlBuffer, offset: 0, index: 2)
+    cmdEncoder.setBuffer(regionBuffer.mtlBuffer, offset: 0, index: 3)
+    
+    /// Subdivide grid as far as possible.
+    /// https://developer.apple.com/documentation/metal/mtlcomputecommandencoder/1443138-dispatchthreadgroups
+    let tgPerGrid = MTLSizeMake(
+        Int(gridSize.width).dividedByRoundingUp(divisor: pipelineState.threadExecutionWidth),
+        Int(gridSize.height).dividedByRoundingUp(divisor: pipelineState.threadHeight),
+        1
+    )
+    
+    cmdEncoder.dispatchThreadgroups(tgPerGrid, threadsPerThreadgroup: pipelineState.maxThreads)
+    cmdEncoder.endEncoding()
+    cmdBuffer.commit()
+    cmdBuffer.waitUntilCompleted()
+    
+    var result: [[Region]] = []
+    for row in 0..<Int(gridSize.height) {
+        let regionRow = [Region](unsafeUninitializedCapacity: Int(gridSize.width)) { buffer, initializedCount in
+            for col in 0..<Int(gridSize.width) {
+                let region = regionBuffer.array[(row * Int(gridSize.width)) + col]
+                buffer.baseAddress!.advanced(by: col).initialize(to: Region(
+                    gridPos: region.gridPos,
+                    runsCount: region.runsCount,
+                    patternSize: patternSize
+                ))
+            }
+            initializedCount = Int(gridSize.width)
+        }
+        result.append(regionRow)
+    }
+    return result
 }
